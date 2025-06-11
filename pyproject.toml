@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=77.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qtile-lxa"
+version = "0.0.2"
+authors = [
+    { name = "Pankaj Jackson", email = "pankajackson@live.co.uk" }
+]
+description = "Custom Qtile widgets and tools for LXA OS"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+
+requires-python = ">=3.10"
+dependencies = [
+    "qtile",
+    "qtile-extras"
+]
+
+keywords = [
+    "qtile",
+    "widgets",
+    "feature",
+    "wm",
+    "window manager"   
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/pankajackson/qtile-lxa"
+"Bug Tracker" = "https://github.com/pankajackson/qtile-lxa/issues"
+Source = "https://github.com/pankajackson/qtile-lxa"
