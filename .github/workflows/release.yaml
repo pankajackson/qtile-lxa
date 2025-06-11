@@ -4,6 +4,7 @@ on:
     inputs:
       custom_tag:
         type: string
+        description: Custom tag to use for the release
 
 jobs:
   Trigger-Release:
