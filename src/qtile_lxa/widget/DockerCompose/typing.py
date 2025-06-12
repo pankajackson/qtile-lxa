@@ -1,9 +1,10 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass
 class DockerComposeConfig:
-    compose_file: str
+    compose_file: Path
     service_name: str | None = None
     network: str | None = None
     ipaddress: str | None = None

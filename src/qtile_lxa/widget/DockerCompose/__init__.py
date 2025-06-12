@@ -1,11 +1,15 @@
 import os, subprocess
+from pathlib import Path
 import threading
 import json
 from qtile_extras.widget import GenPollText, decorations
 from libqtile.log_utils import logger
-from libqtile.utils import guess_terminal as terminal
+from libqtile.utils import guess_terminal
 from .typing import DockerComposeConfig
 from typing import Any
+
+terminal = guess_terminal()
+
 
 class DockerCompose(GenPollText):
     def __init__(
@@ -56,7 +60,8 @@ class DockerCompose(GenPollText):
             service_list = json.loads(output or "[]")
             service_filtered = list(
                 filter(
-                    lambda x: x["ConfigFiles"] == self.config.compose_file, service_list
+                    lambda x: Path(x["ConfigFiles"]) == self.config.compose_file,
+                    service_list,
                 )
             )
             if len(service_filtered) == 0:
@@ -115,7 +120,7 @@ class DockerCompose(GenPollText):
 
         env_vars = {}
         if self.config.network:
-            env_vars["NETWORK"] = self.config.network
+            env_vars["CONTAINER_NETWORK"] = self.config.network
         if self.config.ipaddress:
             env_vars["IPADDRESS"] = self.config.ipaddress
 
