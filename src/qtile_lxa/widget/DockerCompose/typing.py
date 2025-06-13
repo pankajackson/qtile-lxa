@@ -8,8 +8,8 @@ class DockerComposeConfig:
     service_name: str | None = None
     network: str | None = None
     ipaddress: str | None = None
-    running_symbol: str = "✅"
-    stopped_symbol: str = "❌"
+    running_symbol: str = "🟢"
+    stopped_symbol: str = "🔴"
     partial_running_symbol: str = "⚠️"
     unknown_symbol: str = "❓"
     error_symbol: str = "❌"
