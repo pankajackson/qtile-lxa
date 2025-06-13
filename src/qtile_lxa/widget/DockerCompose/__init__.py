@@ -1,12 +1,12 @@
 import os, subprocess
-from pathlib import Path
 import threading
 import json
 from qtile_extras.widget import GenPollText, decorations
 from libqtile.log_utils import logger
 from libqtile.utils import guess_terminal
-from .typing import DockerComposeConfig
+from pathlib import Path
 from typing import Any
+from .typing import DockerComposeConfig
 
 terminal = guess_terminal()
 
@@ -54,7 +54,13 @@ class DockerCompose(GenPollText):
 
     def fetch_service_details(self):
         try:
-            cmd = ["docker-compose", "ls", "-a", "--format", "json"]
+            cmd = [
+                "docker-compose",
+                "ls",
+                "-a",
+                "--format",
+                "json",
+            ]
             output = self.run_command(cmd)
 
             service_list = json.loads(output or "[]")
@@ -130,12 +136,6 @@ class DockerCompose(GenPollText):
         subprocess.Popen(cmd, shell=True, env=env)
 
     def handle_stop_service(self):
-        cmd = [
-            "docker-compose",
-            "-f",
-            self.config.compose_file,
-            "stop",
-        ]
         cmd = f"{terminal} -e docker-compose -f {self.config.compose_file} stop"
 
         if self.config.service_name:

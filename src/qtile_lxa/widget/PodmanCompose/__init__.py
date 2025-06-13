@@ -114,6 +114,7 @@ class PodmanCompose(GenPollText):
                     cmd_logs = f"{cmd_logs} {self.config.service_name}"
                 subprocess.Popen(cmd_logs, shell=True)
                 return
+
         cmd = f"{terminal} -e podman-compose -f {self.config.compose_file} up -d"
         if self.config.service_name:
             cmd = f"{cmd} {self.config.service_name}"
@@ -126,7 +127,6 @@ class PodmanCompose(GenPollText):
 
         env = os.environ.copy()
         env.update(env_vars)
-
         self.log_errors("Starting pod")
         subprocess.Popen(cmd, shell=True, env=env)
 
