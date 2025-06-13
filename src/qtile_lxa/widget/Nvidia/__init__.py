@@ -63,5 +63,4 @@ class Nvidia(base.InLoopPollText):
             elif int(temp_value) >= self.config.crit:
                 self.layout.colour = self.config.fgcolor_crit
 
-            return self.format.format(**stats)
-        return "N/A"
+        return self.format.format(**stats)
