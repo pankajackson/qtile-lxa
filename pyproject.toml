@@ -19,6 +19,7 @@ dependencies = [
     "qtile-extras",
     "elasticsearch",
     "kubernetes",
+    "GPUtil"
 ]
 
 keywords = [
