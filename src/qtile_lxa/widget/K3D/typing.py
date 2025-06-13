@@ -15,8 +15,8 @@ class K3DConfig:
     kube_api_host_port: str | None = None
     network: str | None = None
     subnet: str | None = None
-    volumes: dict[str, str] = field(
-        default_factory=lambda: {str(Path.home() / "kube_storage"): "/data/"}
+    volumes: dict[Path, Path] = field(
+        default_factory=lambda: {Path.home() / "kube_storage": Path("/data/")}
     )
     disable_traefik_ingress: bool = False
     disable_service_lb: bool = False
