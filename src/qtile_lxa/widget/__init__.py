@@ -4,6 +4,8 @@ from .ElasticsearchMonitor import ElasticsearchMonitor
 from .ElasticsearchMonitor.typing import ElasticsearchMonitorConfig
 from .K3D import K3D
 from .K3D.typing import K3DConfig
+from .Kubernetes import Kubernetes
+from .Kubernetes.typing import KubernetesConfig
 
 __all__ = [
     "DockerCompose",
@@ -12,4 +14,6 @@ __all__ = [
     "ElasticsearchMonitorConfig",
     "K3D",
     "K3DConfig",
+    "Kubernetes",
+    "KubernetesConfig",
 ]

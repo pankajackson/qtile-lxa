@@ -177,7 +177,6 @@ class K3D(GenPollText):
             "error": self.config.error_symbol,
         }
         status = self.check_cluster_status()
-        logger.error(status)
         return self.format.format(
             symbol=symbol_map[status],
             label=self.config.label or self.config.cluster_name or "K3D Cluster",
@@ -204,7 +203,7 @@ class K3D(GenPollText):
             cmd = f"{terminal} -e k3d cluster start {self.config.cluster_name}"
             subprocess.Popen(cmd, shell=True)
         else:
-            self.log_errors(f"{self.config.cluster_name}: {status}")
+            self.open_k9s()
 
     def handle_stop_cluster(self):
         cmd = f"{terminal} -e k3d cluster stop {self.config.cluster_name}"
@@ -213,3 +212,10 @@ class K3D(GenPollText):
     def handle_remove_cluster(self):
         cmd = f"{terminal} -e k3d cluster delete {self.config.cluster_name}"
         subprocess.Popen(cmd, shell=True)
+
+    def open_k9s(self):
+        try:
+            command = [terminal, "-e", "k9s"]
+            subprocess.Popen(command)
+        except Exception as e:
+            self._log_error(f"Failed to open k9s: {e}")
