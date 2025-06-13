@@ -6,6 +6,8 @@ from .K3D import K3D
 from .K3D.typing import K3DConfig
 from .Kubernetes import Kubernetes
 from .Kubernetes.typing import KubernetesConfig
+from .PodmanCompose import PodmanCompose
+from .PodmanCompose.typing import PodmanComposeConfig
 
 __all__ = [
     "DockerCompose",
@@ -16,4 +18,6 @@ __all__ = [
     "K3DConfig",
     "Kubernetes",
     "KubernetesConfig",
+    "PodmanCompose",
+    "PodmanComposeConfig",
 ]
