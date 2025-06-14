@@ -10,6 +10,8 @@ from .PodmanCompose import PodmanCompose
 from .PodmanCompose.typing import PodmanComposeConfig
 from .ScreenProfile import ScreenProfile
 from .ScreenProfile.typing import ScreenProfileConfig
+from .Subsystem import Subsystem
+from .Subsystem.typing import SubsystemConfig
 
 __all__ = [
     "DockerCompose",
@@ -24,4 +26,6 @@ __all__ = [
     "PodmanComposeConfig",
     "ScreenProfile",
     "ScreenProfileConfig",
+    "Subsystem",
+    "SubsystemConfig",
 ]
