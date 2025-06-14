@@ -1,13 +1,5 @@
 from dataclasses import dataclass, field
-from pathlib import Path
 from libqtile.utils import guess_terminal
-
-
-@dataclass
-class Volume:
-    src: Path
-    dest: Path
-    mode: str = "rw"
 
 
 @dataclass
@@ -21,7 +13,7 @@ class SubsystemConfig:
     error_symbol: str = "❌"
     format: str = "{symbol} {label}"
     terminal: str = field(default_factory=guess_terminal) or "xterm"
-    volume_mount: str = "/opt/arch-provisioner:/opt/arch-provisioner:ro"
-    packages: str = "git"
+    volumes: list[str] | None = None
+    packages: list[str] = field(default_factory=lambda: ["git"])
     label: str | None = None
     enable_logger: bool = True

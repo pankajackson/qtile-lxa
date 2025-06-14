@@ -76,7 +76,16 @@ class Subsystem(GenPollText):
             "-Y",
             self.config.system_name,
         ]
-        self.create_cmd = f"{terminal} -e distrobox create -Y -I -n {self.config.system_name} --volume /opt/arch-provisioner:/opt/arch-provisioner:ro -i {self.config.image} -ap git --hostname {self.config.system_name}.{get_hostname()}"
+        volume_args = " ".join(f"--volume {v}" for v in self.config.volumes or [])
+        extra_packages_arg = " ".join(self.config.packages or [])
+        self.create_cmd = (
+            f"{terminal} -e distrobox create -Y -I "
+            f"-n {self.config.system_name} "
+            f"{volume_args} "
+            f"-i {self.config.image} "
+            f"-ap '{extra_packages_arg}' "
+            f"--hostname {self.config.system_name}.{get_hostname()}"
+        )
         self.destroy_cmd = [
             "distrobox",
             "rm",
