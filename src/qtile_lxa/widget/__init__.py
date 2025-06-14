@@ -8,6 +8,8 @@ from .Kubernetes import Kubernetes
 from .Kubernetes.typing import KubernetesConfig
 from .PodmanCompose import PodmanCompose
 from .PodmanCompose.typing import PodmanComposeConfig
+from .ScreenProfile import ScreenProfile
+from .ScreenProfile.typing import ScreenProfileConfig
 
 __all__ = [
     "DockerCompose",
@@ -20,4 +22,6 @@ __all__ = [
     "KubernetesConfig",
     "PodmanCompose",
     "PodmanComposeConfig",
+    "ScreenProfile",
+    "ScreenProfileConfig",
 ]
