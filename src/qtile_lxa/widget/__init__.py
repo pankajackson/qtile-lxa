@@ -19,6 +19,7 @@ from .URLMonitor.typing import URLMonitorConfig
 from .Vagrant import Vagrant
 from .Vagrant.typing import VagrantConfig
 from .ThemeManager.Config import ThemeConfig
+from .ThemeManager.PyWall import PyWallChanger
 
 __all__ = [
     "DockerCompose",
