@@ -16,6 +16,8 @@ from .UnitManager import UnitManager
 from .UnitManager.typing import UnitManagerConfig
 from .URLMonitor import URLMonitor
 from .URLMonitor.typing import URLMonitorConfig
+from .Vagrant import Vagrant
+from .Vagrant.typing import VagrantConfig
 
 __all__ = [
     "DockerCompose",
@@ -36,4 +38,6 @@ __all__ = [
     "UnitManagerConfig",
     "URLMonitor",
     "URLMonitorConfig",
+    "Vagrant",
+    "VagrantConfig",
 ]
