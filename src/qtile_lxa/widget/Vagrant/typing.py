@@ -8,7 +8,7 @@ class VagrantConfig:
     partial_running_symbol: str = "🟡"
     poweroff_symbol: str = "🔴"
     stopped_symbol: str = "🛑"
-    not_created_symbol: str = "⬜"
+    not_created_symbol: str = "⚪"
     aborted_symbol: str = "⚡"
     saved_symbol: str = "💤"
     frozen_symbol: str = "❄️"
