@@ -18,6 +18,7 @@ from .URLMonitor import URLMonitor
 from .URLMonitor.typing import URLMonitorConfig
 from .Vagrant import Vagrant
 from .Vagrant.typing import VagrantConfig
+from .ThemeManager.Config import ThemeConfig
 
 __all__ = [
     "DockerCompose",
@@ -40,4 +41,5 @@ __all__ = [
     "URLMonitorConfig",
     "Vagrant",
     "VagrantConfig",
+    "ThemeConfig",
 ]
