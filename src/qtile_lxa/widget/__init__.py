@@ -14,6 +14,8 @@ from .Subsystem import Subsystem
 from .Subsystem.typing import SubsystemConfig
 from .UnitManager import UnitManager
 from .UnitManager.typing import UnitManagerConfig
+from .URLMonitor import URLMonitor
+from .URLMonitor.typing import URLMonitorConfig
 
 __all__ = [
     "DockerCompose",
@@ -32,4 +34,6 @@ __all__ = [
     "SubsystemConfig",
     "UnitManager",
     "UnitManagerConfig",
+    "URLMonitor",
+    "URLMonitorConfig",
 ]
