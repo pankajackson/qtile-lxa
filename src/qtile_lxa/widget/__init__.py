@@ -12,6 +12,8 @@ from .ScreenProfile import ScreenProfile
 from .ScreenProfile.typing import ScreenProfileConfig
 from .Subsystem import Subsystem
 from .Subsystem.typing import SubsystemConfig
+from .UnitManager import UnitManager
+from .UnitManager.typing import UnitManagerConfig
 
 __all__ = [
     "DockerCompose",
@@ -28,4 +30,6 @@ __all__ = [
     "ScreenProfileConfig",
     "Subsystem",
     "SubsystemConfig",
+    "UnitManager",
+    "UnitManagerConfig",
 ]
