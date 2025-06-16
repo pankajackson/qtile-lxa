@@ -192,18 +192,30 @@ class Git:
                                 ["git", "-C", git_clone_dir, "pull", "--rebase"],
                                 check=True,
                             )
-                            sync_config_for_source(self.theme_config, git_clone_dir)
+                            sync_config_for_source(
+                                theme_config=self.theme_config,
+                                wallpaper_dir=self.wallpaper_dir,
+                                data_dir=git_clone_dir,
+                            )
                             any_repo_cloned_or_updated = True
                     except subprocess.CalledProcessError:
                         # Not a valid Git repo, delete and clone
                         subprocess.run(["rm", "-rf", git_clone_dir])
                         if _clone_repo(repo_url, git_clone_dir, progress_message):
-                            sync_config_for_source(self.theme_config, git_clone_dir)
+                            sync_config_for_source(
+                                theme_config=self.theme_config,
+                                wallpaper_dir=self.wallpaper_dir,
+                                data_dir=git_clone_dir,
+                            )
                             any_repo_cloned_or_updated = True
                 else:
                     # Directory does not exist, clone the repo
                     if _clone_repo(repo_url, git_clone_dir, progress_message):
-                        sync_config_for_source(self.theme_config, git_clone_dir)
+                        sync_config_for_source(
+                            theme_config=self.theme_config,
+                            wallpaper_dir=self.wallpaper_dir,
+                            data_dir=git_clone_dir,
+                        )
                         any_repo_cloned_or_updated = True
 
             if any_repo_cloned_or_updated:

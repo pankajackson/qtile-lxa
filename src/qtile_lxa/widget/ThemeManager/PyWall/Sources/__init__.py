@@ -65,7 +65,9 @@ def get_active_source_id(theme_config: ThemeManagerConfig):
     return active_source_id
 
 
-def sync_config_for_source(theme_config: ThemeManagerConfig, wallpaper_dir: Path):
+def sync_config_for_source(
+    theme_config: ThemeManagerConfig, wallpaper_dir: Path, data_dir=None
+):
     """Get the list of wallpaper files and parse source information."""
     config = theme_config.load_config()
     sources = get_source_list(theme_config)
@@ -130,7 +132,7 @@ def sync_config_for_source(theme_config: ThemeManagerConfig, wallpaper_dir: Path
                 elif entry.is_dir():
                     scan_directory(entry.path)
 
-    scan_directory(wallpaper_dir)
+    scan_directory(data_dir if data_dir else wallpaper_dir)
 
     config["wallpaper"]["sources"] = sources
     theme_config.save_config(config)

@@ -128,8 +128,16 @@ class Bing:
 
                 # Save the image and update symlink
                 _save_bing_image(image_url, image_fallback_url, image_path, potd_path)
-                sync_config_for_source(self.theme_config, date_dir)
-                sync_config_for_source(self.theme_config, potd_dir)
+                sync_config_for_source(
+                    theme_config=self.theme_config,
+                    wallpaper_dir=self.wallpaper_dir,
+                    data_dir=date_dir,
+                )
+                sync_config_for_source(
+                    theme_config=self.theme_config,
+                    wallpaper_dir=self.wallpaper_dir,
+                    data_dir=potd_dir,
+                )
 
                 return image_path
 
