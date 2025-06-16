@@ -18,7 +18,7 @@ from .URLMonitor import URLMonitor
 from .URLMonitor.typing import URLMonitorConfig
 from .Vagrant import Vagrant
 from .Vagrant.typing import VagrantConfig
-from .ThemeManager.Config import ThemeConfig
+from .ThemeManager.Config import ThemeManagerConfig
 from .ThemeManager.PyWall import PyWallChanger
 
 __all__ = [
@@ -42,5 +42,5 @@ __all__ = [
     "URLMonitorConfig",
     "Vagrant",
     "VagrantConfig",
-    "ThemeConfig",
+    "ThemeManagerConfig",
 ]

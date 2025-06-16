@@ -7,7 +7,7 @@ from .decorations import decorations
 from typing import Any
 
 
-class ThemeConfig:
+class ThemeManagerConfig:
     def __init__(
         self,
         config: dict[Any, Any] | None = None,

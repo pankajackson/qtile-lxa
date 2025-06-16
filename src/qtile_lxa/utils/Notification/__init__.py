@@ -1,7 +1,7 @@
 import subprocess
 
 
-def notify_dunst(
+def send_notification(
     title: str,
     msg: str,
     progress: int | None = None,
