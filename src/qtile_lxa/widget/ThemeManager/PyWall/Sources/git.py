@@ -59,7 +59,7 @@ class Git:
                     )
                 return False
 
-        def _clone_repo(repo_url, git_clone_dir, progress_message):
+        def _clone_repo(repo_url: str, git_clone_dir: Path, progress_message: str):
             """Clone the repository with shallow depth and send progress notifications."""
             try:
                 git_clone_process = subprocess.Popen(
@@ -86,7 +86,7 @@ class Git:
                                 msg=progress_message,
                                 progress=percentage,
                                 app_name="Wallpaper",
-                                app_id=9998,
+                                app_id=9999,
                                 timeout=5000,
                             )
                 git_clone_process.wait()
@@ -108,7 +108,7 @@ class Git:
                 )
                 return False
 
-        def _detect_git_changes(git_clone_dir):
+        def _detect_git_changes(git_clone_dir: Path):
             """Detect if there are any updates in a shallow-cloned repository."""
             try:
                 pull_output = subprocess.check_output(

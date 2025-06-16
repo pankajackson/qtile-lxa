@@ -1,4 +1,5 @@
 import requests
+from pathlib import Path
 from libqtile.log_utils import logger
 from . import (
     get_potd_directories,
@@ -13,7 +14,7 @@ from qtile_lxa.utils.ProcessLock import ProcessLock
 class Nasa:
     def __init__(
         self,
-        wallpaper_dir,
+        wallpaper_dir: Path,
         theme_config: ThemeManagerConfig,
         process_locker: ProcessLock = ProcessLock("nasa"),
         nasa_api_key="hETQq0FPsZJnUP9C3sUEFtwmJH3edb4I5bghfWDM",

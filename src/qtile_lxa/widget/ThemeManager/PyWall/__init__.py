@@ -19,13 +19,13 @@ from .Sources import (
     switch_prev_source,
 )
 
-theme_config = ThemeManagerConfig(config_file=Path.home() / "theme_config.json")
+theme_config = ThemeManagerConfig(config_file=Path.home() / ".lxa_theme_config.json")
 
 
 class PyWallChanger(widget.GenPollText):
     def __init__(
         self,
-        wallpaper_dir=Path.home() / "Pictures/desktop_backgrounds",
+        wallpaper_dir=Path.home() / "Pictures/lxa_desktop_backgrounds",
         update_screenlock=False,
         screenlock_effect="blur",
         wallpaper_repos=["https://github.com/pankajackson/wallpapers.git"],
