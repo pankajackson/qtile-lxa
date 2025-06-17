@@ -21,6 +21,7 @@ from .Vagrant.typing import VagrantConfig
 from .ThemeManager.Config import ThemeManagerConfig
 from .ThemeManager.PyWall import PyWallChanger
 from .ThemeManager.BarTransparency import BarTransparencyModeChanger
+from .ThemeManager.BarSplit import BarSplitModeChanger
 
 __all__ = [
     "DockerCompose",
@@ -46,4 +47,5 @@ __all__ = [
     "ThemeManagerConfig",
     "PyWallChanger",
     "BarTransparencyModeChanger",
+    "BarSplitModeChanger",
 ]
