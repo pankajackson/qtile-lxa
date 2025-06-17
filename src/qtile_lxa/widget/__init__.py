@@ -22,6 +22,9 @@ from .ThemeManager.Config import ThemeManagerConfig
 from .ThemeManager.PyWall import PyWallChanger
 from .ThemeManager.BarTransparency import BarTransparencyModeChanger
 from .ThemeManager.BarSplit import BarSplitModeChanger
+from .ThemeManager.ColorRainbow import ColorRainbowModeChanger
+from .ThemeManager.ColorScheme import ColorSchemeChanger
+from .ThemeManager.Decoration import DecorationChanger
 
 __all__ = [
     "DockerCompose",
@@ -48,4 +51,7 @@ __all__ = [
     "PyWallChanger",
     "BarTransparencyModeChanger",
     "BarSplitModeChanger",
+    "ColorRainbowModeChanger",
+    "ColorSchemeChanger",
+    "DecorationChanger",
 ]

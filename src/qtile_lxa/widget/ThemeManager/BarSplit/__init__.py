@@ -51,12 +51,12 @@ class BarSplitModeChanger(widget.TextBox):
         send_notification(
             title=f"Bar Split: {self.current_bar_mode}",
             msg="Theme Manager",
-            app_name="BarSplitMode",
+            app_name="ThemeManager",
             app_id=2003,
             timeout=5000,
         )
 
         if self.conf_reload_timer and self.conf_reload_timer.is_alive():
             self.conf_reload_timer.cancel()
-        self.conf_reload_timer = threading.Timer(1, reload_qtile)
+        self.conf_reload_timer = threading.Timer(1, theme_config.reload_qtile)
         self.conf_reload_timer.start()

@@ -8,11 +8,11 @@ from qtile_lxa import __DEFAULTS__
 theme_config = ThemeManagerConfig(config_file=__DEFAULTS__.theme_manager.config_path)
 
 
-class BarTransparencyModeChanger(widget.TextBox):
-    def __init__(self, **kwargs: Any):
-        super().__init__(**kwargs)
-        self.text_template = "󱡓 : {}"
-        self.current_bar_mode = self.get_current_bar_mode()
+class ColorRainbowModeChanger(widget.TextBox):
+    def __init__(self, **config):
+        super().__init__(**config)
+        self.text_template = " : {}"
+        self.current_rainbow_mode = self.get_current_rainbow_mode()
         self.conf_reload_timer = None
         self.decorations = [
             widget.decorations.RectDecoration(
@@ -26,30 +26,30 @@ class BarTransparencyModeChanger(widget.TextBox):
         ]
         self.add_callbacks(
             {
-                "Button1": self.toggle_bar_mode,
+                "Button1": self.toggle_rainbow_mode,
             }
         )
         self.update_text()
 
-    def get_current_bar_mode(self):
-        return theme_config.load_config().get("bar", {}).get("transparent", False)
+    def get_current_rainbow_mode(self):
+        return theme_config.load_config().get("color", {}).get("rainbow", True)
 
-    def save_bar_mode(self, bar_mode):
+    def save_rainbow_mode(self, rainbow_mode):
         config = theme_config.load_config()
-        config["bar"]["transparent"] = bar_mode
-        theme_config.save_config(config=config)
+        config["color"]["rainbow"] = rainbow_mode
+        theme_config.save_config(config)
 
     def update_text(self):
-        current_status = "1" if self.current_bar_mode else "0"
+        current_status = "1" if self.current_rainbow_mode else "0"
         self.text = self.text_template.format(current_status)
         self.draw()
 
-    def toggle_bar_mode(self):
-        self.current_bar_mode = not self.current_bar_mode
-        self.save_bar_mode(self.current_bar_mode)
+    def toggle_rainbow_mode(self):
+        self.current_rainbow_mode = not self.current_rainbow_mode
+        self.save_rainbow_mode(self.current_rainbow_mode)
         self.update_text()
         send_notification(
-            title=f"Bar Transparency: {self.current_bar_mode}",
+            title=f"Rainbow Mode: {self.current_rainbow_mode}",
             msg="Theme Manager",
             app_name="ThemeManager",
             app_id=2003,
