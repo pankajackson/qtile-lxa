@@ -58,5 +58,5 @@ class ThemeManagerConfig:
             self.save_config(self.default_config)
             return self.default_config
 
-    def apply_config(self):
+    def reload_qtile(self):
         subprocess.run(["qtile", "cmd-obj", "-o", "cmd", "-f", "reload_config"])

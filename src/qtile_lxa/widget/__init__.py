@@ -20,6 +20,7 @@ from .Vagrant import Vagrant
 from .Vagrant.typing import VagrantConfig
 from .ThemeManager.Config import ThemeManagerConfig
 from .ThemeManager.PyWall import PyWallChanger
+from .ThemeManager.BarTransparency import BarTransparencyModeChanger
 
 __all__ = [
     "DockerCompose",
@@ -43,4 +44,6 @@ __all__ = [
     "Vagrant",
     "VagrantConfig",
     "ThemeManagerConfig",
+    "PyWallChanger",
+    "BarTransparencyModeChanger",
 ]
