@@ -74,11 +74,9 @@ class PyWallChanger(widget.GenPollText):
         self.update_text()
 
     def poll(self):
-        self.sync_sources()
         return self.get_text()
 
     def sync_sources(self):
-        # lock_fd = self.acquire_lock("sync_sources")
         process_locker = ProcessLock("sync_sources")
         lock_fd = process_locker.acquire_lock()
         if not lock_fd:
@@ -86,21 +84,18 @@ class PyWallChanger(widget.GenPollText):
         try:
             active_source_id = get_active_source_id(theme_config=theme_config)
 
-            # self.sync_git()
             source_git = Git(
                 wallpaper_dir=self.wallpaper_dir, theme_config=theme_config
             )
             source_git.sync_git()
 
             if self.bing_potd:
-                # self.sync_bing()
                 source_bing = Bing(
                     wallpaper_dir=self.wallpaper_dir, theme_config=theme_config
                 )
                 source_bing.sync_bing()
 
             if self.nasa_potd:
-                # self.sync_nasa()
                 source_bing = Nasa(
                     wallpaper_dir=self.wallpaper_dir, theme_config=theme_config
                 )
