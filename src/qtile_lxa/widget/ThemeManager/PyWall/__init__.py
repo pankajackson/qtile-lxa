@@ -214,19 +214,11 @@ class PyWallChanger(widget.GenPollText):
             screen_lock_update_cmd += ["--fx", self.screenlock_effect]
         subprocess.run(screen_lock_update_cmd, check=True)
         if notify:
-            subprocess.run(
-                [
-                    "dunstify",
-                    "-a",
-                    "ScreenLock",
-                    "-r",
-                    "9995",
-                    "ScreenLock",
-                    "ScreenLock Background has been updated!",
-                    "-t",
-                    "5000",
-                ],
-                check=True,
+            send_notification(
+                "ScreenLock",
+                "ScreenLock Background has been updated!",
+                app_name="ScreenLock",
+                app_id=9995,
             )
 
     def get_text(self):
