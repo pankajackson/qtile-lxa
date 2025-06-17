@@ -7,7 +7,8 @@ from libqtile import qtile
 from libqtile.log_utils import logger
 from qtile_lxa.widget.ThemeManager.Config import ThemeManagerConfig
 from qtile_lxa.utils.Notification import send_notification
-from qtile_lxa.utils.ProcessLock import ProcessLock
+from qtile_lxa.utils.ProcessLock import ProcessLocker
+from qtile_lxa.utils.DataManager import sync_dirs
 from .Sources.git import Git
 from .Sources.bing import Bing
 from .Sources.nasa import Nasa
@@ -18,18 +19,18 @@ from .Sources import (
     switch_next_source,
     switch_prev_source,
 )
+from qtile_lxa import __DEFAULTS__, __BASE_DIR__
 
-theme_config = ThemeManagerConfig(config_file=Path.home() / ".lxa_theme_config.json")
+theme_config = ThemeManagerConfig(config_file=__DEFAULTS__.theme_manager.config_path)
 
 
 class PyWallChanger(widget.GenPollText):
     def __init__(
         self,
-        wallpaper_dir=Path.home() / "Pictures/lxa_desktop_backgrounds",
+        wallpaper_dir=__DEFAULTS__.theme_manager.pywall.wallpaper_dir,
         update_screenlock=False,
         screenlock_effect="blur",
-        wallpaper_repos=["https://github.com/pankajackson/wallpapers.git"],
-        lock_dir="/tmp",
+        wallpaper_repos=__DEFAULTS__.theme_manager.pywall.wallpaper_repos,
         bing_potd=True,
         nasa_potd=True,
         nasa_api_key="hETQq0FPsZJnUP9C3sUEFtwmJH3edb4I5bghfWDM",
@@ -40,7 +41,6 @@ class PyWallChanger(widget.GenPollText):
         self.update_screenlock = update_screenlock
         self.screenlock_effect = screenlock_effect
         self.wallpaper_repos = wallpaper_repos or []
-        self.lock_dir = lock_dir
         self.bing_potd = bing_potd
         self.nasa_potd = nasa_potd
         self.nasa_api_key = nasa_api_key
@@ -67,6 +67,7 @@ class PyWallChanger(widget.GenPollText):
                 "Button5": self.prev_wallpaper,  # Previous wallpaper
             }
         )
+        self.sync_default_wallpapers()
         sync_config_for_source(
             theme_config=theme_config, wallpaper_dir=self.wallpaper_dir
         )
@@ -76,8 +77,14 @@ class PyWallChanger(widget.GenPollText):
     def poll(self):
         return self.get_text()
 
+    def sync_default_wallpapers(self):
+        sync_dirs(
+            __BASE_DIR__ / "assets/wallpapers",
+            __DEFAULTS__.theme_manager.pywall.wallpaper_dir / "defaults",
+        )
+
     def sync_sources(self):
-        process_locker = ProcessLock("sync_sources")
+        process_locker = ProcessLocker("sync_sources")
         lock_fd = process_locker.acquire_lock()
         if not lock_fd:
             return

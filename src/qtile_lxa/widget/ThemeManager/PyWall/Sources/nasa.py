@@ -8,7 +8,7 @@ from . import (
     sync_config_for_source,
 )
 from qtile_lxa.widget.ThemeManager.Config import ThemeManagerConfig
-from qtile_lxa.utils.ProcessLock import ProcessLock
+from qtile_lxa.utils.ProcessLock import ProcessLocker
 
 
 class Nasa:
@@ -16,7 +16,7 @@ class Nasa:
         self,
         wallpaper_dir: Path,
         theme_config: ThemeManagerConfig,
-        process_locker: ProcessLock = ProcessLock("nasa"),
+        process_locker: ProcessLocker = ProcessLocker("nasa"),
         nasa_api_key="hETQq0FPsZJnUP9C3sUEFtwmJH3edb4I5bghfWDM",
     ):
         self.wallpaper_dir = wallpaper_dir

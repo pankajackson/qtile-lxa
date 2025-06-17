@@ -3,7 +3,7 @@ from pathlib import Path
 from libqtile.log_utils import logger
 from qtile_lxa.widget.ThemeManager.Config import ThemeManagerConfig
 from qtile_lxa.utils.Notification import send_notification
-from qtile_lxa.utils.ProcessLock import ProcessLock
+from qtile_lxa.utils.ProcessLock import ProcessLocker
 from . import sync_config_for_source
 
 
@@ -13,7 +13,7 @@ class Git:
         wallpaper_dir: Path,
         theme_config: ThemeManagerConfig,
         wallpaper_repos: list[str] = ["https://github.com/pankajackson/wallpapers.git"],
-        process_locker: ProcessLock = ProcessLock("git"),
+        process_locker: ProcessLocker = ProcessLocker("git"),
     ):
         self.wallpaper_dir = wallpaper_dir
         self.theme_config = theme_config

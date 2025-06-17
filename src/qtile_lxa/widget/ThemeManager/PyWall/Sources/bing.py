@@ -8,7 +8,7 @@ from . import (
     sync_config_for_source,
 )
 from qtile_lxa.widget.ThemeManager.Config import ThemeManagerConfig
-from qtile_lxa.utils.ProcessLock import ProcessLock
+from qtile_lxa.utils.ProcessLock import ProcessLocker
 
 
 class Bing:
@@ -16,7 +16,7 @@ class Bing:
         self,
         wallpaper_dir: Path,
         theme_config: ThemeManagerConfig,
-        process_locker: ProcessLock = ProcessLock("bing"),
+        process_locker: ProcessLocker = ProcessLocker("bing"),
     ):
         self.wallpaper_dir = wallpaper_dir
         self.theme_config = theme_config

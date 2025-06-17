@@ -3,7 +3,7 @@ from pathlib import Path
 from libqtile.log_utils import logger
 
 
-class ProcessLock:
+class ProcessLocker:
     def __init__(self, app_name: str, lock_dir: Path = Path("/tmp")):
         self.app_name = app_name
         self.lock_dir = lock_dir
