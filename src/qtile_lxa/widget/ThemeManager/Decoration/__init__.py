@@ -5,7 +5,7 @@ from qtile_lxa.widget.ThemeManager.Config import decorations
 from qtile_lxa.utils.Notification import send_notification
 from qtile_lxa import __DEFAULTS__
 
-theme_config = ThemeManagerConfig(config_file=__DEFAULTS__.theme_manager.config_path)
+theme_config = ThemeManagerConfig()
 
 
 class DecorationChanger(widget.TextBox):

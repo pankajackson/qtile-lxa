@@ -2,16 +2,17 @@ import subprocess
 from pathlib import Path
 import json
 from libqtile.log_utils import logger
-from .color_schemes import color_schemes
+from .colors import color_schemes
 from .decorations import decorations
 from typing import Any
+from qtile_lxa import __DEFAULTS__
 
 
 class ThemeManagerConfig:
     def __init__(
         self,
         config: dict[Any, Any] | None = None,
-        config_file: Path = Path.home() / ".lxa_theme_config.json",
+        config_file: Path = __DEFAULTS__.theme_manager.config_path,
         **kwargs: Any,
     ):
         self.config = config

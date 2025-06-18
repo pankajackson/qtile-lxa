@@ -1,6 +1,8 @@
 from pathlib import Path
 from libqtile.log_utils import logger
 import json
+from qtile_lxa import __DEFAULTS__
+from typing import Literal
 
 
 def invert_hex_color_of(hex_color: str):
@@ -17,7 +19,7 @@ def rgba(hex_color: str, alpha: float):
 
 
 def get_pywal_color_scheme(
-    pywal_colors=Path.home() / ".cache/wal/colors.json",
+    pywal_colors=__DEFAULTS__.theme_manager.pywall.pywal_color_scheme_path,
 ):
     if not Path.exists(pywal_colors):
         logger.error(f"pywal colors file {pywal_colors} not exist!")
@@ -76,3 +78,27 @@ color_schemes = {
     },
     "pywal": get_pywal_color_scheme(),
 }
+
+
+def get_color_scheme(
+    theme: Literal["pywal", "dark_pl", "bright_pl", "black_n_white"] = "dark_pl",
+):
+    cs = None
+    try:
+        if theme in color_schemes and color_schemes[theme]:
+            cs = color_schemes[theme]
+        else:
+            logger.error(f"Unable to find color_schemes for theme {theme}!")
+    except Exception as e:
+        logger.error(f"failed to get color_schemes for theme {theme}!")
+
+    if not cs:
+        cs = color_schemes["dark_pl"]
+
+    cs["active"] = cs["color_sequence"][-1]
+    cs["highlight"] = cs["color_sequence"][0]
+    if len(cs["color_sequence"]) > 1:
+        cs["inactive"] = cs["color_sequence"][1]
+    else:
+        cs["inactive"] = invert_hex_color_of(cs["color_sequence"][0])
+    return cs

@@ -25,6 +25,8 @@ from .ThemeManager.BarSplit import BarSplitModeChanger
 from .ThemeManager.ColorRainbow import ColorRainbowModeChanger
 from .ThemeManager.ColorScheme import ColorSchemeChanger
 from .ThemeManager.Decoration import DecorationChanger
+from .ThemeManager.VidWall import VidWallController
+from .ThemeManager.VidWall import VideoWallpaper
 
 __all__ = [
     "DockerCompose",
@@ -54,4 +56,6 @@ __all__ = [
     "ColorRainbowModeChanger",
     "ColorSchemeChanger",
     "DecorationChanger",
+    "VideoWallpaper",
+    "VidWallController",
 ]
