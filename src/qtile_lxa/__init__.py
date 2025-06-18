@@ -48,10 +48,24 @@ class Media:
 
 
 @dataclass(frozen=True)
+class Docker:
+    network: str = "secure-bridge"
+    subnet: str = "10.0.1.0/24"
+
+
+@dataclass(frozen=True)
+class Podman:
+    network: str = "secure-bridge"
+    subnet: str = "10.0.1.0/24"
+
+
+@dataclass(frozen=True)
 class __Defaults__:
     theme_manager: ThemeManagerDefaults = ThemeManagerDefaults()
     power_menu: PowerMenu = PowerMenu()
     media = Media()
+    docker = Docker()
+    podman = Podman()
 
 
 __DEFAULTS__ = __Defaults__()

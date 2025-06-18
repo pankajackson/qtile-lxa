@@ -21,7 +21,9 @@ dependencies = [
     "kubernetes",
     "GPUtil",
     "pywal",
-    "psutil"
+    "psutil",
+    "docker",
+    "podman"
 ]
 
 keywords = [
