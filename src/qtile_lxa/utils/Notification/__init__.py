@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 
 
 def send_notification(
@@ -7,7 +8,7 @@ def send_notification(
     progress: int | None = None,
     app_name: str | None = None,
     app_id: int | None = None,
-    icon: str | None = None,
+    icon: Path | str | None = None,
     timeout: int | None = None,
 ) -> None:
     cmd = ["dunstify"]
@@ -19,7 +20,7 @@ def send_notification(
         cmd.extend(["-r", str(app_id)])
 
     if icon:
-        cmd.extend(["-i", icon])
+        cmd.extend(["-i", str(icon)])
 
     if progress is not None:
         cmd.extend(["-h", f"'int:value:{progress}'", f"{title}: {progress}%"])

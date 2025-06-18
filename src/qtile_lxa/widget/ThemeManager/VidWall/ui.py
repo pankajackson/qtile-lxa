@@ -6,7 +6,7 @@ from typing import Any, Literal
 from qtile_extras.popup.toolkit import PopupRelativeLayout, PopupText, PopupImage
 from qtile_lxa.widget.ThemeManager.Config import colors
 from qtile_lxa.widget.ThemeManager.Config import ThemeManagerConfig
-from qtile_lxa import __DEFAULTS__, __BASE_DIR__
+from qtile_lxa import __DEFAULTS__, __BASE_DIR__, __ASSETS_DIR__
 
 theme_config = ThemeManagerConfig().load_config()
 color_scheme = colors.get_color_scheme(
@@ -285,7 +285,7 @@ class VideoWallpaper:
             h_align="left",
         )
         btn_close = PopupImage(
-            filename=str(__BASE_DIR__ / "assets/icons/close.png"),
+            filename=str(__ASSETS_DIR__ / "icons/close.png"),
             pos_x=0.95,
             pos_y=0.01,
             width=0.035,

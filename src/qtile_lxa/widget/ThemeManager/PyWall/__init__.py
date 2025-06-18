@@ -19,7 +19,7 @@ from .Sources import (
     switch_next_source,
     switch_prev_source,
 )
-from qtile_lxa import __DEFAULTS__, __BASE_DIR__
+from qtile_lxa import __DEFAULTS__, __BASE_DIR__, __ASSETS_DIR__
 
 theme_config = ThemeManagerConfig()
 
@@ -79,7 +79,7 @@ class PyWallChanger(widget.GenPollText):
 
     def sync_default_wallpapers(self):
         sync_dirs(
-            __BASE_DIR__ / "assets/wallpapers",
+            __ASSETS_DIR__ / "wallpapers",
             __DEFAULTS__.theme_manager.pywall.wallpaper_dir / "defaults",
         )
 

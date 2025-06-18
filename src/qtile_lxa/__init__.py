@@ -6,7 +6,7 @@ from libqtile.log_utils import logger
 
 
 __BASE_DIR__ = Path(__file__).resolve().parent
-logger.error("qtile-lxa basedir: {}".format(__BASE_DIR__))
+__ASSETS_DIR__ = __BASE_DIR__ / "assets"
 
 
 try:
@@ -43,9 +43,15 @@ class PowerMenu:
 
 
 @dataclass(frozen=True)
+class Media:
+    max_volume: int = 150
+
+
+@dataclass(frozen=True)
 class __Defaults__:
     theme_manager: ThemeManagerDefaults = ThemeManagerDefaults()
     power_menu: PowerMenu = PowerMenu()
+    media = Media()
 
 
 __DEFAULTS__ = __Defaults__()

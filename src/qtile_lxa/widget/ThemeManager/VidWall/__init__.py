@@ -104,9 +104,7 @@ class VidWallController(widget.GenPollText):
 
     def load_vid_wall_widget(self):
         """Initialize the video wallpaper widget."""
-        return VideoWallpaper(
-            qtile, hwdec=self.hwdec, playlist_file=self.playlist_file
-        )
+        return VideoWallpaper(qtile, hwdec=self.hwdec, playlist_file=self.playlist_file)
 
     def toggle_show_hide(self):
         """Toggle visibility of the Video Wallpaper Widget."""
@@ -121,9 +119,12 @@ class VidWallController(widget.GenPollText):
         if self.widget.widget_instance:
             self.widget.widget_instance.toggle_play_pause()
         else:
-            subprocess.run(
-                "dunstify -a 'VideoWallpaper' -r 9997 'Video Wallpaper' 'App not Running at this moment' -t 5000",
-                shell=True,
+            send_notification(
+                title=f"App not Running at this moment",
+                msg="Video Wallpaper",
+                app_name="ThemeManager",
+                app_id=2003,
+                timeout=5000,
             )
 
     def get_current_config(self):
