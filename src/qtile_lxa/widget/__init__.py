@@ -27,6 +27,7 @@ from .ThemeManager.ColorScheme import ColorSchemeChanger
 from .ThemeManager.Decoration import DecorationChanger
 from .ThemeManager.VidWall import VidWallController
 from .ThemeManager.VidWall import VideoWallpaper
+from .ThemeManager import ThemeManager
 
 __all__ = [
     "DockerCompose",
@@ -58,4 +59,5 @@ __all__ = [
     "DecorationChanger",
     "VideoWallpaper",
     "VidWallController",
+    "ThemeManager",
 ]
