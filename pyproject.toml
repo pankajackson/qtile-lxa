@@ -20,7 +20,8 @@ dependencies = [
     "elasticsearch",
     "kubernetes",
     "GPUtil",
-    "pywal"
+    "pywal",
+    "psutil"
 ]
 
 keywords = [

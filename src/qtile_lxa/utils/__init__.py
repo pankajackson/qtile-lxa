@@ -1,5 +1,6 @@
 from threading import Timer
 from libqtile import qtile
+import psutil
 
 
 def toggle_and_auto_close_widgetbox(widget_name, close_after=5):
@@ -9,3 +10,11 @@ def toggle_and_auto_close_widgetbox(widget_name, close_after=5):
         Timer(
             close_after, lambda: widget.toggle() if widget.box_is_open else None
         ).start()
+
+
+def check_battery():
+    battery = psutil.sensors_battery()
+    if battery is not None:
+        return True
+    else:
+        return False
