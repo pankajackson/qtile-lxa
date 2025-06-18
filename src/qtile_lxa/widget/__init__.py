@@ -29,6 +29,8 @@ from .ThemeManager.VidWall import VidWallController
 from .ThemeManager.VidWall import VideoWallpaper
 from .ThemeManager.BarDecorator import DecoratedBar
 from .ThemeManager import ThemeManager
+from .PowerMenu import PowerMenu
+from .PowerMenu import show_power_menu
 
 __all__ = [
     "DockerCompose",
@@ -62,4 +64,6 @@ __all__ = [
     "VidWallController",
     "DecoratedBar",
     "ThemeManager",
+    "PowerMenu",
+    "show_power_menu",
 ]

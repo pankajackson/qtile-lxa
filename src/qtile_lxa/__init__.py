@@ -1,6 +1,7 @@
 from importlib.metadata import version as pkg_version, PackageNotFoundError
 from pathlib import Path
 from dataclasses import dataclass, field
+from typing import Literal
 from libqtile.log_utils import logger
 
 
@@ -21,6 +22,7 @@ class PyWallDefaults:
     wallpaper_repos: list[str] = field(
         default_factory=lambda: ["https://github.com/pankajackson/wallpapers.git"]
     )
+    screenlock_effect: str = "blur"
 
 
 @dataclass(frozen=True)
@@ -36,8 +38,14 @@ class ThemeManagerDefaults:
 
 
 @dataclass(frozen=True)
+class PowerMenu:
+    sleep_mode: Literal["sleep", "hibernate", "hybrid-sleep"] = "sleep"
+
+
+@dataclass(frozen=True)
 class __Defaults__:
     theme_manager: ThemeManagerDefaults = ThemeManagerDefaults()
+    power_menu: PowerMenu = PowerMenu()
 
 
 __DEFAULTS__ = __Defaults__()

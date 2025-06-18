@@ -29,7 +29,7 @@ class PyWallChanger(widget.GenPollText):
         self,
         wallpaper_dir=__DEFAULTS__.theme_manager.pywall.wallpaper_dir,
         update_screenlock=False,
-        screenlock_effect="blur",
+        screenlock_effect=__DEFAULTS__.theme_manager.pywall.screenlock_effect,
         wallpaper_repos=__DEFAULTS__.theme_manager.pywall.wallpaper_repos,
         bing_potd=True,
         nasa_potd=True,
