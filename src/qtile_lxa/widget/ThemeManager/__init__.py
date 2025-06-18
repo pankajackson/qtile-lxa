@@ -37,8 +37,8 @@ class ThemeManager(widget.WidgetBox):
             name=name,
             widgets=self.controller_list,
             close_button_location="left",
-            text_closed=" 󰸌 ye",
-            text_open="󰸌  yes",
+            text_closed=" 󰸌 ",
+            text_open="󰸌  ",
             mouse_callbacks={
                 "Button1": lambda: toggle_and_auto_close_widgetbox(
                     name, close_after=120
