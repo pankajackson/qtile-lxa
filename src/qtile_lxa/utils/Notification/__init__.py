@@ -1,13 +1,14 @@
 import subprocess
+from pathlib import Path
 
 
-def notify_dunst(
+def send_notification(
     title: str,
     msg: str,
     progress: int | None = None,
     app_name: str | None = None,
     app_id: int | None = None,
-    icon: str | None = None,
+    icon: Path | str | None = None,
     timeout: int | None = None,
 ) -> None:
     cmd = ["dunstify"]
@@ -19,10 +20,10 @@ def notify_dunst(
         cmd.extend(["-r", str(app_id)])
 
     if icon:
-        cmd.extend(["-i", icon])
+        cmd.extend(["-i", str(icon)])
 
     if progress is not None:
-        cmd.extend(["-h", f"int:value:{progress}", f"{title}: {progress}%"])
+        cmd.extend(["-h", f"'int:value:{progress}'", f"{title}: {progress}%"])
     else:
         cmd.append(title)
 
