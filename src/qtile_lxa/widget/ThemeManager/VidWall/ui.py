@@ -8,9 +8,9 @@ from qtile_lxa.widget.ThemeManager.Config import colors
 from qtile_lxa.widget.ThemeManager.Config import ThemeManagerConfig
 from qtile_lxa import __DEFAULTS__, __BASE_DIR__
 
-theme_config = ThemeManagerConfig()
+theme_config = ThemeManagerConfig().load_config()
 color_scheme = colors.get_color_scheme(
-    theme_config.load_config().get("color", {}).get("scheme", "dark_pl")
+    theme_config.get("color", {}).get("scheme", "dark_pl")
 )
 active_color = colors.rgba(color_scheme["active"], 0.4)
 inactive_color = colors.rgba(color_scheme["inactive"], 0.4)
