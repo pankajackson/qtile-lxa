@@ -51,9 +51,5 @@ Homepage = "https://github.com/pankajackson/qtile-lxa"
 "Bug Tracker" = "https://github.com/pankajackson/qtile-lxa/issues"
 Source = "https://github.com/pankajackson/qtile-lxa"
 
-[tool.setuptools]
-packages = ["qtile_lxa"]
-include-package-data = true
-
 [tool.setuptools.package-data]
 qtile_lxa = ["assets/*"]
