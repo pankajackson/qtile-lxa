@@ -1,6 +1,6 @@
-# 🧩 qtile_lxa
+# 🧩 QtileLXA
 
-**`qtile_lxa`** is a modular extension suite for the [Qtile window manager](https://qtile.org/), providing custom widgets, utility scripts, dynamic theming, screen locking, Docker integration, and more — designed to streamline advanced Linux desktop setups.
+**`QtileLXA`** is a modular extension suite for the [Qtile window manager](https://qtile.org/), providing custom widgets, utility scripts, dynamic theming, screen locking, Docker integration, and more — designed to streamline advanced Linux desktop setups.
 
 ---
 
