@@ -52,4 +52,4 @@ Homepage = "https://github.com/pankajackson/qtile-lxa"
 Source = "https://github.com/pankajackson/qtile-lxa"
 
 [tool.setuptools.package-data]
-qtile_lxa = ["assets/*"]
+qtile_lxa = ["assets/**/*"]
