@@ -8,12 +8,13 @@ version = "x.x.x"
 authors = [
     { name = "Pankaj Jackson", email = "pankajackson@live.co.uk" }
 ]
-description = "Custom Qtile widgets and tools for LXA OS"
+description = "QtileLXA is a modular extension suite for the Qtile window manager, featuring custom widgets, dynamic theming, video wallpapers, and system controls, all designed to enhance and automate your Qtile desktop experience."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 
 requires-python = ">=3.10"
+
 dependencies = [
     "qtile",
     "qtile-extras",
@@ -31,7 +32,7 @@ keywords = [
     "widgets",
     "feature",
     "wm",
-    "window manager"   
+    "window manager"
 ]
 
 classifiers = [
@@ -49,3 +50,6 @@ classifiers = [
 Homepage = "https://github.com/pankajackson/qtile-lxa"
 "Bug Tracker" = "https://github.com/pankajackson/qtile-lxa/issues"
 Source = "https://github.com/pankajackson/qtile-lxa"
+
+[tool.setuptools.package-data]
+qtile_lxa = ["assets/*"]
