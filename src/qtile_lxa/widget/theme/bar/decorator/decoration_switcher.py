@@ -1,19 +1,17 @@
 import threading
 from qtile_extras import widget
-from qtile_lxa.widget.theme.config.theme_manager_config import (
-    ThemeManagerConfig,
-)
+from qtile_lxa.widget.theme.config import ThemeConfig
 from qtile_lxa.widget.theme.config import decorations
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa import __DEFAULTS__
 
-theme_config = ThemeManagerConfig()
+theme_config = ThemeConfig()
 
 
 class DecorationChanger(widget.TextBox):
     def __init__(self, display_name=False, **config):
         super().__init__(**config)
-        self.decorations_list = list(decorations.decorations.keys())
+        self.decorations_list = list(decorations.keys())
         self.text_template = f"󰟾: {{current_decor}}"  # Icon and index
         self.current_decoration = self.get_current_decoration()
         self.display_name = display_name
@@ -37,7 +35,9 @@ class DecorationChanger(widget.TextBox):
         self.update_text()
 
     def get_current_decoration(self):
-        return theme_config.load_config().get("decoration", list(decorations.decorations.keys())[0])
+        return theme_config.load_config().get(
+            "decoration", list(decorations.keys())[0]
+        )
 
     def save_current_decoration(self, decoration_name):
         config = theme_config.load_config()

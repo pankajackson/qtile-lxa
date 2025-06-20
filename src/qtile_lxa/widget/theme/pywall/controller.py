@@ -5,7 +5,7 @@ from pathlib import Path
 from qtile_extras import widget
 from libqtile import qtile
 from libqtile.log_utils import logger
-from qtile_lxa.widget.theme.config.theme_manager_config import ThemeManagerConfig
+from qtile_lxa.widget.theme.config import ThemeConfig
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa.utils.process_lock import ProcessLocker
 from qtile_lxa.utils.data_manager import sync_dirs
@@ -21,7 +21,7 @@ from .sources.utils import (
 )
 from qtile_lxa import __DEFAULTS__, __BASE_DIR__, __ASSETS_DIR__
 
-theme_config = ThemeManagerConfig()
+theme_config = ThemeConfig()
 
 
 class PyWallChanger(widget.GenPollText):

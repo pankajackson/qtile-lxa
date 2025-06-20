@@ -1,11 +1,11 @@
 import threading
 from typing import Any
 from qtile_extras import widget
-from qtile_lxa.widget.theme.config.theme_manager_config import ThemeManagerConfig
+from qtile_lxa.widget.theme.config import ThemeConfig
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa import __DEFAULTS__
 
-theme_config = ThemeManagerConfig()
+theme_config = ThemeConfig()
 
 
 class ColorRainbowModeChanger(widget.TextBox):

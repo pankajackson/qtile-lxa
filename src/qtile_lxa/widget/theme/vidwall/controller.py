@@ -6,11 +6,11 @@ from pathlib import Path
 from typing import Any, Literal
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa import __DEFAULTS__
-from qtile_lxa.widget.theme.config.theme_manager_config import ThemeManagerConfig
+from qtile_lxa.widget.theme.config import ThemeConfig
 from .ui import VidWallUi
 
 
-theme_config = ThemeManagerConfig()
+theme_config = ThemeConfig()
 
 
 class VidWallController(widget.GenPollText):

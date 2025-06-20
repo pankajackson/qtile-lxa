@@ -8,7 +8,7 @@ from typing import Any
 from qtile_lxa import __DEFAULTS__
 
 
-class ThemeManagerConfig:
+class ThemeConfig:
     def __init__(
         self,
         config: dict[Any, Any] | None = None,

@@ -1,7 +1,7 @@
 import subprocess
 from pathlib import Path
 from libqtile.log_utils import logger
-from qtile_lxa.widget.theme.config.theme_manager_config import ThemeManagerConfig
+from qtile_lxa.widget.theme.config import ThemeConfig
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa.utils.process_lock import ProcessLocker
 from .utils import sync_config_for_source
@@ -11,7 +11,7 @@ class Git:
     def __init__(
         self,
         wallpaper_dir: Path,
-        theme_config: ThemeManagerConfig,
+        theme_config: ThemeConfig,
         wallpaper_repos: list[str] = ["https://github.com/pankajackson/wallpapers.git"],
         process_locker: ProcessLocker = ProcessLocker("git"),
     ):

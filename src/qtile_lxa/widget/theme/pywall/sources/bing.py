@@ -7,7 +7,7 @@ from .utils import (
     get_active_source_id,
     sync_config_for_source,
 )
-from qtile_lxa.widget.theme.config.theme_manager_config import ThemeManagerConfig
+from qtile_lxa.widget.theme.config import ThemeConfig
 from qtile_lxa.utils.process_lock import ProcessLocker
 
 
@@ -15,7 +15,7 @@ class Bing:
     def __init__(
         self,
         wallpaper_dir: Path,
-        theme_config: ThemeManagerConfig,
+        theme_config: ThemeConfig,
         process_locker: ProcessLocker = ProcessLocker("bing"),
     ):
         self.wallpaper_dir = wallpaper_dir

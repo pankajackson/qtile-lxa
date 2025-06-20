@@ -1,7 +1,7 @@
 from typing import Literal
 from .colors import get_color_scheme
 from .decorations import get_decoration
-from qtile_lxa.widget.theme.config.theme_manager_config import ThemeManagerConfig
+from qtile_lxa.widget.theme.config import ThemeConfig
 
 
 def get_active_config(
@@ -13,7 +13,7 @@ def get_active_config(
         "transparency_mode",
     ],
 ):
-    theme_config = ThemeManagerConfig().load_config()
+    theme_config = ThemeConfig().load_config()
 
     if config == "decoration":
         decoration = get_decoration(theme_config.get("decoration", "arrows"))

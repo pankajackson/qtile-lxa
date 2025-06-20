@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 import hashlib
-from qtile_lxa.widget.theme.config.theme_manager_config import ThemeManagerConfig
+from qtile_lxa.widget.theme.config import ThemeConfig
 from qtile_lxa.utils.notification import send_notification
 
 
@@ -23,13 +23,13 @@ def get_potd_directories(wallpaper_dir: Path, provider: str):
     return image_path, potd_path, date_dir, potd_dir
 
 
-def get_source_list(theme_config: ThemeManagerConfig):
+def get_source_list(theme_config: ThemeConfig):
     config = theme_config.load_config()
     sources = config.get("wallpaper", {}).get("sources", {})
     return sources
 
 
-def set_active_source_id(theme_config: ThemeManagerConfig, source_id):
+def set_active_source_id(theme_config: ThemeConfig, source_id):
     """Save the current source ID."""
     if source_id is not None:
         config = theme_config.load_config()
@@ -50,7 +50,7 @@ def set_active_source_id(theme_config: ThemeManagerConfig, source_id):
         )
 
 
-def get_active_source_id(theme_config: ThemeManagerConfig):
+def get_active_source_id(theme_config: ThemeConfig):
     """Get the current source ID."""
     config = theme_config.load_config()
     sources = get_source_list(theme_config)
@@ -66,7 +66,7 @@ def get_active_source_id(theme_config: ThemeManagerConfig):
 
 
 def sync_config_for_source(
-    theme_config: ThemeManagerConfig, wallpaper_dir: Path, data_dir=None
+    theme_config: ThemeConfig, wallpaper_dir: Path, data_dir=None
 ):
     """Get the list of wallpaper files and parse source information."""
     config = theme_config.load_config()
@@ -139,7 +139,7 @@ def sync_config_for_source(
     return sources
 
 
-def switch_next_source(theme_config: ThemeManagerConfig):
+def switch_next_source(theme_config: ThemeConfig):
     active_source_id = get_active_source_id(theme_config)
     sources = get_source_list(theme_config)  # Returns the dictionary of sources
 
@@ -170,7 +170,7 @@ def switch_next_source(theme_config: ThemeManagerConfig):
     # self.update_wall_timer.start()
 
 
-def switch_prev_source(theme_config: ThemeManagerConfig):
+def switch_prev_source(theme_config: ThemeConfig):
     active_source_id = get_active_source_id(theme_config)
     sources = get_source_list(theme_config)  # Returns the dictionary of sources
 

@@ -1,5 +1,6 @@
-from .theme_manager_config import ThemeManagerConfig
-from . import colors
-from . import decorations
+from .config import ThemeConfig
+from .colors import color_schemes
+from .decorations import decorations
 
-__all__ = ["ThemeManagerConfig", "colors", "decorations"]
+
+__all__ = ["ThemeConfig", "color_schemes", "decorations"]
