@@ -4,16 +4,13 @@ import GPUtil
 from subprocess import Popen
 from typing import Any, Literal
 from qtile_extras.popup.toolkit import PopupRelativeLayout, PopupText, PopupImage
-from qtile_lxa.widget.theme.config import colors
-from qtile_lxa.widget.theme.config.theme_manager_config import ThemeManagerConfig
+from qtile_lxa.widget.theme.utils.config import get_active_config
+from qtile_lxa.widget.theme.utils.colors import rgba
 from qtile_lxa import __DEFAULTS__, __BASE_DIR__, __ASSETS_DIR__
 
-theme_config = ThemeManagerConfig().load_config()
-color_scheme = colors.get_color_scheme(
-    theme_config.get("color", {}).get("scheme", "dark_pl")
-)
-active_color = colors.rgba(color_scheme["active"], 0.4)
-inactive_color = colors.rgba(color_scheme["inactive"], 0.4)
+color_scheme: Any = get_active_config("color_scheme")
+active_color = rgba(color_scheme["active"], 0.4)
+inactive_color = rgba(color_scheme["inactive"], 0.4)
 
 
 class VidWallUi:

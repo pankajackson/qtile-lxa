@@ -1,16 +1,10 @@
-from typing import Literal
+from typing import Literal, Any
 from libqtile.lazy import lazy
 from qtile_extras.popup.toolkit import PopupRelativeLayout, PopupImage, PopupText
+from qtile_lxa.widget.theme.utils import colors, config
+from qtile_lxa import __DEFAULTS__, __ASSETS_DIR__
 
-
-from qtile_lxa.widget.theme.config import colors
-from qtile_lxa.widget.theme.config.theme_manager_config import ThemeManagerConfig
-from qtile_lxa import __DEFAULTS__, __BASE_DIR__, __ASSETS_DIR__
-
-theme_config = ThemeManagerConfig().load_config()
-color_scheme = colors.get_color_scheme(
-    theme_config.get("color", {}).get("scheme", "dark_pl")
-)
+color_scheme: Any = config.get_active_config("color_scheme")
 active_color = colors.rgba(color_scheme["active"], 0.4)
 inactive_color = colors.rgba(color_scheme["inactive"], 0.4)
 
