@@ -3,8 +3,8 @@ from libqtile.lazy import lazy
 from qtile_extras.popup.toolkit import PopupRelativeLayout, PopupImage, PopupText
 
 
-from qtile_lxa.widget.theme_manager.Config import colors
-from qtile_lxa.widget.theme_manager.Config import ThemeManagerConfig
+from qtile_lxa.widget.theme.config import colors
+from qtile_lxa.widget.theme.config.theme_manager_config import ThemeManagerConfig
 from qtile_lxa import __DEFAULTS__, __BASE_DIR__, __ASSETS_DIR__
 
 theme_config = ThemeManagerConfig().load_config()

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class UnitManagerConfig:
+class SystemdUnitConfig:
     unit_name: str
     label: str | None = None
     active_symbol: str = "🟢"
