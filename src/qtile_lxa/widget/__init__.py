@@ -1,36 +1,38 @@
-from .DockerCompose import DockerCompose
-from .DockerCompose.typing import DockerComposeConfig
-from .ElasticsearchMonitor import ElasticsearchMonitor
-from .ElasticsearchMonitor.typing import ElasticsearchMonitorConfig
-from .K3D import K3D
-from .K3D.typing import K3DConfig
-from .Kubernetes import Kubernetes
-from .Kubernetes.typing import KubernetesConfig
-from .PodmanCompose import PodmanCompose
-from .PodmanCompose.typing import PodmanComposeConfig
-from .ScreenProfile import ScreenProfile
-from .ScreenProfile.typing import ScreenProfileConfig
-from .Subsystem import Subsystem
-from .Subsystem.typing import SubsystemConfig
-from .UnitManager import UnitManager
-from .UnitManager.typing import UnitManagerConfig
-from .URLMonitor import URLMonitor
-from .URLMonitor.typing import URLMonitorConfig
-from .Vagrant import Vagrant
-from .Vagrant.typing import VagrantConfig
-from .ThemeManager.Config import ThemeManagerConfig
-from .ThemeManager.PyWall import PyWallChanger
-from .ThemeManager.BarTransparency import BarTransparencyModeChanger
-from .ThemeManager.BarSplit import BarSplitModeChanger
-from .ThemeManager.ColorRainbow import ColorRainbowModeChanger
-from .ThemeManager.ColorScheme import ColorSchemeChanger
-from .ThemeManager.Decoration import DecorationChanger
-from .ThemeManager.VidWall import VidWallController
-from .ThemeManager.VidWall import VideoWallpaper
-from .ThemeManager.BarDecorator import DecoratedBar
-from .ThemeManager import ThemeManager
-from .PowerMenu import PowerMenu
-from .PowerMenu import show_power_menu
+from .docker.docker_compose import DockerCompose
+from .docker.typing import DockerComposeConfig
+from .elasticsearch.elasticsearch_monitor import ElasticsearchMonitor
+from .elasticsearch.typing import ElasticsearchMonitorConfig
+from .k3d.k3d_cluster import K3D
+from .k3d.typing import K3DConfig
+from .kubernetes.kubernetes import Kubernetes
+from .kubernetes.typing import KubernetesConfig
+from .nvidia.nvidia import Nvidia
+from .nvidia.typing import NvidiaConfig
+from .podman.podman_compose import PodmanCompose
+from .podman.typing import PodmanComposeConfig
+from .screen.screen_profile import ScreenProfile
+from .screen.typing import ScreenProfileConfig
+from .subsystem.subsystem import Subsystem
+from .subsystem.typing import SubsystemConfig
+from .systemd_unit.unit_manager import UnitManager
+from .systemd_unit.typing import UnitManagerConfig
+from .url_monitor.url_monitor import URLMonitor
+from .url_monitor.typing import URLMonitorConfig
+from .vagrant.vagrant import Vagrant
+from .vagrant.typing import VagrantConfig
+from .theme_manager.Config import ThemeManagerConfig
+from .theme_manager.PyWall import PyWallChanger
+from .theme_manager.BarTransparency import BarTransparencyModeChanger
+from .theme_manager.BarSplit import BarSplitModeChanger
+from .theme_manager.ColorRainbow import ColorRainbowModeChanger
+from .theme_manager.ColorScheme import ColorSchemeChanger
+from .theme_manager.Decoration import DecorationChanger
+from .theme_manager.VidWall import VidWallController
+from .theme_manager.VidWall import VideoWallpaper
+from .theme_manager.BarDecorator import DecoratedBar
+from .theme_manager.theme_manager_box.theme_manager_box import ThemeManager
+from .power_menu.power_menu import PowerMenu
+from .power_menu.power_menu import show_power_menu
 
 __all__ = [
     "DockerCompose",
@@ -41,8 +43,11 @@ __all__ = [
     "K3DConfig",
     "Kubernetes",
     "KubernetesConfig",
+    "Nvidia",
+    "NvidiaConfig",
     "PodmanCompose",
     "PodmanComposeConfig",
+    "PowerMenu",
     "ScreenProfile",
     "ScreenProfileConfig",
     "Subsystem",
@@ -64,6 +69,5 @@ __all__ = [
     "VidWallController",
     "DecoratedBar",
     "ThemeManager",
-    "PowerMenu",
     "show_power_menu",
 ]
