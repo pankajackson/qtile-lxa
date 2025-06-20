@@ -4,7 +4,7 @@ from libqtile import qtile
 import GPUtil
 from pathlib import Path
 from typing import Any, Literal
-from qtile_lxa.utils.Notification import send_notification
+from qtile_lxa.utils.notification import send_notification
 from qtile_lxa import __DEFAULTS__
 from qtile_lxa.widget.ThemeManager.Config import ThemeManagerConfig
 from .ui import VideoWallpaper

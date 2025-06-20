@@ -2,8 +2,8 @@ import subprocess
 from pathlib import Path
 from libqtile.log_utils import logger
 from qtile_lxa.widget.ThemeManager.Config import ThemeManagerConfig
-from qtile_lxa.utils.Notification import send_notification
-from qtile_lxa.utils.ProcessLock import ProcessLocker
+from qtile_lxa.utils.notification import send_notification
+from qtile_lxa.utils.process_lock import ProcessLocker
 from . import sync_config_for_source
 
 

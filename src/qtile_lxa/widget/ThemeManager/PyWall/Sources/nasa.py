@@ -8,7 +8,7 @@ from . import (
     sync_config_for_source,
 )
 from qtile_lxa.widget.ThemeManager.Config import ThemeManagerConfig
-from qtile_lxa.utils.ProcessLock import ProcessLocker
+from qtile_lxa.utils.process_lock import ProcessLocker
 
 
 class Nasa:

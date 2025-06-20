@@ -2,7 +2,7 @@ import os
 import subprocess
 from libqtile.lazy import lazy
 from qtile_lxa import __ASSETS_DIR__
-from qtile_lxa.utils.Notification import send_notification
+from qtile_lxa.utils.notification import send_notification
 
 
 def get_current_brightness():

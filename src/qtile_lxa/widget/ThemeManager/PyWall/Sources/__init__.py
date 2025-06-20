@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 import hashlib
 from qtile_lxa.widget.ThemeManager.Config import ThemeManagerConfig
-from qtile_lxa.utils.Notification import send_notification
+from qtile_lxa.utils.notification import send_notification
 
 
 def get_potd_directories(wallpaper_dir: Path, provider: str):

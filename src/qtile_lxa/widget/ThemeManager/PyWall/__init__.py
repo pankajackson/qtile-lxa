@@ -6,9 +6,9 @@ from qtile_extras import widget
 from libqtile import qtile
 from libqtile.log_utils import logger
 from qtile_lxa.widget.ThemeManager.Config import ThemeManagerConfig
-from qtile_lxa.utils.Notification import send_notification
-from qtile_lxa.utils.ProcessLock import ProcessLocker
-from qtile_lxa.utils.DataManager import sync_dirs
+from qtile_lxa.utils.notification import send_notification
+from qtile_lxa.utils.process_lock import ProcessLocker
+from qtile_lxa.utils.data_manager import sync_dirs
 from .Sources.git import Git
 from .Sources.bing import Bing
 from .Sources.nasa import Nasa
