@@ -14,13 +14,15 @@ class ThemeManager(widget.WidgetBox):
     def __init__(
         self,
         name: str = "theme_manager_widget_box",
-        pywall: bool = True,
-        vidwall: bool = True,
-        color_scheme: bool = True,
-        decoration: bool = True,
-        color_rainbow: bool = True,
-        bar_split: bool = True,
-        bar_transparency: bool = True,
+        pywall: PyWallChanger | None = PyWallChanger(update_screenlock=True),
+        vidwall: VidWallController | None = VidWallController(),
+        color_scheme: ColorSchemeChanger | None = ColorSchemeChanger(),
+        decoration: DecorationChanger | None = DecorationChanger(),
+        color_rainbow: ColorRainbowModeChanger | None = ColorRainbowModeChanger(),
+        bar_split: BarSplitModeChanger | None = BarSplitModeChanger(),
+        bar_transparency: (
+            BarTransparencyModeChanger | None
+        ) = BarTransparencyModeChanger(),
         **kwargs: Any,
     ):
         self.name = name
@@ -50,17 +52,17 @@ class ThemeManager(widget.WidgetBox):
     def get_enabled_controllers(self):
         controllers = []
         if self.pywall:
-            controllers.append(PyWallChanger(update_screenlock=True))
+            controllers.append(self.pywall)
         if self.vidwall:
-            controllers.append(VidWallController())
+            controllers.append(self.vidwall)
         if self.color_scheme:
-            controllers.append(ColorSchemeChanger())
+            controllers.append(self.color_scheme)
         if self.decoration:
-            controllers.append(DecorationChanger())
+            controllers.append(self.decoration)
         if self.color_rainbow:
-            controllers.append(ColorRainbowModeChanger())
+            controllers.append(self.color_rainbow)
         if self.bar_split:
-            controllers.append(BarSplitModeChanger())
+            controllers.append(self.bar_split)
         if self.bar_transparency:
-            controllers.append(BarTransparencyModeChanger())
+            controllers.append(self.bar_transparency)
         return controllers
