@@ -7,7 +7,7 @@ from typing import Any, Literal
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa import __DEFAULTS__
 from qtile_lxa.widget.theme.config.theme_manager_config import ThemeManagerConfig
-from .ui import VideoWallpaper
+from .ui import VidWallUi
 
 
 theme_config = ThemeManagerConfig()
@@ -104,7 +104,7 @@ class VidWallController(widget.GenPollText):
 
     def load_vid_wall_widget(self):
         """Initialize the video wallpaper widget."""
-        return VideoWallpaper(qtile, hwdec=self.hwdec, playlist_file=self.playlist_file)
+        return VidWallUi(qtile, hwdec=self.hwdec, playlist_file=self.playlist_file)
 
     def toggle_show_hide(self):
         """Toggle visibility of the Video Wallpaper Widget."""
