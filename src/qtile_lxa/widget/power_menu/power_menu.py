@@ -3,6 +3,7 @@ from libqtile.lazy import lazy
 from qtile_extras.popup.toolkit import PopupRelativeLayout, PopupImage, PopupText
 from qtile_lxa.widget.theme.utils import colors, config
 from qtile_lxa import __DEFAULTS__, __ASSETS_DIR__
+from .typing import PowerMenuConfig
 
 color_scheme: Any = config.get_active_config("color_scheme")
 active_color = colors.rgba(color_scheme["active"], 0.4)
@@ -12,35 +13,27 @@ inactive_color = colors.rgba(color_scheme["inactive"], 0.4)
 class PowerMenu:
     menu_instance = None
 
-    def __init__(
-        self,
-        qtile,
-        sleep_mode: str = __DEFAULTS__.power_menu.sleep_mode,
-        screenlock_effect: str = __DEFAULTS__.theme_manager.pywall.screenlock_effect,
-    ):
+    def __init__(self, qtile, config: PowerMenuConfig = PowerMenuConfig()):
         self.qtile = qtile
-        self.sleep_mode = sleep_mode
-        self.screenlock_effect = screenlock_effect
+        self.config = config
         self.controls = []
         self.layout = None
         self.create_controls()
 
     def create_controls(self):
-        sleep_commands = {
-            "sleep": "systemctl suspend",
-            "hibernate": "systemctl hibernate",
-            "hybrid-sleep": "systemctl hybrid-sleep",
-        }
-        sleep_command = sleep_commands.get(self.sleep_mode, sleep_commands["sleep"])
 
         menu_items = [
             (
                 "lock.png",
                 "Lock",
-                lazy.spawn(f"betterlockscreen -l {self.screenlock_effect}"),
+                lazy.spawn(f"betterlockscreen -l {self.config.screenlock_effect}"),
             ),
             ("logout.png", "Logout", lazy.shutdown()),
-            ("sleep.png", self.sleep_mode.capitalize(), lazy.spawn(sleep_command)),
+            (
+                "sleep.png",
+                self.config.sleep_mode.name.capitalize(),
+                lazy.spawn(self.config.sleep_mode.value),
+            ),
             ("restart.png", "Restart", lazy.spawn("systemctl reboot")),
             ("shutdown.png", "Shutdown", lazy.spawn("systemctl poweroff")),
         ]
@@ -112,11 +105,11 @@ class PowerMenu:
             PowerMenu.menu_instance = None
 
 
-def show_power_menu(qtile, sleep_mode=__DEFAULTS__.power_menu.sleep_mode):
+def show_power_menu(qtile):
     if not PowerMenu.menu_instance:
-        menu = PowerMenu(qtile, sleep_mode)
+        menu = PowerMenu(qtile)
         menu.show()
     else:
         PowerMenu.menu_instance.hide()
-        menu = PowerMenu(qtile, sleep_mode)
+        menu = PowerMenu(qtile)
         menu.show()
