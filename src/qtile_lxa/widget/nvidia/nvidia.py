@@ -14,7 +14,7 @@ class Nvidia(base.InLoopPollText):
 
     def __init__(
         self,
-        config: NvidiaConfig,
+        config: NvidiaConfig = NvidiaConfig(),
         update_interval: float = 2.0,
         **kwargs: Any,
     ):

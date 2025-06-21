@@ -1,5 +1,5 @@
 from ..config.colors import color_schemes
-from typing import Literal
+from typing import Any, Literal
 from libqtile.log_utils import logger
 
 
@@ -11,7 +11,7 @@ def invert_hex_color_of(hex_color: str):
     return inverted_hex
 
 
-def rgba(hex_color: str, alpha: float):
+def rgba(hex_color: Any, alpha: float):
     hex_color = hex_color.lstrip("#")
     return f"#{hex_color}{int(alpha * 255):02x}"
 

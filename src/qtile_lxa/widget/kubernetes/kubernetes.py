@@ -14,7 +14,7 @@ terminal = guess_terminal()
 class Kubernetes(GenPollText):
     def __init__(
         self,
-        config: KubernetesConfig,
+        config: KubernetesConfig = KubernetesConfig(),
         **kwargs: Any,
     ):
         self.config = config
