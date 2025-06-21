@@ -12,6 +12,7 @@ from . import (
     theme,
     url_monitor,
     vagrant,
+    widgetbox,
 )
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "theme",
     "url_monitor",
     "vagrant",
+    "widgetbox",
 ]

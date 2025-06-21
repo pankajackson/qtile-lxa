@@ -1,7 +1,7 @@
 import subprocess
 import shutil
 from libqtile.widget import base
-from qtile_extras.widget import GenPollText
+from qtile_extras.widget import GenPollText, decorations
 from libqtile.log_utils import logger
 from typing import Any, Literal
 from .typing import SystemdUnitConfig
@@ -35,6 +35,16 @@ class SystemdUnit(GenPollText):
             "activating": "#ffaa00",
             "deactivating": "#aaaa00",
         }
+        self.decorations = [
+            decorations.RectDecoration(
+                colour="#004040",
+                radius=10,
+                filled=True,
+                padding_y=4,
+                group=True,
+                extrawidth=5,
+            )
+        ]
 
         super().__init__(func=self.get_text, markup=self.config.markup, **kwargs)
         self.add_callbacks(
