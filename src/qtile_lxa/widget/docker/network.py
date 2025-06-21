@@ -3,11 +3,13 @@ import docker
 from libqtile.log_utils import logger
 from docker.types import IPAMConfig, IPAMPool
 from qtile_lxa import __DEFAULTS__
+from .typing import DockerNetworkConfig
 
 
-def get_docker_network(name=None, subnet=None, gateway=None):
-    name = __DEFAULTS__.docker.network if name is None else name
-    subnet = __DEFAULTS__.docker.subnet if subnet is None else subnet
+def get_docker_network(network_config: DockerNetworkConfig):
+    name = network_config.name
+    subnet = network_config.subnet
+    gateway = network_config.gateway
     try:
         client = docker.from_env()
         existing_network = client.networks.list(names=[name])

@@ -1,12 +1,20 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from qtile_lxa import __DEFAULTS__
+
+
+@dataclass
+class DockerNetworkConfig:
+    name: str = __DEFAULTS__.docker.network
+    subnet: str = __DEFAULTS__.docker.subnet
+    gateway: str | None = None
 
 
 @dataclass
 class DockerComposeConfig:
     compose_file: Path
     service_name: str | None = None
-    network: str | None = None
+    network: DockerNetworkConfig | None = field(default_factory=DockerNetworkConfig)
     ipaddress: str | None = None
     running_symbol: str = "🟢"
     stopped_symbol: str = "🔴"

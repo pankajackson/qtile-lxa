@@ -2,12 +2,14 @@ import ipaddress
 import podman
 from libqtile.log_utils import logger
 from qtile_lxa import __DEFAULTS__
+from .typing import PodmanNetworkConfig
 
 
-def get_podman_network(name=None, subnet=None, gateway=None):
+def get_podman_network(network_config: PodmanNetworkConfig):
 
-    name = __DEFAULTS__.podman.network if name is None else name
-    subnet = __DEFAULTS__.podman.subnet if subnet is None else subnet
+    name = network_config.name
+    subnet = network_config.subnet
+    gateway = network_config.gateway
 
     try:
         with podman.PodmanClient() as client:
@@ -34,7 +36,7 @@ def get_podman_network(name=None, subnet=None, gateway=None):
             gateway = str(list(network.hosts())[0]) if gateway is None else gateway
 
             # Create Podman network
-            network_config = {
+            pd_network_config = {
                 "name": name,
                 "driver": "bridge",
                 "subnets": [
@@ -45,12 +47,17 @@ def get_podman_network(name=None, subnet=None, gateway=None):
                 ],
             }
 
-            created_network = client.networks.create(**network_config)
+            created_network = client.networks.create(**pd_network_config)
             logger.error(
                 f"Podman network '{created_network.name}' created successfully."
             )
             return created_network.name, network
 
     except Exception as e:
-        logger.error(f"An error occurred during Podman network creation: {e}")
+        msg = f"Podman network creation failed: {e}"
+        hint = "Hint: Is the podman.socket service running? Try `systemctl --user start podman.socket`"
+        if "podman.sock" in str(e):
+            logger.error(msg + "\n" + hint)
+        else:
+            logger.error(msg)
         return None, None

@@ -7,6 +7,7 @@ from libqtile.utils import guess_terminal
 from pathlib import Path
 from typing import Any
 from .typing import DockerComposeConfig
+from .network import get_docker_network
 
 terminal = guess_terminal()
 
@@ -29,6 +30,8 @@ class DockerCompose(GenPollText):
             )
         ]
         self.format = "{symbol} {label}"
+        if config.network is not None:
+            get_docker_network(config.network)
         super().__init__(func=self.check_service_status, **kwargs)
 
     def log_errors(self, msg):
@@ -126,7 +129,7 @@ class DockerCompose(GenPollText):
 
         env_vars = {}
         if self.config.network:
-            env_vars["CONTAINER_NETWORK"] = self.config.network
+            env_vars["CONTAINER_NETWORK"] = self.config.network.name
         if self.config.ipaddress:
             env_vars["IPADDRESS"] = self.config.ipaddress
 

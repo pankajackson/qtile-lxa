@@ -1,12 +1,20 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from qtile_lxa import __DEFAULTS__
+
+
+@dataclass
+class PodmanNetworkConfig:
+    name: str = __DEFAULTS__.podman.network
+    subnet: str = __DEFAULTS__.podman.subnet
+    gateway: str | None = None
 
 
 @dataclass
 class PodmanComposeConfig:
     compose_file: Path
     service_name: str | None = None
-    network: str | None = None
+    network: PodmanNetworkConfig | None = field(default_factory=PodmanNetworkConfig)
     ipaddress: str | None = None
     running_symbol: str = "🟢"
     stopped_symbol: str = "🔴"

@@ -10,7 +10,7 @@ class ElasticsearchMonitor(GenPollText):
     def __init__(self, config: ElasticsearchMonitorConfig, **kwargs: Any) -> None:
         self.config = config
         self.format = "{symbol} {label}"
-        super().__init__(func=self.get_elasticsearch_status, **kwargs)
+        super().__init__(func=self.safe_status_poll, **kwargs)
 
     def log_errors(self, msg: str) -> None:
         if self.config.enable_logger:
@@ -25,6 +25,19 @@ class ElasticsearchMonitor(GenPollText):
                 self.open_url(self.config.kibana_url)
             else:
                 self.open_url(self.config.endpoint)
+
+    def safe_status_poll(self) -> str:
+        try:
+            # Only update if we're ready to draw
+            if not self.layout or not self.drawer:
+                return ""
+            return self.get_elasticsearch_status()
+        except Exception as e:
+            self.log_errors(f"Failed during safe_status_poll: {e}")
+            return self.format.format(
+                symbol=self.config.error_symbol,
+                label=self.config.get_label("ES"),
+            )
 
     def get_elasticsearch_status(self) -> str:
         try:
