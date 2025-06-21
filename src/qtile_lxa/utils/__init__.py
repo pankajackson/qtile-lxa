@@ -4,6 +4,7 @@ from libqtile import qtile
 from libqtile.log_utils import logger
 import psutil
 from typing import Literal
+import GPUtil
 
 
 def toggle_and_auto_close_widgetbox(widget_name, close_after=5):
@@ -57,3 +58,8 @@ def toggle_systemd_unit(service_name: str, level: Literal["user", "system"] = "s
         # Service is not active, start it
         subprocess.run(cmds["start"], check=True)
         logger.info(f"Service {service_name} started.")
+
+
+def is_gpu_present() -> bool:
+    gpus = GPUtil.getGPUs()
+    return len(gpus) > 0

@@ -5,6 +5,7 @@ import GPUtil
 from pathlib import Path
 from typing import Any, Literal
 from qtile_lxa.utils.notification import send_notification
+from qtile_lxa.utils import is_gpu_present
 from qtile_lxa import __DEFAULTS__
 from qtile_lxa.widget.theme.config import ThemeConfig
 from .ui import VidWallUi
@@ -41,7 +42,7 @@ class VidWallController(widget.GenPollText):
 
         # Video wallpaper-specific attributes
         self.hwdec: Literal["auto", "no"] | None = (
-            hwdec or "auto" if self.is_gpu_present else "no"
+            hwdec or "auto" if is_gpu_present else "no"
         )
         self.playlist_file = playlist_file
         self.widget = self.load_vid_wall_widget()
@@ -69,10 +70,6 @@ class VidWallController(widget.GenPollText):
     def poll(self):
         """Update the widget display with the current status."""
         return self.check_status()
-
-    def is_gpu_present(self) -> bool:
-        gpus = GPUtil.getGPUs()
-        return len(gpus) > 0
 
     def autostart(self):
         config = self.get_current_config()

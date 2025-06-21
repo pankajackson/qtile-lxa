@@ -48,6 +48,11 @@ class Media:
 
 
 @dataclass(frozen=True)
+class Screen:
+    profile: str = "my_desktop_screen"
+
+
+@dataclass(frozen=True)
 class Docker:
     network: str = "secure-bridge"
     subnet: str = "10.0.1.0/24"
@@ -66,6 +71,7 @@ class __Defaults__:
     media = Media()
     docker = Docker()
     podman = Podman()
+    screen = Screen()
 
 
 __DEFAULTS__ = __Defaults__()

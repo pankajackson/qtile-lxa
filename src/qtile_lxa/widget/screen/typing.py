@@ -1,10 +1,11 @@
 from dataclasses import dataclass, field
 from typing import List
+from qtile_lxa import __DEFAULTS__
 
 
 @dataclass
 class ScreenProfileConfig:
-    default_profile: str = "my_desktop_screen"
+    default_profile: str = __DEFAULTS__.screen.profile
     icon_default: str = "✅"
     icon_other: str = "❓"
     error_icon: str = "❌"

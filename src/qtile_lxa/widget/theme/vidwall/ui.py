@@ -6,6 +6,7 @@ from typing import Any, Literal
 from qtile_extras.popup.toolkit import PopupRelativeLayout, PopupText, PopupImage
 from qtile_lxa.widget.theme.utils.config import get_active_config
 from qtile_lxa.widget.theme.utils.colors import rgba
+from qtile_lxa.utils import is_gpu_present
 from qtile_lxa import __DEFAULTS__, __BASE_DIR__, __ASSETS_DIR__
 
 color_scheme: Any = get_active_config("color_scheme")
@@ -37,7 +38,7 @@ class VidWallUi:
         self.controls = []
         self.active_playlist_page_index = 0
         self.layout = None
-        self.hwdec = hwdec or "auto" if self.is_gpu_present else "no"
+        self.hwdec = hwdec or "auto" if is_gpu_present else "no"
         self.playlists = self.load_playlists()
         self.videos_per_page = 12
         self.playlist_pages = self.split_playlist()
@@ -52,10 +53,6 @@ class VidWallUi:
         # Restore state from persistent_state
         for key, value in self.persistent_state.items():
             setattr(self, key, value)
-
-    def is_gpu_present(self) -> bool:
-        gpus = GPUtil.getGPUs()
-        return len(gpus) > 0
 
     def load_playlists(self):
         """Load playlists from the JSON file."""
