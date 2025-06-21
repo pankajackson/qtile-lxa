@@ -19,7 +19,7 @@ class Kubernetes(GenPollText):
     ):
         self.config = config
         self.format = "{symbol} {label} : {status}"
-        super().__init__(func=self.check_cluster_status, **kwargs)
+        super().__init__(func=self.check_cluster_status, update_interval=5, **kwargs)
 
     def _initialize_k8s_client(self, kubeconfig_path: Path):
         try:
