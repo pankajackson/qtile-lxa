@@ -83,6 +83,15 @@ class PyWallChanger(widget.GenPollText):
             __DEFAULTS__.theme_manager.pywall.wallpaper_dir / "defaults",
         )
 
+    def sync_sources_background(self):
+        def worker():
+            try:
+                self.sync_sources()
+            except Exception as e:
+                logger.error(f"sync_sources_background failed: {e}")
+
+        threading.Thread(target=worker, daemon=True).start()
+
     def sync_sources(self):
         process_locker = ProcessLocker("sync_sources")
         lock_fd = process_locker.acquire_lock()
@@ -92,7 +101,9 @@ class PyWallChanger(widget.GenPollText):
             active_source_id = get_active_source_id(theme_config=theme_config)
 
             source_git = Git(
-                wallpaper_dir=self.wallpaper_dir, theme_config=theme_config
+                wallpaper_dir=self.wallpaper_dir,
+                theme_config=theme_config,
+                wallpaper_repos=self.wallpaper_repos,
             )
             source_git.sync_git()
 
