@@ -13,7 +13,7 @@ class ScreenProfile(GenPollText):
     ):
         self.config = config
         self.format = " {icon}"
-        super().__init__(func=self.check_screen_profile, **kwargs)
+        super().__init__(func=self.check_screen_profile, update_interval=2, **kwargs)
 
     def run_command(self, cmd: list[str]):
         try:
