@@ -61,5 +61,8 @@ def toggle_systemd_unit(service_name: str, level: Literal["user", "system"] = "s
 
 
 def is_gpu_present() -> bool:
-    gpus = GPUtil.getGPUs()
-    return len(gpus) > 0
+    try:
+        gpus = GPUtil.getGPUs()
+        return len(gpus) > 0
+    except Exception:
+        return False

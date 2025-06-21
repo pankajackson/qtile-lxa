@@ -3,6 +3,7 @@ from libqtile.log_utils import logger
 from libqtile.widget import base
 from typing import Any
 from .typing import NvidiaConfig
+from qtile_lxa.utils import is_gpu_present
 
 
 class Nvidia(base.InLoopPollText):
@@ -31,10 +32,10 @@ class Nvidia(base.InLoopPollText):
 
     def get_stats(self):
         try:
-            gpus = GPUtil.getGPUs()
-            if not gpus:
+            if not is_gpu_present():
                 return
 
+            gpus = GPUtil.getGPUs()
             gpu = gpus[0]
             variables = {
                 "name": gpu.name,
@@ -53,7 +54,7 @@ class Nvidia(base.InLoopPollText):
 
         # Temperature not available
         if stats is None:
-            return "N/A"
+            return "󱜕  N/A"
         temp_value: int = stats.get("temp", 0)
         if self.layout:
             if int(temp_value) < self.config.high:
