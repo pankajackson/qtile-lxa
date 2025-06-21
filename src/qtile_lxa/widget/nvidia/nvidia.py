@@ -54,7 +54,7 @@ class Nvidia(base.InLoopPollText):
 
         # Temperature not available
         if stats is None:
-            return "󱜕  N/A"
+            return "󱜕  N/A   "
         temp_value: int = stats.get("temp", 0)
         if self.layout:
             if int(temp_value) < self.config.high:
