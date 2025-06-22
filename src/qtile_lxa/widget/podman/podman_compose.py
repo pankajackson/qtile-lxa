@@ -30,8 +30,6 @@ class PodmanCompose(GenPollText):
             )
         ]
         self.format = "{symbol} {label}"
-        if config.network is not None:
-            get_podman_network(config.network)
         super().__init__(func=self.check_service_status, **kwargs)
 
     def log_errors(self, msg):
@@ -118,6 +116,8 @@ class PodmanCompose(GenPollText):
                 subprocess.Popen(cmd_logs, shell=True)
                 return
 
+        if self.config.network is not None:
+            get_podman_network(self.config.network)
         cmd = f"{terminal} -e podman-compose -f {self.config.compose_file} up -d"
         if self.config.service_name:
             cmd = f"{cmd} {self.config.service_name}"
