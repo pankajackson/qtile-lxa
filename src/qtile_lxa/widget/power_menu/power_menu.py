@@ -1,13 +1,9 @@
 from typing import Literal, Any
 from libqtile.lazy import lazy
 from qtile_extras.popup.toolkit import PopupRelativeLayout, PopupImage, PopupText
-from qtile_lxa.widget.theme.utils import colors, config
+from qtile_lxa.widget.theme.utils import colors as color_utils, config as config_utils
 from qtile_lxa import __DEFAULTS__, __ASSETS_DIR__
 from .typing import PowerMenuConfig
-
-color_scheme: Any = config.get_active_config("color_scheme")
-active_color = colors.rgba(color_scheme["active"], 0.4)
-inactive_color = colors.rgba(color_scheme["inactive"], 0.4)
 
 
 class PowerMenu:
@@ -18,6 +14,9 @@ class PowerMenu:
         self.config = config
         self.controls = []
         self.layout = None
+        self.color_scheme: Any = config_utils.get_active_config("color_scheme")
+        self.active_color = color_utils.rgba(self.color_scheme["active"], 0.4)
+        self.inactive_color = color_utils.rgba(self.color_scheme["inactive"], 0.4)
         self.create_controls()
 
     def create_controls(self):
@@ -49,7 +48,7 @@ class PowerMenu:
                     height=0.5,
                     highlight_radius=35,
                     highlight_method="border",
-                    highlight=color_scheme["active"],
+                    highlight=self.color_scheme["active"],
                     mouse_callbacks={"Button1": action},
                 )
             )
@@ -87,8 +86,8 @@ class PowerMenu:
             width=1000,
             height=250,
             controls=self.controls,
-            background=inactive_color,
-            border=active_color,
+            background=self.inactive_color,
+            border=self.active_color,
             border_width=2,
             initial_focus=None,
             close_on_click=True,
