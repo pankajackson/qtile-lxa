@@ -153,3 +153,4 @@ Contributions are welcome! Please open an issue or pull request for suggestions,
 Built with ❤️ by Pankaj Kumar Patel (Pankaj Jackson) for the Arch/Qtile community.
 
 Wallpaper credits: NASA, Bing Images, and LXA originals.
+
