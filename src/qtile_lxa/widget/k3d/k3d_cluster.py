@@ -27,7 +27,7 @@ class K3D(GenPollText):
             )
         ]
         self.format = "{symbol} {label}"
-        super().__init__(func=self.get_text, update_interval=5, **kwargs)
+        super().__init__(func=self.get_text, **kwargs)
 
     def log_errors(self, msg):
         if self.config.enable_logger:
