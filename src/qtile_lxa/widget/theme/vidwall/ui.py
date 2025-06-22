@@ -9,10 +9,6 @@ from qtile_lxa.widget.theme.utils.colors import rgba
 from qtile_lxa.utils import is_gpu_present
 from qtile_lxa import __DEFAULTS__, __BASE_DIR__, __ASSETS_DIR__
 
-color_scheme: Any = get_active_config("color_scheme")
-active_color = rgba(color_scheme["active"], 0.4)
-inactive_color = rgba(color_scheme["inactive"], 0.4)
-
 
 class VidWallUi:
     widget_instance = None
@@ -48,6 +44,9 @@ class VidWallUi:
             ]
         else:
             self.active_playlist_page = None
+        self.color_scheme: Any = get_active_config("color_scheme")
+        self.active_color = rgba(self.color_scheme["active"], 0.4)
+        self.inactive_color = rgba(self.color_scheme["inactive"], 0.4)
         self.create_controls()
 
         # Restore state from persistent_state
@@ -247,7 +246,7 @@ class VidWallUi:
             "pos_y": 0.01,
             "height": 0.05,
             "width": 0.1,
-            "highlight": color_scheme["active"],
+            "highlight": self.color_scheme["active"],
             "highlight_radius": 13,
             "highlight_method": "border",
         }
@@ -312,7 +311,7 @@ class VidWallUi:
             pos_y=0.01,
             height=0.05,
             width=0.2,
-            highlight=color_scheme["active"],
+            highlight=self.color_scheme["active"],
             highlight_radius=13,
             highlight_method="border",
             h_align="center",
@@ -356,7 +355,7 @@ class VidWallUi:
             "width": 0.1,
             "height": 0.07,
             "h_align": "center",
-            "highlight": color_scheme["active"],
+            "highlight": self.color_scheme["active"],
             "highlight_radius": 13,
             "highlight_method": "border",
         }
@@ -417,7 +416,7 @@ class VidWallUi:
                             width=0.6,
                             height=0.05,
                             h_align="center",
-                            highlight=color_scheme["active"],
+                            highlight=self.color_scheme["active"],
                             highlight_radius=13,
                             highlight_method="border",
                             mouse_callbacks={
@@ -478,8 +477,8 @@ class VidWallUi:
             width=800,
             height=600,
             controls=self.controls,
-            background=inactive_color,
-            border=active_color,
+            background=self.inactive_color,
+            border=self.active_color,
             border_width=2,
             close_on_click=False,
             hide_on_mouse_leave=True,
