@@ -314,4 +314,4 @@ class PyWallChanger(widget.GenPollText):
         wallpaper = self.get_wallpaper()
         if wallpaper:
             subprocess.run(["wal", "-i", wallpaper])
-            qtile.reload_config()
+            theme_config.reload_qtile()
