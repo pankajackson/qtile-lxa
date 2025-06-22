@@ -6,13 +6,6 @@ from qtile_lxa.widget.theme.utils.colors import rgba, invert_hex_color_of
 from qtile_lxa.widget.theme.utils.config import get_active_config
 
 
-decoration = get_active_config("decoration")
-color_scheme: Any = get_active_config("color_scheme")
-colors_rainbow_mode = get_active_config("rainbow_mode")
-bar_split_mode = get_active_config("split_mode")
-bar_transparent_mode = get_active_config("transparency_mode")
-
-
 class DecoratedBar:
     def __init__(
         self,
@@ -27,6 +20,11 @@ class DecoratedBar:
         self.height = height
         self.opacity = opacity
         self.transparent = transparent
+        self.decoration = get_active_config("decoration")
+        self.color_scheme: Any = get_active_config("color_scheme")
+        self.colors_rainbow_mode = get_active_config("rainbow_mode")
+        self.bar_split_mode = get_active_config("split_mode")
+        self.bar_transparent_mode = get_active_config("transparency_mode")
 
     def get_bar(self):
         return bar.Bar(
@@ -35,7 +33,7 @@ class DecoratedBar:
             opacity=self.opacity,
             margin=4,
             background=rgba(
-                color_scheme["color_sequence"][0], 0 if self.transparent else 1
+                self.color_scheme["color_sequence"][0], 0 if self.transparent else 1
             ),
         )
 
@@ -44,10 +42,10 @@ class DecoratedBar:
 
         def set_properties(wid, attributes):
             for attr in attributes.keys():
-                if bar_transparent_mode:
+                if self.bar_transparent_mode:
                     if attr == "background":
                         attributes[attr] = rgba(attributes[attr], 0)
-                elif bar_split_mode:
+                elif self.bar_split_mode:
                     if attr == "background" and (
                         isinstance(wid, widget.WindowName)
                         or isinstance(wid, widget.TaskList)
@@ -56,37 +54,37 @@ class DecoratedBar:
                 setattr(wid, attr, attributes[attr])
 
         for i, wid in enumerate(self.left_widget):
-            if colors_rainbow_mode:
-                background_color = color_scheme["color_sequence"][
-                    -i % len(color_scheme["color_sequence"])
+            if self.colors_rainbow_mode:
+                background_color = self.color_scheme["color_sequence"][
+                    -i % len(self.color_scheme["color_sequence"])
                 ]
                 foreground_color = invert_hex_color_of(background_color)
             else:
-                background_color = color_scheme["highlight"]
+                background_color = self.color_scheme["highlight"]
                 foreground_color = (
-                    color_scheme["active"]
-                    if color_scheme["active"] != background_color
+                    self.color_scheme["active"]
+                    if self.color_scheme["active"] != background_color
                     else invert_hex_color_of(background_color)
                 )
             widget_attr = {
                 "background": background_color,
                 "foreground": foreground_color,
-                "decorations": decoration["left_decoration"],
+                "decorations": self.decoration["left_decoration"],
             }
             set_properties(wid=wid, attributes=widget_attr)
         widgets.extend(self.left_widget)
 
         for i, wid in enumerate(self.right_widget):
-            if colors_rainbow_mode:
-                background_color = color_scheme["color_sequence"][
-                    i % len(color_scheme["color_sequence"])
+            if self.colors_rainbow_mode:
+                background_color = self.color_scheme["color_sequence"][
+                    i % len(self.color_scheme["color_sequence"])
                 ]
                 foreground_color = invert_hex_color_of(background_color)
             else:
-                background_color = color_scheme["inactive"]
+                background_color = self.color_scheme["inactive"]
                 foreground_color = (
-                    color_scheme["active"]
-                    if color_scheme["active"] != background_color
+                    self.color_scheme["active"]
+                    if self.color_scheme["active"] != background_color
                     else invert_hex_color_of(background_color)
                 )
             widget_attr = {
@@ -94,7 +92,7 @@ class DecoratedBar:
                 "foreground": foreground_color,
             }
             if wid != self.right_widget[-1]:
-                widget_attr["decorations"] = decoration["right_decoration"]
+                widget_attr["decorations"] = self.decoration["right_decoration"]
 
             set_properties(wid=wid, attributes=widget_attr)
 
