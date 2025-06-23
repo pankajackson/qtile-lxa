@@ -47,7 +47,7 @@ class PyWallChanger(widget.GenPollText):
         self.text_template = f"󰸉: {{index}}"  # Icon and index
         self.update_wall_timer = None
         self.update_lock_timer = None
-        self.update_interval = 900
+        self.update_interval = 30  # 900
         self.conf_reload_timer = None
         self.decorations = [
             widget.decorations.RectDecoration(
@@ -76,6 +76,7 @@ class PyWallChanger(widget.GenPollText):
         self.update_text()
 
     def poll(self):
+        self.sync_potd_sources()
         return self.get_text()
 
     def sync_default_wallpapers(self):
@@ -113,52 +114,51 @@ class PyWallChanger(widget.GenPollText):
                 theme_config=theme_config,
                 wallpaper_repos=self.wallpaper_repos,
             )
-            send_notification(
-                "Syncing GIT wallpaper sources",
-                "Wallpaper",
-                app_name="Wallpaper",
-                app_id=99981,
-                timeout=5000,
-            )
             source_git.sync_git()
-
-            if self.bing_potd:
-                source_bing = Bing(
-                    wallpaper_dir=self.wallpaper_dir, theme_config=theme_config
-                )
-                send_notification(
-                    "Syncing BING wallpaper sources",
-                    "Wallpaper",
-                    app_name="Wallpaper",
-                    app_id=99982,
-                    timeout=5000,
-                )
-                source_bing.sync_bing()
-
-            if self.nasa_potd:
-                source_bing = Nasa(
-                    wallpaper_dir=self.wallpaper_dir, theme_config=theme_config
-                )
-                send_notification(
-                    "Syncing NASA wallpaper sources",
-                    "Wallpaper",
-                    app_name="Wallpaper",
-                    app_id=99983,
-                    timeout=5000,
-                )
-                source_bing.sync_nasa()
+            self.sync_potd_sources()
             source_list = get_source_list(theme_config)
             if source_list and active_source_id is None:
                 self.set_wallpaper(screen_lock_background=True, notify=True)
         finally:
             send_notification(
-                "Syncing wallpaper sources Done",
+                "Synced wallpaper sources",
                 "Wallpaper",
                 app_name="Wallpaper",
                 app_id=99980,
                 timeout=5000,
             )
             process_locker.release_lock(lock_fd=lock_fd)
+
+    def sync_potd_sources(self):
+        if self.bing_potd:
+            source_bing = Bing(
+                wallpaper_dir=self.wallpaper_dir, theme_config=theme_config
+            )
+            source_bing.sync_bing()
+            source_list = get_source_list(theme_config=theme_config)
+            active_source_id = get_active_source_id(theme_config=theme_config)
+            if active_source_id is not None:
+                source = source_list[active_source_id]
+                if (
+                    source["group"] == "bing"
+                    and source["collection"] == "PictureOfTheDay"
+                ):
+                    self.set_wallpaper(screen_lock_background=True, notify=True)
+
+        if self.nasa_potd:
+            source_bing = Nasa(
+                wallpaper_dir=self.wallpaper_dir, theme_config=theme_config
+            )
+            source_bing.sync_nasa()
+            source_list = get_source_list(theme_config)
+            active_source_id = get_active_source_id(theme_config)
+            if active_source_id is not None:
+                source = source_list[active_source_id]
+                if (
+                    source["group"] == "nasa"
+                    and source["collection"] == "PictureOfTheDay"
+                ):
+                    self.set_wallpaper(screen_lock_background=True, notify=True)
 
     def get_active_wall_id(self):
         """Get the current wallpaper index."""

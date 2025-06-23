@@ -9,6 +9,7 @@ from .utils import (
 )
 from qtile_lxa.widget.theme.config import ThemeConfig
 from qtile_lxa.utils.process_lock import ProcessLocker
+from qtile_lxa.utils.notification import send_notification
 
 
 class Nasa:
@@ -88,6 +89,13 @@ class Nasa:
                 return image_path
 
             try:
+                send_notification(
+                    "Downloading NASA POTD...",
+                    "Wallpaper",
+                    app_name="Wallpaper",
+                    app_id=99983,
+                    timeout=5000,
+                )
                 # Fetch metadata
                 apod_metadata = _fetch_apod_metadata(NASA_APOD_URL, self.nasa_api_key)
 
