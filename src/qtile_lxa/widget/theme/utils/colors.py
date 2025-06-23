@@ -1,4 +1,4 @@
-from ..config.colors import color_schemes
+from ..config.colors import color_schemes, get_pywal_color_scheme
 from typing import Any, Literal
 from libqtile.log_utils import logger
 
@@ -20,6 +20,7 @@ def get_color_scheme(
     theme: Literal["pywal", "dark_pl", "bright_pl", "black_n_white"] = "dark_pl",
 ):
     cs = None
+    color_schemes["pywal"] = get_pywal_color_scheme()
     try:
         if theme in color_schemes and color_schemes[theme]:
             cs = color_schemes[theme]
