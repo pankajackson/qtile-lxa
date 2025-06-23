@@ -134,31 +134,33 @@ class PyWallChanger(widget.GenPollText):
             source_bing = Bing(
                 wallpaper_dir=self.wallpaper_dir, theme_config=theme_config
             )
-            source_bing.sync_bing()
-            source_list = get_source_list(theme_config=theme_config)
-            active_source_id = get_active_source_id(theme_config=theme_config)
-            if active_source_id is not None:
-                source = source_list[active_source_id]
-                if (
-                    source["group"] == "bing"
-                    and source["collection"] == "PictureOfTheDay"
-                ):
-                    self.set_wallpaper(screen_lock_background=True, notify=True)
+            is_synced = source_bing.sync_bing()
+            if is_synced:
+                source_list = get_source_list(theme_config=theme_config)
+                active_source_id = get_active_source_id(theme_config=theme_config)
+                if active_source_id is not None:
+                    source = source_list[active_source_id]
+                    if (
+                        source["group"] == "bing"
+                        and source["collection"] == "PictureOfTheDay"
+                    ):
+                        self.set_wallpaper(screen_lock_background=True, notify=True)
 
         if self.nasa_potd:
             source_bing = Nasa(
                 wallpaper_dir=self.wallpaper_dir, theme_config=theme_config
             )
-            source_bing.sync_nasa()
-            source_list = get_source_list(theme_config)
-            active_source_id = get_active_source_id(theme_config)
-            if active_source_id is not None:
-                source = source_list[active_source_id]
-                if (
-                    source["group"] == "nasa"
-                    and source["collection"] == "PictureOfTheDay"
-                ):
-                    self.set_wallpaper(screen_lock_background=True, notify=True)
+            is_synced = source_bing.sync_nasa()
+            if is_synced:
+                source_list = get_source_list(theme_config)
+                active_source_id = get_active_source_id(theme_config)
+                if active_source_id is not None:
+                    source = source_list[active_source_id]
+                    if (
+                        source["group"] == "nasa"
+                        and source["collection"] == "PictureOfTheDay"
+                    ):
+                        self.set_wallpaper(screen_lock_background=True, notify=True)
 
     def get_active_wall_id(self):
         """Get the current wallpaper index."""

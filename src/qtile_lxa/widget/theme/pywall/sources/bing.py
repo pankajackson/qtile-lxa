@@ -29,7 +29,7 @@ class Bing:
         )
         if image_path.exists():
             return
-        self.download_bing_potd()
+        return self.download_bing_potd()
         source_list = get_source_list(theme_config=self.theme_config)
         active_source_id = get_active_source_id(theme_config=self.theme_config)
         # if active_source_id is not None:

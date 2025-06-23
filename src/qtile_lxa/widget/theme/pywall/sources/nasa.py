@@ -31,7 +31,7 @@ class Nasa:
         )
         if image_path.exists():
             return
-        self.download_nasa_apod()
+        return self.download_nasa_apod()
         source_list = get_source_list(self.theme_config)
         active_source_id = get_active_source_id(self.theme_config)
         # if active_source_id is not None:
