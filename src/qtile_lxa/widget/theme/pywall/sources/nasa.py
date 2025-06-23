@@ -9,6 +9,7 @@ from .utils import (
 )
 from qtile_lxa.widget.theme.config import ThemeConfig
 from qtile_lxa.utils.process_lock import ProcessLocker
+from qtile_lxa.utils.notification import send_notification
 
 
 class Nasa:
@@ -30,13 +31,7 @@ class Nasa:
         )
         if image_path.exists():
             return
-        self.download_nasa_apod()
-        source_list = get_source_list(self.theme_config)
-        active_source_id = get_active_source_id(self.theme_config)
-        # if active_source_id is not None:
-        #     source = source_list[self.get_active_source_id()]
-        #     if source["group"] == "nasa" and source["collection"] == "PictureOfTheDay":
-        #         self.set_wallpaper(screen_lock_background=True, notify=True)
+        return self.download_nasa_apod()
 
     def download_nasa_apod(self):
         """Download NASA's Astronomy Picture of the Day (APOD)."""
@@ -88,6 +83,13 @@ class Nasa:
                 return image_path
 
             try:
+                send_notification(
+                    "Downloading NASA POTD...",
+                    "Wallpaper",
+                    app_name="Wallpaper",
+                    app_id=99983,
+                    timeout=5000,
+                )
                 # Fetch metadata
                 apod_metadata = _fetch_apod_metadata(NASA_APOD_URL, self.nasa_api_key)
 

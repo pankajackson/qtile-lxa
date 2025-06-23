@@ -9,6 +9,7 @@ from .utils import (
 )
 from qtile_lxa.widget.theme.config import ThemeConfig
 from qtile_lxa.utils.process_lock import ProcessLocker
+from qtile_lxa.utils.notification import send_notification
 
 
 class Bing:
@@ -28,13 +29,7 @@ class Bing:
         )
         if image_path.exists():
             return
-        self.download_bing_potd()
-        source_list = get_source_list(theme_config=self.theme_config)
-        active_source_id = get_active_source_id(theme_config=self.theme_config)
-        # if active_source_id is not None:
-        #     source = source_list[get_active_source_id(theme_config=self.theme_config)]
-        #     if source["group"] == "bing" and source["collection"] == "PictureOfTheDay":
-        #         self.set_wallpaper(screen_lock_background=True, notify=True)
+        return self.download_bing_potd()
 
     def download_bing_potd(self, resolution="WidescreenHD"):
         """Download the Bing Picture of the Day."""
@@ -119,6 +114,13 @@ class Bing:
                 return image_path
 
             try:
+                send_notification(
+                    "Downloading BING POTD...",
+                    "Wallpaper",
+                    app_name="Wallpaper",
+                    app_id=99982,
+                    timeout=5000,
+                )
                 # Fetch metadata and construct URLs
                 image_info = _fetch_bing_metadata(BING_API_URL)
                 resolution = available_resolutions[resolution]
