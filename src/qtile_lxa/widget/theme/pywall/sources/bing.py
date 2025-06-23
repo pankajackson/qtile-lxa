@@ -30,12 +30,6 @@ class Bing:
         if image_path.exists():
             return
         return self.download_bing_potd()
-        source_list = get_source_list(theme_config=self.theme_config)
-        active_source_id = get_active_source_id(theme_config=self.theme_config)
-        # if active_source_id is not None:
-        #     source = source_list[get_active_source_id(theme_config=self.theme_config)]
-        #     if source["group"] == "bing" and source["collection"] == "PictureOfTheDay":
-        #         self.set_wallpaper(screen_lock_background=True, notify=True)
 
     def download_bing_potd(self, resolution="WidescreenHD"):
         """Download the Bing Picture of the Day."""
