@@ -48,6 +48,7 @@ class PyWallChanger(widget.GenPollText):
         self.update_wall_timer = None
         self.update_lock_timer = None
         self.update_interval = 900
+        self.conf_reload_timer = None
         self.decorations = [
             widget.decorations.RectDecoration(
                 colour="#004040",
@@ -311,7 +312,25 @@ class PyWallChanger(widget.GenPollText):
 
     def apply_pywal(self):
         """Apply the current wallpaper using pywal."""
+        send_notification(
+            "Applying Pywal Theme",
+            msg="Theme Manager",
+            app_name="ThemeManager",
+            app_id=2003,
+            timeout=5000,
+        )
         wallpaper = self.get_wallpaper()
         if wallpaper:
             subprocess.run(["wal", "-i", wallpaper])
-            theme_config.reload_qtile()
+            # theme_config.reload_qtile()
+            if self.conf_reload_timer and self.conf_reload_timer.is_alive():
+                self.conf_reload_timer.cancel()
+            self.conf_reload_timer = threading.Timer(1, theme_config.reload_qtile)
+            self.conf_reload_timer.start()
+            send_notification(
+                "Applied Pywal Theme",
+                msg="Theme Manager",
+                app_name="ThemeManager",
+                app_id=2003,
+                timeout=5000,
+            )
