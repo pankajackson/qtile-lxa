@@ -47,7 +47,7 @@ class PyWallChanger(widget.GenPollText):
         self.text_template = f"󰸉: {{index}}"  # Icon and index
         self.update_wall_timer = None
         self.update_lock_timer = None
-        self.update_interval = 30  # 900
+        self.update_interval = 900
         self.conf_reload_timer = None
         self.decorations = [
             widget.decorations.RectDecoration(
