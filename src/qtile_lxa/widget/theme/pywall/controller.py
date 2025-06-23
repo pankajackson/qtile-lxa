@@ -94,6 +94,13 @@ class PyWallChanger(widget.GenPollText):
         threading.Thread(target=worker, daemon=True).start()
 
     def sync_sources(self):
+        send_notification(
+            "Syncing wallpaper sources",
+            "Wallpaper",
+            app_name="Wallpaper",
+            app_id=99980,
+            timeout=5000,
+        )
         process_locker = ProcessLocker("sync_sources")
         lock_fd = process_locker.acquire_lock()
         if not lock_fd:
@@ -106,11 +113,25 @@ class PyWallChanger(widget.GenPollText):
                 theme_config=theme_config,
                 wallpaper_repos=self.wallpaper_repos,
             )
+            send_notification(
+                "Syncing GIT wallpaper sources",
+                "Wallpaper",
+                app_name="Wallpaper",
+                app_id=99981,
+                timeout=5000,
+            )
             source_git.sync_git()
 
             if self.bing_potd:
                 source_bing = Bing(
                     wallpaper_dir=self.wallpaper_dir, theme_config=theme_config
+                )
+                send_notification(
+                    "Syncing BING wallpaper sources",
+                    "Wallpaper",
+                    app_name="Wallpaper",
+                    app_id=99982,
+                    timeout=5000,
                 )
                 source_bing.sync_bing()
 
@@ -118,11 +139,25 @@ class PyWallChanger(widget.GenPollText):
                 source_bing = Nasa(
                     wallpaper_dir=self.wallpaper_dir, theme_config=theme_config
                 )
+                send_notification(
+                    "Syncing NASA wallpaper sources",
+                    "Wallpaper",
+                    app_name="Wallpaper",
+                    app_id=99983,
+                    timeout=5000,
+                )
                 source_bing.sync_nasa()
             source_list = get_source_list(theme_config)
             if source_list and active_source_id is None:
                 self.set_wallpaper(screen_lock_background=True, notify=True)
         finally:
+            send_notification(
+                "Syncing wallpaper sources Done",
+                "Wallpaper",
+                app_name="Wallpaper",
+                app_id=99980,
+                timeout=5000,
+            )
             process_locker.release_lock(lock_fd=lock_fd)
 
     def get_active_wall_id(self):
