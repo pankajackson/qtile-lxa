@@ -23,7 +23,7 @@ def send_notification(
         cmd.extend(["-i", str(icon)])
 
     if progress is not None:
-        cmd.extend(["-h", f"'int:value:{progress}'", f"{title}: {progress}%"])
+        cmd.extend(["-h", f"int:value:{progress}", f"{title}: {progress}%"])
     else:
         cmd.append(title)
 
