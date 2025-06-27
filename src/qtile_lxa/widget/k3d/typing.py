@@ -9,7 +9,7 @@ class K3DConfig:
     agents: int | None = None
     server_memory: str | None = None
     agent_memory: str | None = None
-    gpu_request: bool | None = None
+    gpu_request: str | None = None  # "all", "device=0", "1", etc.
     kube_api_host: str | None = None
     kube_api_host_ip: str | None = None
     kube_api_host_port: str | None = None
