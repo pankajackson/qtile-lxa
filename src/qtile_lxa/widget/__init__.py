@@ -13,6 +13,7 @@ from . import (
     url_monitor,
     vagrant,
     widgetbox,
+    multipass,
 )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "url_monitor",
     "vagrant",
     "widgetbox",
+    "multipass",
 ]
