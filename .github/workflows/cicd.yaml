@@ -3,6 +3,10 @@ on:
   push:
     branches:
       - "main"
+      - "master"
+      - "dev"
+      - "develop"
+
 jobs:
   PYPI:
     runs-on: self-hosted
