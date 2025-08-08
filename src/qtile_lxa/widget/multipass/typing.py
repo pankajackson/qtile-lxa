@@ -22,4 +22,4 @@ class MultipassConfig:
     stopped_symbol: str = "🔴"
     unknown_symbol: str = "❓"
     error_symbol: str = "❌"
-    enable_logger: bool = True
+    enable_logger: bool = False
