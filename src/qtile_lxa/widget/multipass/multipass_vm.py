@@ -105,23 +105,38 @@ class MultipassVM(GenPollText):
             self.run_in_thread(self.handle_delete_vm)
 
     def handle_launch_vm(self):
-        cmd = [
+        launch_cmd = [
             "multipass",
             "launch",
-            self.config.image,
             "--name",
             self.config.instance_name,
-            "--cpus",
-            str(self.config.cpus),
-            "--memory",
-            self.config.memory,
-            "--disk",
-            self.config.disk,
         ]
+
+        if self.config.cpus:
+            launch_cmd += ["--cpus", str(self.config.cpus)]
+        if self.config.memory:
+            launch_cmd += ["--memory", str(self.config.memory)]
+        if self.config.disk:
+            launch_cmd += ["--disk", str(self.config.disk)]
         if self.config.cloud_init_path and Path(self.config.cloud_init_path).exists():
-            cmd += ["--cloud-init", str(self.config.cloud_init_path)]
-        full_cmd = f"{terminal} -e {' '.join(cmd)}"
-        subprocess.Popen(full_cmd, shell=True)
+            launch_cmd += ["--cloud-init", str(self.config.cloud_init_path)]
+        if self.config.image:
+            launch_cmd += [str(self.config.image)]
+
+        # Base shell command
+        shell_cmd = [" ".join(launch_cmd)]
+
+        # Append mount commands as a chain
+        if self.config.shared_volumes:
+            for shared_volume in self.config.shared_volumes:
+                shell_cmd.append(
+                    f"multipass mount {shared_volume.source_path} {self.config.instance_name}:{shared_volume.target_path}"
+                )
+
+        full_shell_command = " && ".join(shell_cmd)
+
+        terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
+        subprocess.Popen(terminal_cmd, shell=True)
 
     def handle_start_vm(self):
         status = self.check_vm_status()
