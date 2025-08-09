@@ -128,6 +128,12 @@ class MultipassVM(GenPollText):
         shell_cmd = [" ".join(launch_cmd)]
         if self.config.shared_volumes:
             for shared_volume in self.config.shared_volumes:
+                try:
+                    shared_volume.source_path.mkdir(parents=True, exist_ok=True)
+                except:
+                    self.log(
+                        f"Failed to create shared volume {shared_volume.source_path}"
+                    )
                 shell_cmd.append(
                     f"multipass mount {shared_volume.source_path} {self.config.instance_name}:{shared_volume.target_path}"
                 )
@@ -139,7 +145,11 @@ class MultipassVM(GenPollText):
             )
 
         # Step 4: Run all in one terminal so sequence is guaranteed
-        full_shell_command = " && ".join(shell_cmd)
+        full_shell_command = (
+            " && ".join(shell_cmd)
+            + "; echo Closing window in 5 seconds..."
+            + "; sleep 5"
+        )
 
         terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
         subprocess.Popen(terminal_cmd, shell=True)
