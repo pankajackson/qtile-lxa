@@ -17,6 +17,7 @@ class MultipassConfig:
     memory: str | None = None  # default "1G"
     disk: str | None = None  # default "5G"
     shared_volumes: list[MultipassSharedVolume] | None = None
+    userdata_script: Path | None = None
     label: str | None = None
     running_symbol: str = "🟢"
     stopped_symbol: str = "🔴"

@@ -105,6 +105,7 @@ class MultipassVM(GenPollText):
             self.run_in_thread(self.handle_delete_vm)
 
     def handle_launch_vm(self):
+        # Step 1: Build launch command
         launch_cmd = [
             "multipass",
             "launch",
@@ -123,16 +124,21 @@ class MultipassVM(GenPollText):
         if self.config.image:
             launch_cmd += [str(self.config.image)]
 
-        # Base shell command
+        # Step 2: Append mount commands to same chain
         shell_cmd = [" ".join(launch_cmd)]
-
-        # Append mount commands as a chain
         if self.config.shared_volumes:
             for shared_volume in self.config.shared_volumes:
                 shell_cmd.append(
                     f"multipass mount {shared_volume.source_path} {self.config.instance_name}:{shared_volume.target_path}"
                 )
 
+        # Step 3: Append userdata script if available
+        if self.config.userdata_script and self.config.userdata_script.exists():
+            shell_cmd.append(
+                f"multipass exec {self.config.instance_name} -- bash -s < {self.config.userdata_script}"
+            )
+
+        # Step 4: Run all in one terminal so sequence is guaranteed
         full_shell_command = " && ".join(shell_cmd)
 
         terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
