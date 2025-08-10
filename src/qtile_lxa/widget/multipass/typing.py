@@ -20,6 +20,12 @@ class MultipassConfig:
     userdata_script: Path | None = None
     pre_launch_script: Path | None = None
     post_launch_script: Path | None = None
+    pre_start_script: Path | None = None
+    post_start_script: Path | None = None
+    pre_stop_script: Path | None = None
+    post_stop_script: Path | None = None
+    pre_delete_script: Path | None = None
+    post_delete_script: Path | None = None
     label: str | None = None
     running_symbol: str = "🟢"
     stopped_symbol: str = "🔴"

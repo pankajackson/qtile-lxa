@@ -180,22 +180,78 @@ class MultipassVM(GenPollText):
         if status == "unknown":
             self.handle_launch_vm()
         elif status == "stopped":
-            subprocess.Popen(
-                f"{terminal} -e multipass start {self.config.instance_name}", shell=True
+
+            # 1: Pre-start script
+            shell_cmd = []
+            self._append_script(
+                shell_cmd, self.config.pre_start_script, "Pre-start", inside_vm=False
             )
+
+            # 2: Start VM
+            shell_cmd.append(f"multipass start {self.config.instance_name}")
+
+            # 3: Post-start script
+            self._append_script(
+                shell_cmd, self.config.post_start_script, "Post-start", inside_vm=False
+            )
+
+            full_shell_command = (
+                " && ".join(shell_cmd)
+                + "; echo Press any key to close..."
+                + "; stty -echo -icanon time 0 min 1; dd bs=1 count=1 >/dev/null 2>&1; stty sane"
+            )
+            terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
+            subprocess.Popen(terminal_cmd, shell=True)
         else:
             self.open_shell()
 
     def handle_stop_vm(self):
-        subprocess.Popen(
-            f"{terminal} -e multipass stop {self.config.instance_name}", shell=True
+        # 1: Pre-stop script
+        shell_cmd = []
+        self._append_script(
+            shell_cmd, self.config.pre_stop_script, "Pre-stop", inside_vm=False
         )
 
-    def handle_delete_vm(self):
-        subprocess.Popen(
-            f"{terminal} -e multipass delete {self.config.instance_name} && multipass purge",
-            shell=True,
+        # 2: stop VM
+        shell_cmd.append(f"multipass stop {self.config.instance_name}")
+
+        # 3: Post-stop script
+        self._append_script(
+            shell_cmd, self.config.post_stop_script, "Post-stop", inside_vm=False
         )
+
+        full_shell_command = (
+            " && ".join(shell_cmd)
+            + "; echo Press any key to close..."
+            + "; stty -echo -icanon time 0 min 1; dd bs=1 count=1 >/dev/null 2>&1; stty sane"
+        )
+        terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
+        subprocess.Popen(terminal_cmd, shell=True)
+
+    def handle_delete_vm(self):
+        # 1: Pre-delete script
+        shell_cmd = []
+        self._append_script(
+            shell_cmd, self.config.pre_delete_script, "Pre-delete", inside_vm=False
+        )
+
+        # 2: delete VM
+        shell_cmd.append(
+            f"multipass delete {self.config.instance_name} && multipass purge"
+        )
+
+        # 3: Post-delete script
+        self._append_script(
+            shell_cmd, self.config.post_delete_script, "Post-delete", inside_vm=False
+        )
+
+        full_shell_command = (
+            " && ".join(shell_cmd)
+            + "; echo Press any key to close..."
+            + "; stty -echo -icanon time 0 min 1; dd bs=1 count=1 >/dev/null 2>&1; stty sane"
+        )
+        terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
+        subprocess.Popen(terminal_cmd, shell=True)
 
     def open_shell(self):
         subprocess.Popen(
