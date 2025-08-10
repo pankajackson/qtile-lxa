@@ -15,6 +15,10 @@ class MultipassScript:
     inside_vm: bool = False
     ignore_errors: bool = False
 
+    def __post_init__(self):
+        if not isinstance(self.path, Path):
+            raise TypeError(f"path must be a Path, got {type(self.path).__name__}")
+
 
 class MultipassVMOnlyScript(MultipassScript):
     def __init__(
@@ -25,7 +29,7 @@ class MultipassVMOnlyScript(MultipassScript):
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class MultipassConfig:
     instance_name: str
     cloud_init_path: Path | None = None
@@ -33,7 +37,7 @@ class MultipassConfig:
     cpus: int | None = None  # default 1
     memory: str | None = None  # default "1G"
     disk: str | None = None  # default "5G"
-    shared_volumes: list[MultipassSharedVolume] | None = None
+    shared_volumes: list[MultipassSharedVolume] = field(default_factory=list)
     userdata_script: MultipassVMOnlyScript | None = None
     pre_launch_script: MultipassScript | None = None
     post_launch_script: MultipassScript | None = None
