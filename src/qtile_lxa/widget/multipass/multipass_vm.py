@@ -104,15 +104,32 @@ class MultipassVM(GenPollText):
         elif button == 2:
             self.run_in_thread(self.handle_delete_vm)
 
+    def _append_script(self, shell_cmd: list, path, label: str, inside_vm=False):
+        if not path:
+            return
+        if path.exists():
+            cmd = (
+                f"multipass exec {self.config.instance_name} -- bash -s < {path}"
+                if inside_vm
+                else f"bash {path}"
+            )
+            shell_cmd.append(cmd)
+        else:
+            self.log(f"{label} script not found: {path}")
+
     def handle_launch_vm(self):
-        # Step 1: Build launch command
+        shell_cmd = []
+
+        # 0: Pre-launch script (host side)
+        self._append_script(shell_cmd, self.config.pre_launch_script, "Pre-launch")
+
+        # 1: Build launch command
         launch_cmd = [
             "multipass",
             "launch",
             "--name",
             self.config.instance_name,
         ]
-
         if self.config.cpus:
             launch_cmd += ["--cpus", str(self.config.cpus)]
         if self.config.memory:
@@ -123,32 +140,36 @@ class MultipassVM(GenPollText):
             launch_cmd += ["--cloud-init", str(self.config.cloud_init_path)]
         if self.config.image:
             launch_cmd += [str(self.config.image)]
+        shell_cmd.append(" ".join(launch_cmd))
 
-        # Step 2: Append mount commands to same chain
-        shell_cmd = [" ".join(launch_cmd)]
+        # 2: Mount shared volumes
         if self.config.shared_volumes:
             for shared_volume in self.config.shared_volumes:
                 try:
                     shared_volume.source_path.mkdir(parents=True, exist_ok=True)
-                except:
+                except Exception as e:
                     self.log(
-                        f"Failed to create shared volume {shared_volume.source_path}"
+                        f"Failed to create shared volume {shared_volume.source_path}: {e}"
                     )
                 shell_cmd.append(
                     f"multipass mount {shared_volume.source_path} {self.config.instance_name}:{shared_volume.target_path}"
                 )
 
-        # Step 3: Append userdata script if available
-        if self.config.userdata_script and self.config.userdata_script.exists():
-            shell_cmd.append(
-                f"multipass exec {self.config.instance_name} -- bash -s < {self.config.userdata_script}"
-            )
+        # 3: Userdata script (inside VM)
+        self._append_script(
+            shell_cmd, self.config.userdata_script, "Userdata", inside_vm=True
+        )
 
-        # Step 4: Run all in one terminal so sequence is guaranteed
+        # 4: Post-launch script (inside VM)
+        self._append_script(
+            shell_cmd, self.config.post_launch_script, "Post-launch", inside_vm=False
+        )
+
+        # Run all chained
         full_shell_command = (
             " && ".join(shell_cmd)
-            + "; echo Closing window in 5 seconds..."
-            + "; sleep 5"
+            + "; echo Press any key to close..."
+            + "; stty -echo -icanon time 0 min 1; dd bs=1 count=1 >/dev/null 2>&1; stty sane"
         )
 
         terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'

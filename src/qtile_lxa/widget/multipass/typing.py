@@ -18,6 +18,8 @@ class MultipassConfig:
     disk: str | None = None  # default "5G"
     shared_volumes: list[MultipassSharedVolume] | None = None
     userdata_script: Path | None = None
+    pre_launch_script: Path | None = None
+    post_launch_script: Path | None = None
     label: str | None = None
     running_symbol: str = "🟢"
     stopped_symbol: str = "🔴"
