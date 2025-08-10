@@ -13,11 +13,16 @@ class MultipassScript:
     path: Path
     args: list[str] = field(default_factory=list)
     inside_vm: bool = False
+    ignore_errors: bool = False
 
 
 class MultipassVMOnlyScript(MultipassScript):
-    def __init__(self, path: Path, args: list[str] | None = None):
-        super().__init__(path=path, args=args or [], inside_vm=True)
+    def __init__(
+        self, path: Path, args: list[str] | None = None, ignore_errors: bool = False
+    ):
+        super().__init__(
+            path=path, args=args or [], inside_vm=True, ignore_errors=ignore_errors
+        )
 
 
 @dataclass

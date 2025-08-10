@@ -144,6 +144,8 @@ class MultipassVM(GenPollText):
         if script:
             cmd = self._get_script_cmd(script)
             if cmd:
+                if script.ignore_errors:
+                    cmd = f"({cmd}) || true"
                 shell_cmd.append(cmd)
         return shell_cmd
 
