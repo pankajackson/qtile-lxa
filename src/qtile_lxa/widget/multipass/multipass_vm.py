@@ -1,6 +1,7 @@
 import subprocess
 import threading
 import json
+import uuid
 from pathlib import Path
 from qtile_extras.widget import GenPollText, decorations
 from libqtile.log_utils import logger
@@ -106,23 +107,36 @@ class MultipassVM(GenPollText):
 
     def _get_script_cmd(self, script: MultipassScript | MultipassVMOnlyScript):
         if not script.path.exists():
-            self.log(f"script not found: {script.path}")
+            self.log(f"Script not found: {script.path}")
             return
 
-        # if script.inside_vm:
-        #     cmd = f"multipass exec {self.config.instance_name} -- bash {script.path} {' '.join(script.args)}"
-        # else:
-        #     cmd = f"bash {script.path} {' '.join(script.args)}"
-        # return cmd
-
         if script.inside_vm:
-            cmd = (
-                f"multipass exec {self.config.instance_name} -- "
-                f"bash -s -- {' '.join(script.args)} < {script.path}"
+            # Generate unique path inside VM
+            remote_tmp_path = f"/tmp/{uuid.uuid4().hex}_{script.path.name}"
+
+            # Transfer script into VM
+            transfer_cmd = (
+                f"multipass transfer {script.path} "
+                f"{self.config.instance_name}:{remote_tmp_path}"
             )
+
+            # Execute script in VM
+            exec_cmd = (
+                f"multipass exec {self.config.instance_name} -- "
+                f"bash {remote_tmp_path} {' '.join(script.args)}"
+            )
+
+            # Optional cleanup command
+            cleanup_cmd = (
+                f"multipass exec {self.config.instance_name} -- rm {remote_tmp_path}"
+            )
+
+            # Return full chain of commands
+            return f"{transfer_cmd} && {exec_cmd} && {cleanup_cmd}"
+
         else:
-            cmd = f"bash {script.path} {' '.join(script.args)}"
-        return cmd
+            # Run directly on host
+            return f"bash {script.path} {' '.join(script.args)}"
 
     def _append_script(
         self, shell_cmd: list, script: MultipassScript | MultipassVMOnlyScript | None
