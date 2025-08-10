@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -6,6 +6,18 @@ from pathlib import Path
 class MultipassSharedVolume:
     source_path: Path
     target_path: Path
+
+
+@dataclass
+class MultipassScript:
+    path: Path
+    args: list[str] = field(default_factory=list)
+    inside_vm: bool = False
+
+
+class MultipassVMOnlyScript(MultipassScript):
+    def __init__(self, path: Path, args: list[str] | None = None):
+        super().__init__(path=path, args=args or [], inside_vm=True)
 
 
 @dataclass
@@ -17,15 +29,15 @@ class MultipassConfig:
     memory: str | None = None  # default "1G"
     disk: str | None = None  # default "5G"
     shared_volumes: list[MultipassSharedVolume] | None = None
-    userdata_script: Path | None = None
-    pre_launch_script: Path | None = None
-    post_launch_script: Path | None = None
-    pre_start_script: Path | None = None
-    post_start_script: Path | None = None
-    pre_stop_script: Path | None = None
-    post_stop_script: Path | None = None
-    pre_delete_script: Path | None = None
-    post_delete_script: Path | None = None
+    userdata_script: MultipassVMOnlyScript | None = None
+    pre_launch_script: MultipassScript | None = None
+    post_launch_script: MultipassScript | None = None
+    pre_start_script: MultipassScript | None = None
+    post_start_script: MultipassScript | None = None
+    pre_stop_script: MultipassScript | None = None
+    post_stop_script: MultipassScript | None = None
+    pre_delete_script: MultipassScript | None = None
+    post_delete_script: MultipassScript | None = None
     label: str | None = None
     running_symbol: str = "🟢"
     stopped_symbol: str = "🔴"

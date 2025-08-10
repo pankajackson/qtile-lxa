@@ -6,7 +6,7 @@ from qtile_extras.widget import GenPollText, decorations
 from libqtile.log_utils import logger
 from libqtile.utils import guess_terminal
 from typing import Any, Literal
-from .typing import MultipassConfig
+from .typing import MultipassConfig, MultipassScript, MultipassVMOnlyScript
 
 terminal = guess_terminal()
 
@@ -104,66 +104,114 @@ class MultipassVM(GenPollText):
         elif button == 2:
             self.run_in_thread(self.handle_delete_vm)
 
-    def _append_script(self, shell_cmd: list, path, label: str, inside_vm=False):
-        if not path:
+    def _get_script_cmd(self, script: MultipassScript | MultipassVMOnlyScript):
+        if not script.path.exists():
+            self.log(f"script not found: {script.path}")
             return
-        if path.exists():
+
+        # if script.inside_vm:
+        #     cmd = f"multipass exec {self.config.instance_name} -- bash {script.path} {' '.join(script.args)}"
+        # else:
+        #     cmd = f"bash {script.path} {' '.join(script.args)}"
+        # return cmd
+
+        if script.inside_vm:
             cmd = (
-                f"multipass exec {self.config.instance_name} -- bash -s < {path}"
-                if inside_vm
-                else f"bash {path}"
+                f"multipass exec {self.config.instance_name} -- "
+                f"bash -s -- {' '.join(script.args)} < {script.path}"
             )
-            shell_cmd.append(cmd)
         else:
-            self.log(f"{label} script not found: {path}")
+            cmd = f"bash {script.path} {' '.join(script.args)}"
+        return cmd
 
-    def handle_launch_vm(self):
+    def _append_script(
+        self, shell_cmd: list, script: MultipassScript | MultipassVMOnlyScript | None
+    ):
+        if script:
+            cmd = self._get_script_cmd(script)
+            if cmd:
+                shell_cmd.append(cmd)
+        return shell_cmd
+
+    def _get_full_event_shell_cmd(
+        self, event: Literal["launch", "start", "stop", "delete"]
+    ):
         shell_cmd = []
+        if event == "launch":
+            # 0: Pre-launch script (host side)
+            self._append_script(shell_cmd, self.config.pre_launch_script)
 
-        # 0: Pre-launch script (host side)
-        self._append_script(shell_cmd, self.config.pre_launch_script, "Pre-launch")
+            # 1: Build launch command
+            launch_cmd = [
+                "multipass",
+                "launch",
+                "--name",
+                self.config.instance_name,
+            ]
+            if self.config.cpus:
+                launch_cmd += ["--cpus", str(self.config.cpus)]
+            if self.config.memory:
+                launch_cmd += ["--memory", str(self.config.memory)]
+            if self.config.disk:
+                launch_cmd += ["--disk", str(self.config.disk)]
+            if (
+                self.config.cloud_init_path
+                and Path(self.config.cloud_init_path).exists()
+            ):
+                launch_cmd += ["--cloud-init", str(self.config.cloud_init_path)]
+            if self.config.image:
+                launch_cmd += [str(self.config.image)]
+            shell_cmd.append(" ".join(launch_cmd))
 
-        # 1: Build launch command
-        launch_cmd = [
-            "multipass",
-            "launch",
-            "--name",
-            self.config.instance_name,
-        ]
-        if self.config.cpus:
-            launch_cmd += ["--cpus", str(self.config.cpus)]
-        if self.config.memory:
-            launch_cmd += ["--memory", str(self.config.memory)]
-        if self.config.disk:
-            launch_cmd += ["--disk", str(self.config.disk)]
-        if self.config.cloud_init_path and Path(self.config.cloud_init_path).exists():
-            launch_cmd += ["--cloud-init", str(self.config.cloud_init_path)]
-        if self.config.image:
-            launch_cmd += [str(self.config.image)]
-        shell_cmd.append(" ".join(launch_cmd))
-
-        # 2: Mount shared volumes
-        if self.config.shared_volumes:
-            for shared_volume in self.config.shared_volumes:
-                try:
-                    shared_volume.source_path.mkdir(parents=True, exist_ok=True)
-                except Exception as e:
-                    self.log(
-                        f"Failed to create shared volume {shared_volume.source_path}: {e}"
+            # 2: Mount shared volumes
+            if self.config.shared_volumes:
+                for shared_volume in self.config.shared_volumes:
+                    try:
+                        shared_volume.source_path.mkdir(parents=True, exist_ok=True)
+                    except Exception as e:
+                        self.log(
+                            f"Failed to create shared volume {shared_volume.source_path}: {e}"
+                        )
+                    shell_cmd.append(
+                        f"multipass mount {shared_volume.source_path} {self.config.instance_name}:{shared_volume.target_path}"
                     )
-                shell_cmd.append(
-                    f"multipass mount {shared_volume.source_path} {self.config.instance_name}:{shared_volume.target_path}"
-                )
 
-        # 3: Userdata script (inside VM)
-        self._append_script(
-            shell_cmd, self.config.userdata_script, "Userdata", inside_vm=True
-        )
+            # 3: Userdata script (inside VM)
+            self._append_script(shell_cmd, self.config.userdata_script)
 
-        # 4: Post-launch script (inside VM)
-        self._append_script(
-            shell_cmd, self.config.post_launch_script, "Post-launch", inside_vm=False
-        )
+            # 4: Post-launch script (inside VM)
+            self._append_script(shell_cmd, self.config.post_launch_script)
+
+        elif event == "start":
+            # 1: Pre-start script
+            self._append_script(shell_cmd, self.config.pre_start_script)
+
+            # 2: Start VM
+            shell_cmd.append(f"multipass start {self.config.instance_name}")
+
+            # 3: Post-start script
+            self._append_script(shell_cmd, self.config.post_start_script)
+        elif event == "stop":
+            # 1: Pre-stop script
+            self._append_script(shell_cmd, self.config.pre_stop_script)
+
+            # 2: stop VM
+            shell_cmd.append(f"multipass stop {self.config.instance_name}")
+
+            # 3: Post-stop script
+            self._append_script(shell_cmd, self.config.post_stop_script)
+
+        elif event == "delete":
+            # 1: Pre-delete script
+            self._append_script(shell_cmd, self.config.pre_delete_script)
+
+            # 2: delete VM
+            shell_cmd.append(
+                f"multipass delete {self.config.instance_name} && multipass purge"
+            )
+
+            # 3: Post-delete script
+            self._append_script(shell_cmd, self.config.post_delete_script)
 
         # Run all chained
         full_shell_command = (
@@ -172,6 +220,12 @@ class MultipassVM(GenPollText):
             + "; stty -echo -icanon time 0 min 1; dd bs=1 count=1 >/dev/null 2>&1; stty sane"
         )
 
+        self.log(f"Running: {full_shell_command}")
+
+        return full_shell_command
+
+    def handle_launch_vm(self):
+        full_shell_command = self._get_full_event_shell_cmd("launch")
         terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
         subprocess.Popen(terminal_cmd, shell=True)
 
@@ -180,76 +234,19 @@ class MultipassVM(GenPollText):
         if status == "unknown":
             self.handle_launch_vm()
         elif status == "stopped":
-
-            # 1: Pre-start script
-            shell_cmd = []
-            self._append_script(
-                shell_cmd, self.config.pre_start_script, "Pre-start", inside_vm=False
-            )
-
-            # 2: Start VM
-            shell_cmd.append(f"multipass start {self.config.instance_name}")
-
-            # 3: Post-start script
-            self._append_script(
-                shell_cmd, self.config.post_start_script, "Post-start", inside_vm=False
-            )
-
-            full_shell_command = (
-                " && ".join(shell_cmd)
-                + "; echo Press any key to close..."
-                + "; stty -echo -icanon time 0 min 1; dd bs=1 count=1 >/dev/null 2>&1; stty sane"
-            )
+            full_shell_command = self._get_full_event_shell_cmd("start")
             terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
             subprocess.Popen(terminal_cmd, shell=True)
         else:
             self.open_shell()
 
     def handle_stop_vm(self):
-        # 1: Pre-stop script
-        shell_cmd = []
-        self._append_script(
-            shell_cmd, self.config.pre_stop_script, "Pre-stop", inside_vm=False
-        )
-
-        # 2: stop VM
-        shell_cmd.append(f"multipass stop {self.config.instance_name}")
-
-        # 3: Post-stop script
-        self._append_script(
-            shell_cmd, self.config.post_stop_script, "Post-stop", inside_vm=False
-        )
-
-        full_shell_command = (
-            " && ".join(shell_cmd)
-            + "; echo Press any key to close..."
-            + "; stty -echo -icanon time 0 min 1; dd bs=1 count=1 >/dev/null 2>&1; stty sane"
-        )
+        full_shell_command = self._get_full_event_shell_cmd("stop")
         terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
         subprocess.Popen(terminal_cmd, shell=True)
 
     def handle_delete_vm(self):
-        # 1: Pre-delete script
-        shell_cmd = []
-        self._append_script(
-            shell_cmd, self.config.pre_delete_script, "Pre-delete", inside_vm=False
-        )
-
-        # 2: delete VM
-        shell_cmd.append(
-            f"multipass delete {self.config.instance_name} && multipass purge"
-        )
-
-        # 3: Post-delete script
-        self._append_script(
-            shell_cmd, self.config.post_delete_script, "Post-delete", inside_vm=False
-        )
-
-        full_shell_command = (
-            " && ".join(shell_cmd)
-            + "; echo Press any key to close..."
-            + "; stty -echo -icanon time 0 min 1; dd bs=1 count=1 >/dev/null 2>&1; stty sane"
-        )
+        full_shell_command = self._get_full_event_shell_cmd("delete")
         terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
         subprocess.Popen(terminal_cmd, shell=True)
 
