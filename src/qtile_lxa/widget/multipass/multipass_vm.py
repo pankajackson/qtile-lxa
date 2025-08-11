@@ -170,6 +170,8 @@ class MultipassVM(GenPollText):
                 launch_cmd += ["--memory", str(self.config.memory)]
             if self.config.disk:
                 launch_cmd += ["--disk", str(self.config.disk)]
+            if self.config.network:
+                launch_cmd += ["--network", str(self.config.network)]
             if (
                 self.config.cloud_init_path
                 and Path(self.config.cloud_init_path).exists()

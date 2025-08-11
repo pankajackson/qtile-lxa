@@ -37,6 +37,7 @@ class MultipassConfig:
     cpus: int | None = None  # default 1
     memory: str | None = None  # default "1G"
     disk: str | None = None  # default "5G"
+    network: str | None = None
     shared_volumes: list[MultipassSharedVolume] = field(default_factory=list)
     userdata_script: MultipassVMOnlyScript | None = None
     pre_launch_script: MultipassScript | None = None
