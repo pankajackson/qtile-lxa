@@ -68,22 +68,55 @@ class MultipassVM(GenPollText):
             self.log(f"JSON decode error: {e}")
             return None
 
-    def check_vm_status(self) -> Literal["running", "stopped", "unknown", "error"]:
+    def check_vm_status(
+        self,
+    ) -> Literal[
+        "running",
+        "stopped",
+        "deleted",
+        "starting",
+        "restarting",
+        "delayed_shutdown",
+        "suspending",
+        "suspended",
+        "unknown",
+        "error",
+    ]:
         info = self.get_instance_info()
         if not info:
             return "unknown"
         state = info.get("state", "").lower()
-        if "running" in state:
+        if state == "running":
             return "running"
-        elif "stopped" in state:
+        elif state == "stopped":
             return "stopped"
+        elif state == "deleted":
+            return "deleted"
+        elif state == "starting":
+            return "starting"
+        elif state == "restarting":
+            return "restarting"
+        elif state == "delayed shutdown":
+            return "delayed_shutdown"
+        elif state == "suspending":
+            return "suspending"
+        elif state == "suspended":
+            return "suspended"
+        elif state == "unknown":
+            return "unknown"
         else:
             return "error"
 
     def get_text(self):
         symbol_map = {
-            "stopped": self.config.stopped_symbol,
             "running": self.config.running_symbol,
+            "stopped": self.config.stopped_symbol,
+            "deleted": self.config.deleted_symbol,
+            "starting": self.config.starting_symbol,
+            "restarting": self.config.restarting_symbol,
+            "delayed_shutdown": self.config.delayed_shutdown_symbol,
+            "suspending": self.config.suspending_symbol,
+            "suspended": self.config.suspended_symbol,
             "unknown": self.config.unknown_symbol,
             "error": self.config.error_symbol,
         }

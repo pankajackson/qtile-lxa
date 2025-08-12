@@ -51,6 +51,12 @@ class MultipassConfig:
     label: str | None = None
     running_symbol: str = "🟢"
     stopped_symbol: str = "🔴"
+    deleted_symbol: str = "🗑️"
+    starting_symbol: str = "🟡"
+    restarting_symbol: str = "🔄"
+    delayed_shutdown_symbol: str = "🛑"
+    suspending_symbol: str = "⏱️"
+    suspended_symbol: str = "❄️"
     unknown_symbol: str = "❓"
     error_symbol: str = "❌"
     enable_logger: bool = False
