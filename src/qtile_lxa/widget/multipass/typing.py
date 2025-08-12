@@ -49,6 +49,7 @@ class MultipassConfig:
     pre_delete_script: MultipassScript | None = None
     post_delete_script: MultipassScript | None = None
     label: str | None = None
+    not_created_symbol: str = "⚪"
     running_symbol: str = "🟢"
     stopped_symbol: str = "🔴"
     deleted_symbol: str = "🗑️"

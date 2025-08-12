@@ -8,6 +8,7 @@ from libqtile.log_utils import logger
 from libqtile.utils import guess_terminal
 from typing import Any, Literal
 from .typing import MultipassConfig, MultipassScript, MultipassVMOnlyScript
+from qtile_lxa.utils.notification import send_notification
 
 terminal = guess_terminal()
 
@@ -71,6 +72,7 @@ class MultipassVM(GenPollText):
     def check_vm_status(
         self,
     ) -> Literal[
+        "not_created",
         "running",
         "stopped",
         "deleted",
@@ -84,7 +86,7 @@ class MultipassVM(GenPollText):
     ]:
         info = self.get_instance_info()
         if not info:
-            return "unknown"
+            return "not_created"
         state = info.get("state", "").lower()
         if state == "running":
             return "running"
@@ -109,6 +111,7 @@ class MultipassVM(GenPollText):
 
     def get_text(self):
         symbol_map = {
+            "not_created": self.config.not_created_symbol,
             "running": self.config.running_symbol,
             "stopped": self.config.stopped_symbol,
             "deleted": self.config.deleted_symbol,
@@ -282,14 +285,45 @@ class MultipassVM(GenPollText):
 
     def handle_start_vm(self):
         status = self.check_vm_status()
-        if status == "unknown":
+
+        if status in ("not_created", "deleted"):
             self.handle_launch_vm()
+
         elif status == "stopped":
+            # Start the VM normally
             full_shell_command = self._get_full_event_shell_cmd("start")
             terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
             subprocess.Popen(terminal_cmd, shell=True)
-        else:
+
+        elif status in ("running",):
+            # Already running → just open shell
             self.open_shell()
+
+        elif status in (
+            "starting",
+            "restarting",
+            "delayed_shutdown",
+            "suspending",
+            "unknown",
+        ):
+            # VM is busy → maybe just log or notify user
+            msg = f"VM is currently {status.replace('_', ' ')}. Please wait..."
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
+
+        elif status == "suspended":
+            # Resume suspended VM
+            full_shell_command = self._get_full_event_shell_cmd("start")
+            terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
+            subprocess.Popen(terminal_cmd, shell=True)
+
+        elif status == "error":
+            # Error state — maybe offer relaunch
+            self.log("VM is in error state. Attempting to relaunch...")
+            self.handle_launch_vm()
+
+        else:
+            self.log(f"Unhandled VM status: {status}")
 
     def handle_stop_vm(self):
         full_shell_command = self._get_full_event_shell_cmd("stop")
