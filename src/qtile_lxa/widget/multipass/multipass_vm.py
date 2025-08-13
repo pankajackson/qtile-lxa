@@ -250,7 +250,7 @@ class MultipassVM(GenPollText):
             self._append_script(shell_cmd, self.config.pre_stop_script)
 
             # 2: stop VM
-            shell_cmd.append(f"multipass stop {self.config.instance_name}")
+            shell_cmd.append(f"multipass stop {self.config.instance_name} --force")
 
             # 3: Post-stop script
             self._append_script(shell_cmd, self.config.post_stop_script)
@@ -260,9 +260,7 @@ class MultipassVM(GenPollText):
             self._append_script(shell_cmd, self.config.pre_delete_script)
 
             # 2: delete VM
-            shell_cmd.append(
-                f"multipass delete {self.config.instance_name} && multipass purge"
-            )
+            shell_cmd.append(f"multipass delete --purge {self.config.instance_name}")
 
             # 3: Post-delete script
             self._append_script(shell_cmd, self.config.post_delete_script)
@@ -289,7 +287,7 @@ class MultipassVM(GenPollText):
         if status in ("not_created", "deleted"):
             self.handle_launch_vm()
 
-        elif status == "stopped":
+        elif status in ["stopped", "suspended"]:
             # Start the VM normally
             full_shell_command = self._get_full_event_shell_cmd("start")
             terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
@@ -311,29 +309,52 @@ class MultipassVM(GenPollText):
             self.log(msg)
             send_notification(self.config.instance_name, msg)
 
-        elif status == "suspended":
-            # Resume suspended VM
-            full_shell_command = self._get_full_event_shell_cmd("start")
+        else:
+            msg = f"Unhandled VM status: {status}"
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
+
+    def handle_stop_vm(self):
+        status = self.check_vm_status()
+
+        if status in ("running", "delayed_shutdown", "suspended"):
+            full_shell_command = self._get_full_event_shell_cmd("stop")
             terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
             subprocess.Popen(terminal_cmd, shell=True)
 
-        elif status == "error":
-            # Error state — maybe offer relaunch
-            self.log("VM is in error state. Attempting to relaunch...")
-            self.handle_launch_vm()
+        elif status == "stopped":
+            # VM is stopped → maybe just log or notify user
+            msg = f"VM is already stopped."
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
+
+        elif status in (
+            "starting",
+            "restarting",
+            "suspending",
+            "unknown",
+        ):
+            # VM is busy → maybe just log or notify user
+            msg = f"VM is currently {status.replace('_', ' ')}. Please wait..."
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
 
         else:
-            self.log(f"Unhandled VM status: {status}")
-
-    def handle_stop_vm(self):
-        full_shell_command = self._get_full_event_shell_cmd("stop")
-        terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
-        subprocess.Popen(terminal_cmd, shell=True)
+            msg = f"Unhandled VM status: {status}"
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
 
     def handle_delete_vm(self):
-        full_shell_command = self._get_full_event_shell_cmd("delete")
-        terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
-        subprocess.Popen(terminal_cmd, shell=True)
+        status = self.check_vm_status()
+
+        if status not in ["not_created", "unknown"]:
+            full_shell_command = self._get_full_event_shell_cmd("delete")
+            terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
+            subprocess.Popen(terminal_cmd, shell=True)
+        else:
+            msg = f"VM is currently {status.replace('_', ' ')}. Cannot be deleted."
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
 
     def open_shell(self):
         subprocess.Popen(
