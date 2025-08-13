@@ -272,8 +272,6 @@ class MultipassVM(GenPollText):
             + "; stty -echo -icanon time 0 min 1; dd bs=1 count=1 >/dev/null 2>&1; stty sane"
         )
 
-        self.log(f"Running: {full_shell_command}")
-
         return full_shell_command
 
     def handle_launch_vm(self):
