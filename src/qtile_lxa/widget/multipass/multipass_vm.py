@@ -347,12 +347,25 @@ class MultipassVM(GenPollText):
     def handle_delete_vm(self):
         status = self.check_vm_status()
 
-        if status not in ["not_created", "unknown"]:
+        if status in [
+            "running",
+            "starting",
+            "restarting",
+            "suspending",
+            "stopped",
+            "delayed_shutdown",
+            "suspended",
+            "deleted",
+        ]:
             full_shell_command = self._get_full_event_shell_cmd("delete")
             terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
             subprocess.Popen(terminal_cmd, shell=True)
-        else:
+        elif status in ["not_created", "unknown"]:
             msg = f"VM is currently {status.replace('_', ' ')}. Cannot be deleted."
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
+        else:
+            msg = f"Unhandled VM status: {status}"
             self.log(msg)
             send_notification(self.config.instance_name, msg)
 
