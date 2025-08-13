@@ -323,8 +323,7 @@ class MultipassVM(GenPollText):
             subprocess.Popen(terminal_cmd, shell=True)
 
         elif status == "stopped":
-            # VM is stopped → maybe just log or notify user
-            msg = f"VM is already stopped."
+            msg = "VM is already stopped."
             self.log(msg)
             send_notification(self.config.instance_name, msg)
 
@@ -334,7 +333,6 @@ class MultipassVM(GenPollText):
             "suspending",
             "unknown",
         ):
-            # VM is busy → maybe just log or notify user
             msg = f"VM is currently {status.replace('_', ' ')}. Please wait..."
             self.log(msg)
             send_notification(self.config.instance_name, msg)
