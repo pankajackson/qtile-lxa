@@ -3,6 +3,50 @@ from pathlib import Path
 
 
 @dataclass
+class MultipassNetwork:
+    multipass_network: str  # Network name from `multipass networks`
+    adapter: str = "ens4"  # Interface name inside the VM
+    dhcp4: bool = True  # Enable DHCP for IPv4
+    addresses: list[str] = field(
+        default_factory=list
+    )  # List of static IPs, e.g., ["192.168.100.31/24"]
+    gateway4: str | None = None  # Default gateway
+    nameservers: list[str] = field(
+        default_factory=lambda: ["8.8.8.8", "8.8.4.4"]
+    )  # DNS servers
+    mtu: int | None = 1500  # Optional MTU
+    routes: list[dict] = field(default_factory=list)  # Optional static routes
+
+    def to_netplan_dict(self) -> dict:
+        """Convert this network config into netplan YAML dict format."""
+        net = {
+            "network": {
+                "version": 2,
+                "ethernets": {
+                    self.adapter: {
+                        "dhcp4": self.dhcp4,
+                    }
+                },
+            }
+        }
+        if self.addresses:
+            net["network"]["ethernets"][self.adapter]["addresses"] = self.addresses
+        if self.nameservers:
+            net["network"]["ethernets"][self.adapter]["nameservers"] = {
+                "addresses": self.nameservers
+            }
+        if self.mtu:
+            net["network"]["ethernets"][self.adapter]["mtu"] = self.mtu
+        if self.routes:
+            net["network"]["ethernets"][self.adapter]["routes"] = self.routes
+        elif self.gateway4:
+            net["network"]["ethernets"][self.adapter]["routes"] = [
+                {"to": "0.0.0.0/0", "via": self.gateway4}
+            ]
+        return net
+
+
+@dataclass
 class MultipassSharedVolume:
     source_path: Path
     target_path: Path
@@ -37,7 +81,7 @@ class MultipassConfig:
     cpus: int | None = None  # default 1
     memory: str | None = None  # default "1G"
     disk: str | None = None  # default "5G"
-    network: str | None = None
+    network: MultipassNetwork | None = None
     shared_volumes: list[MultipassSharedVolume] = field(default_factory=list)
     userdata_script: MultipassVMOnlyScript | None = None
     pre_launch_script: MultipassScript | None = None
