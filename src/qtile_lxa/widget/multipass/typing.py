@@ -49,8 +49,15 @@ class MultipassConfig:
     pre_delete_script: MultipassScript | None = None
     post_delete_script: MultipassScript | None = None
     label: str | None = None
+    not_created_symbol: str = "⚪"
     running_symbol: str = "🟢"
     stopped_symbol: str = "🔴"
+    deleted_symbol: str = "🗑️"
+    starting_symbol: str = "🟡"
+    restarting_symbol: str = "🔄"
+    delayed_shutdown_symbol: str = "🛑"
+    suspending_symbol: str = "⏱️"
+    suspended_symbol: str = "❄️"
     unknown_symbol: str = "❓"
     error_symbol: str = "❌"
     enable_logger: bool = False

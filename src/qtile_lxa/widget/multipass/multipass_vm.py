@@ -8,6 +8,7 @@ from libqtile.log_utils import logger
 from libqtile.utils import guess_terminal
 from typing import Any, Literal
 from .typing import MultipassConfig, MultipassScript, MultipassVMOnlyScript
+from qtile_lxa.utils.notification import send_notification
 
 terminal = guess_terminal()
 
@@ -68,22 +69,57 @@ class MultipassVM(GenPollText):
             self.log(f"JSON decode error: {e}")
             return None
 
-    def check_vm_status(self) -> Literal["running", "stopped", "unknown", "error"]:
+    def check_vm_status(
+        self,
+    ) -> Literal[
+        "not_created",
+        "running",
+        "stopped",
+        "deleted",
+        "starting",
+        "restarting",
+        "delayed_shutdown",
+        "suspending",
+        "suspended",
+        "unknown",
+        "error",
+    ]:
         info = self.get_instance_info()
         if not info:
-            return "unknown"
+            return "not_created"
         state = info.get("state", "").lower()
-        if "running" in state:
+        if state == "running":
             return "running"
-        elif "stopped" in state:
+        elif state == "stopped":
             return "stopped"
+        elif state == "deleted":
+            return "deleted"
+        elif state == "starting":
+            return "starting"
+        elif state == "restarting":
+            return "restarting"
+        elif state == "delayed shutdown":
+            return "delayed_shutdown"
+        elif state == "suspending":
+            return "suspending"
+        elif state == "suspended":
+            return "suspended"
+        elif state == "unknown":
+            return "unknown"
         else:
             return "error"
 
     def get_text(self):
         symbol_map = {
-            "stopped": self.config.stopped_symbol,
+            "not_created": self.config.not_created_symbol,
             "running": self.config.running_symbol,
+            "stopped": self.config.stopped_symbol,
+            "deleted": self.config.deleted_symbol,
+            "starting": self.config.starting_symbol,
+            "restarting": self.config.restarting_symbol,
+            "delayed_shutdown": self.config.delayed_shutdown_symbol,
+            "suspending": self.config.suspending_symbol,
+            "suspended": self.config.suspended_symbol,
             "unknown": self.config.unknown_symbol,
             "error": self.config.error_symbol,
         }
@@ -214,7 +250,7 @@ class MultipassVM(GenPollText):
             self._append_script(shell_cmd, self.config.pre_stop_script)
 
             # 2: stop VM
-            shell_cmd.append(f"multipass stop {self.config.instance_name}")
+            shell_cmd.append(f"multipass stop {self.config.instance_name} --force")
 
             # 3: Post-stop script
             self._append_script(shell_cmd, self.config.post_stop_script)
@@ -224,9 +260,7 @@ class MultipassVM(GenPollText):
             self._append_script(shell_cmd, self.config.pre_delete_script)
 
             # 2: delete VM
-            shell_cmd.append(
-                f"multipass delete {self.config.instance_name} && multipass purge"
-            )
+            shell_cmd.append(f"multipass delete --purge {self.config.instance_name}")
 
             # 3: Post-delete script
             self._append_script(shell_cmd, self.config.post_delete_script)
@@ -238,8 +272,6 @@ class MultipassVM(GenPollText):
             + "; stty -echo -icanon time 0 min 1; dd bs=1 count=1 >/dev/null 2>&1; stty sane"
         )
 
-        self.log(f"Running: {full_shell_command}")
-
         return full_shell_command
 
     def handle_launch_vm(self):
@@ -249,24 +281,89 @@ class MultipassVM(GenPollText):
 
     def handle_start_vm(self):
         status = self.check_vm_status()
-        if status == "unknown":
+
+        if status in ("not_created", "deleted"):
             self.handle_launch_vm()
-        elif status == "stopped":
+
+        elif status in ["stopped", "suspended"]:
+            # Start the VM normally
             full_shell_command = self._get_full_event_shell_cmd("start")
             terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
             subprocess.Popen(terminal_cmd, shell=True)
-        else:
+
+        elif status in ("running",):
+            # Already running → just open shell
             self.open_shell()
 
+        elif status in (
+            "starting",
+            "restarting",
+            "delayed_shutdown",
+            "suspending",
+            "unknown",
+        ):
+            # VM is busy → maybe just log or notify user
+            msg = f"VM is currently {status.replace('_', ' ')}. Please wait..."
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
+
+        else:
+            msg = f"Unhandled VM status: {status}"
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
+
     def handle_stop_vm(self):
-        full_shell_command = self._get_full_event_shell_cmd("stop")
-        terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
-        subprocess.Popen(terminal_cmd, shell=True)
+        status = self.check_vm_status()
+
+        if status in ("running", "delayed_shutdown", "suspended"):
+            full_shell_command = self._get_full_event_shell_cmd("stop")
+            terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
+            subprocess.Popen(terminal_cmd, shell=True)
+
+        elif status == "stopped":
+            msg = "VM is already stopped."
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
+
+        elif status in (
+            "starting",
+            "restarting",
+            "suspending",
+            "unknown",
+        ):
+            msg = f"VM is currently {status.replace('_', ' ')}. Please wait..."
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
+
+        else:
+            msg = f"Unhandled VM status: {status}"
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
 
     def handle_delete_vm(self):
-        full_shell_command = self._get_full_event_shell_cmd("delete")
-        terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
-        subprocess.Popen(terminal_cmd, shell=True)
+        status = self.check_vm_status()
+
+        if status in [
+            "running",
+            "starting",
+            "restarting",
+            "suspending",
+            "stopped",
+            "delayed_shutdown",
+            "suspended",
+            "deleted",
+        ]:
+            full_shell_command = self._get_full_event_shell_cmd("delete")
+            terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
+            subprocess.Popen(terminal_cmd, shell=True)
+        elif status in ["not_created", "unknown"]:
+            msg = f"VM is currently {status.replace('_', ' ')}. Cannot be deleted."
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
+        else:
+            msg = f"Unhandled VM status: {status}"
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
 
     def open_shell(self):
         subprocess.Popen(
