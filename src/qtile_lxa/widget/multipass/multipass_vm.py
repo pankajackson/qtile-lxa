@@ -180,7 +180,7 @@ class MultipassVM(GenPollText):
             # Run directly on host
             return f"bash {script.path} {' '.join(script.args)}"
 
-    def _get_ipaddress_setup_cmd(self) -> str:
+    def _get_network_setup_cmd(self) -> str:
         if not self.config.network:
             self.log("No network config provided")
             return ""
@@ -305,9 +305,9 @@ class MultipassVM(GenPollText):
                         f"multipass mount {shared_volume.source_path} {self.config.instance_name}:{shared_volume.target_path}"
                     )
 
-            # 3: Setup IPAddress
+            # 3: Setup Network
             if self.config.network:
-                shell_cmd.append(self._get_ipaddress_setup_cmd())
+                shell_cmd.append(self._get_network_setup_cmd())
 
             # 4: Userdata script (inside VM)
             self._append_script(shell_cmd, self.config.userdata_script)
