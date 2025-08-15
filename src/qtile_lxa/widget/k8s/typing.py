@@ -30,7 +30,7 @@ class K8sNetwork:
     network: str  # Network name from `multipass networks`
     subnet: str  # e.g., "192.168.0.0/24"
     start_ip: int  # e.g., 30
-    adapter: str | None = None  # e.g., "br0"
+    adapter: str = "ens4"  # Adapter name inside the VM, e.g., "eth0"
 
     def get_ip(self, index: int) -> str:
         """Return an IP address incremented by index from the start_ip with CIDR suffix."""

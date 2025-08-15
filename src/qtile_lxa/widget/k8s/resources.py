@@ -1,11 +1,21 @@
 from pathlib import Path
 from jinja2 import Template, StrictUndefined, Undefined
 import tempfile
+from .typing import K8SConfig
 from qtile_lxa import __ASSETS_DIR__
 
 
 class K8sResources:
     templates_dir = __ASSETS_DIR__ / "k8s/templates"
+
+    def __init__(self, config: K8SConfig, output_dir: Path):
+        self.config = config
+        self.output_dir = output_dir
+
+        self.master_userdata, self.master_userdata_path = (
+            self._generate_master_userdata()
+        )
+        self.agent_userdata, self.agent_userdata_path = self._generate_agent_userdata()
 
     @staticmethod
     def load_template(
@@ -48,27 +58,27 @@ class K8sResources:
 
         return rendered_text, final_path
 
-    @classmethod
-    def master_userdata(
-        cls,
-        output_path: Path | None = None,
-        disable_traefik_ingress: bool = False,
-        disable_local_storage: bool = False,
-        disable_metrics_server: bool = False,
-        token: str | None = None,
-    ) -> tuple[str, Path]:
+    def _generate_master_userdata(self) -> tuple[str, Path]:
         install_flags = "--write-kubeconfig-mode 644"
-        if disable_local_storage:
+        if self.config.disable_local_storage:
             install_flags += " --disable local-storage"
-        if disable_traefik_ingress:
+        if self.config.disable_traefik_ingress:
             install_flags += " --disable traefik"
-        if disable_metrics_server:
+        if self.config.disable_metrics_server:
             install_flags += " --disable metrics-server"
 
-        return cls.load_template(
-            "master_userdata.sh", output_path=output_path, install_flags=install_flags
+        return self.load_template(
+            "scripts/master_userdata.sh",
+            output_path=self.output_dir / "master_userdata.sh",
+            strict=False,
+            install_flags=install_flags,
+            token=self.config.token,
+            k3s_version=self.config.k3s_version,
+            cluster_name=self.config.cluster_name,
         )
 
-    @classmethod
-    def agent_userdata(cls, output_path: Path | None = None) -> tuple[str, Path]:
-        return cls.load_template("agent_userdata.sh", output_path=output_path)
+    def _generate_agent_userdata(self) -> tuple[str, Path]:
+        return self.load_template(
+            "scripts/worker_userdata.sh",
+            output_path=self.output_dir / "agent_userdata.sh",
+        )

@@ -12,6 +12,7 @@ from qtile_lxa.widget.multipass import (
 from qtile_lxa.widget.widgetbox import WidgetBox, WidgetBoxConfig
 from typing import Any, cast
 from .typing import K8SConfig
+from .resources import K8sResources
 
 
 class K8s(WidgetBox):
@@ -23,6 +24,8 @@ class K8s(WidgetBox):
         self.master_data_dir = self.data_dir / "master"
         self.worker_data_dir = self.data_dir / "worker"
         self.common_data_dir = self.data_dir / "common"
+        self.resources = K8sResources(self.config, self.data_dir)
+
         self.node_list = cast(list[_Widget], self.get_node_list())
 
         super().__init__(
@@ -74,7 +77,7 @@ class K8s(WidgetBox):
                     MultipassSharedVolume(self.common_data_dir, Path("/common")),
                 ],
                 userdata_script=MultipassVMOnlyScript(
-                    self.assets_dir / "master_userdata.sh"
+                    self.resources.master_userdata_path
                 ),
             ),
             update_interval=10,
