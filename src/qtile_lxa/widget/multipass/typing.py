@@ -6,10 +6,10 @@ from pathlib import Path
 class MultipassNetwork:
     multipass_network: str  # Network name from `multipass networks`
     adapter: str = "ens4"  # Interface name inside the VM
-    dhcp4: bool = True  # Enable DHCP for IPv4
+    dhcp4: bool = True  # Enable DHCP for IPv4 by default
     addresses: list[str] = field(
         default_factory=list
-    )  # List of static IPs, e.g., ["192.168.100.31/24"]
+    )  # Static IPs, e.g., ["192.168.100.31/24"]
     gateway4: str | None = None  # Default gateway
     nameservers: list[str] = field(
         default_factory=lambda: ["8.8.8.8", "8.8.4.4"]
@@ -19,30 +19,37 @@ class MultipassNetwork:
 
     def to_netplan_dict(self) -> dict:
         """Convert this network config into netplan YAML dict format."""
+        dhcp_enabled = self.dhcp4 and not (
+            self.addresses or self.routes or self.gateway4
+        )
+
         net = {
             "network": {
                 "version": 2,
                 "ethernets": {
                     self.adapter: {
-                        "dhcp4": self.dhcp4,
+                        "dhcp4": dhcp_enabled,
                     }
                 },
             }
         }
+
+        eth = net["network"]["ethernets"][self.adapter]
+
         if self.addresses:
-            net["network"]["ethernets"][self.adapter]["addresses"] = self.addresses
+            eth["addresses"] = self.addresses
+
         if self.nameservers:
-            net["network"]["ethernets"][self.adapter]["nameservers"] = {
-                "addresses": self.nameservers
-            }
+            eth["nameservers"] = {"addresses": self.nameservers}
+
         if self.mtu:
-            net["network"]["ethernets"][self.adapter]["mtu"] = self.mtu
+            eth["mtu"] = self.mtu
+
         if self.routes:
-            net["network"]["ethernets"][self.adapter]["routes"] = self.routes
+            eth["routes"] = self.routes
         elif self.gateway4:
-            net["network"]["ethernets"][self.adapter]["routes"] = [
-                {"to": "0.0.0.0/0", "via": self.gateway4}
-            ]
+            eth["routes"] = [{"to": "0.0.0.0/0", "via": self.gateway4}]
+
         return net
 
 
