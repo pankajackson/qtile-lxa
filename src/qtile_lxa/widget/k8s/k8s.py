@@ -4,6 +4,7 @@ from qtile_lxa import __ASSETS_DIR__
 from qtile_lxa.widget.multipass import (
     MultipassVM,
     MultipassConfig,
+    MultipassNetwork,
     MultipassSharedVolume,
     MultipassScript,
     MultipassVMOnlyScript,
@@ -35,6 +36,28 @@ class K8s(WidgetBox):
             )
         )
 
+    def get_master_network(self) -> MultipassNetwork | None:
+        if not self.config.network:
+            return
+
+        config = {
+            "adapter": self.config.network.adapter,
+            "multipass_network": self.config.network.network,  # make sure key matches dataclass
+            "addresses": [self.config.network.master_ip()],  # wrap in list
+        }
+        return MultipassNetwork(**config)
+
+    def get_agent_network(self, count: int) -> MultipassNetwork | None:
+        if not self.config.network:
+            return
+
+        config = {
+            "adapter": self.config.network.adapter,
+            "multipass_network": self.config.network.network,  # make sure key matches dataclass
+            "addresses": [self.config.network.agent_ips(count=count)],  # wrap in list
+        }
+        return MultipassNetwork(**config)
+
     def get_node_list(self) -> list[MultipassVM]:
         master_node = MultipassVM(
             config=MultipassConfig(
@@ -43,7 +66,7 @@ class K8s(WidgetBox):
                 cpus=self.config.master_cpus,
                 memory=self.config.master_memory,
                 disk=self.config.master_disk,
-                network=self.config.network,
+                network=self.get_master_network(),
                 shared_volumes=[
                     MultipassSharedVolume(self.master_data_dir, Path("/data")),
                     MultipassSharedVolume(self.common_data_dir, Path("/common")),
@@ -63,7 +86,7 @@ class K8s(WidgetBox):
                     cpus=self.config.agent_cpus,
                     memory=self.config.agent_memory,
                     disk=self.config.agent_disk,
-                    network=self.config.network,
+                    network=self.get_agent_network(i),
                     shared_volumes=[
                         MultipassSharedVolume(self.worker_data_dir, Path("/data")),
                         MultipassSharedVolume(self.common_data_dir, Path("/common")),
