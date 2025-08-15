@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 import ipaddress
 from pathlib import Path
 import secrets
-from qtile_lxa.widget.multipass import MultipassConfig
 from typing import Literal
 
 
@@ -34,10 +33,10 @@ class K8sNetwork:
     adapter: str | None = None  # e.g., "br0"
 
     def get_ip(self, index: int) -> str:
-        """Return an IP address incremented by index from the start_ip."""
+        """Return an IP address incremented by index from the start_ip with CIDR suffix."""
         net = ipaddress.ip_network(self.subnet, strict=False)
-        base_ip = list(net.hosts())[self.start_ip - 1]  # start_ip is 1-based
-        return str(ipaddress.ip_address(base_ip) + index)
+        base_ip = list(net.hosts())[self.start_ip - 1]
+        return f"{ipaddress.ip_address(base_ip) + index}/{net.prefixlen}"
 
     def master_ip(self) -> str:
         """Return the master node IP (first IP in the range)."""
@@ -63,6 +62,7 @@ class K8SConfig:
     extra_packages: list[str] = field(default_factory=list)
 
     # K3s install options
+    # check available version using `curl -sL https://api.github.com/repos/k3s-io/k3s/releases | jq -r '.[].tag_name'`
     k3s_version: str | None = None  # "v1.28.4+k3s1"
     token: str | None = None  # Shared secret between master and agents
 

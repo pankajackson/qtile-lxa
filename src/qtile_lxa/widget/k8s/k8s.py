@@ -33,6 +33,7 @@ class K8s(WidgetBox):
                 text_closed=self.config.widgetbox_text_closed,
                 text_open=self.config.widgetbox_text_open,
                 timeout=self.config.widgetbox_timeout,
+                **kwargs,
             )
         )
 
@@ -50,11 +51,12 @@ class K8s(WidgetBox):
     def get_agent_network(self, count: int) -> MultipassNetwork | None:
         if not self.config.network:
             return
+        agent_ips = self.config.network.agent_ips(count=self.config.agent_count)
 
         config = {
             "adapter": self.config.network.adapter,
             "multipass_network": self.config.network.network,  # make sure key matches dataclass
-            "addresses": [self.config.network.agent_ips(count=count)],  # wrap in list
+            "addresses": [agent_ips[count]],  # wrap in list
         }
         return MultipassNetwork(**config)
 

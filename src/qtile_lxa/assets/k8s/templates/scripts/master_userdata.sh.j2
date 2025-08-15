@@ -3,13 +3,14 @@ set -e
 
 echo "=== Installing K3s master ==="
 curl -sfL https://get.k3s.io | \
-INSTALL_K3S_VERSION='{{ k3s_version }}' \
-{% if token %}K3S_TOKEN='{{ token }}' {% endif %}\
+{% if k3s_version %}INSTALL_K3S_VERSION='{{ k3s_version }}' \{% endif %}
+{% if token %}K3S_TOKEN='{{ token }}' \{% endif %}
 INSTALL_K3S_EXEC='{{ install_flags }}' sh -
 
 echo "=== Getting token ==="
 {% if token %}
 TOKEN="{{ token }}"
+
 {% else %}
 TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
 {% endif %}
@@ -18,7 +19,7 @@ echo "=== Getting master ip ==="
 MASTER_IP=$(hostname -I | awk '{print $1}')
 
 echo "=== Preparing Join Command ==="
-JOIN_CMD="curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION='{{ k3s_version }}' K3S_URL=https://${MASTER_IP}:6443 K3S_TOKEN=${TOKEN} sh -"
+JOIN_CMD="curl -sfL https://get.k3s.io | {% if k3s_version %}INSTALL_K3S_VERSION='{{ k3s_version }}' {% endif %}K3S_URL=https://${MASTER_IP}:6443 K3S_TOKEN=${TOKEN} sh -"
 echo $JOIN_CMD > /common/join.sh
 chmod +x /common/join.sh
 echo $JOIN_CMD
