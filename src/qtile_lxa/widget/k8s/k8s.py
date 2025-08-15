@@ -1,0 +1,93 @@
+from pathlib import Path
+from libqtile.widget.base import _Widget
+from qtile_lxa import __ASSETS_DIR__
+from qtile_lxa.widget.multipass import (
+    MultipassVM,
+    MultipassConfig,
+    MultipassSharedVolume,
+    MultipassScript,
+    MultipassVMOnlyScript,
+)
+from qtile_lxa.widget.widgetbox import WidgetBox, WidgetBoxConfig
+from typing import Any, cast
+from .typing import K8SConfig
+
+
+class K8s(WidgetBox):
+    def __init__(self, config: K8SConfig, **kwargs: Any) -> None:
+        self.config = config
+        self.assets_dir = __ASSETS_DIR__ / "k8s"
+        self.base_dir = Path.home() / f".lxa_k8s/{self.config.cluster_name}"
+        self.data_dir = self.config.data_dir or self.base_dir
+        self.master_data_dir = self.data_dir / "master"
+        self.worker_data_dir = self.data_dir / "worker"
+        self.common_data_dir = self.data_dir / "common"
+        self.node_list = cast(list[_Widget], self.get_node_list())
+
+        super().__init__(
+            config=WidgetBoxConfig(
+                name=self.config.cluster_name,
+                widgets=self.node_list,
+                close_button_location=self.config.widgetbox_close_button_location,
+                text_closed=self.config.widgetbox_text_closed,
+                text_open=self.config.widgetbox_text_open,
+                timeout=self.config.widgetbox_timeout,
+            )
+        )
+
+    def get_node_list(self) -> list[MultipassVM]:
+        master_node = MultipassVM(
+            config=MultipassConfig(
+                instance_name=f"lxa-{self.config.cluster_name}-master",
+                label="M",
+                cpus=self.config.master_cpus,
+                memory=self.config.master_memory,
+                disk=self.config.master_disk,
+                network=self.config.network,
+                shared_volumes=[
+                    MultipassSharedVolume(self.master_data_dir, Path("/data")),
+                    MultipassSharedVolume(self.common_data_dir, Path("/common")),
+                ],
+                userdata_script=MultipassVMOnlyScript(
+                    self.assets_dir / "master_userdata.sh"
+                ),
+            ),
+            update_interval=10,
+        )
+
+        agent_nodes = [
+            MultipassVM(
+                config=MultipassConfig(
+                    instance_name=f"lxa-{self.config.cluster_name}-agent-{i}",
+                    label=f"W{i}",
+                    cpus=self.config.agent_cpus,
+                    memory=self.config.agent_memory,
+                    disk=self.config.agent_disk,
+                    network=self.config.network,
+                    shared_volumes=[
+                        MultipassSharedVolume(self.worker_data_dir, Path("/data")),
+                        MultipassSharedVolume(self.common_data_dir, Path("/common")),
+                    ],
+                    userdata_script=MultipassVMOnlyScript(
+                        self.assets_dir / "worker_userdata.sh"
+                    ),
+                    post_launch_script=MultipassScript(
+                        self.assets_dir / "worker_post_start.sh", inside_vm=True
+                    ),
+                    post_start_script=MultipassScript(
+                        self.assets_dir / "worker_post_start.sh", inside_vm=True
+                    ),
+                    pre_delete_script=MultipassScript(
+                        self.assets_dir / "worker_pre_remove.sh",
+                        inside_vm=True,
+                        ignore_errors=True,
+                    ),
+                    pre_stop_script=MultipassScript(
+                        self.assets_dir / "worker_pre_remove.sh", inside_vm=True
+                    ),
+                ),
+                update_interval=10,
+            )
+            for i in range(self.config.agent_count)
+        ]
+        return [master_node] + agent_nodes

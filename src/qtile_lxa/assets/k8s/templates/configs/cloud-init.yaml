@@ -1,0 +1,7 @@
+---
+package_update: true
+packages:
+  - nfs-common
+  - jq
+  - net-tools
+  - iputils-ping

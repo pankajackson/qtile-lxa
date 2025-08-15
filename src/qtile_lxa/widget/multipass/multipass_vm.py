@@ -2,12 +2,18 @@ import subprocess
 import threading
 import json
 import uuid
+import yaml
 from pathlib import Path
 from qtile_extras.widget import GenPollText, decorations
 from libqtile.log_utils import logger
 from libqtile.utils import guess_terminal
 from typing import Any, Literal
-from .typing import MultipassConfig, MultipassScript, MultipassVMOnlyScript
+from .typing import (
+    MultipassConfig,
+    MultipassNetwork,
+    MultipassScript,
+    MultipassVMOnlyScript,
+)
 from qtile_lxa.utils.notification import send_notification
 
 terminal = guess_terminal()
@@ -174,6 +180,75 @@ class MultipassVM(GenPollText):
             # Run directly on host
             return f"bash {script.path} {' '.join(script.args)}"
 
+    def _get_network_setup_cmd(self) -> str:
+        if not self.config.network:
+            self.log("No network config provided")
+            return ""
+
+        network = self.config.network
+        adapter = network.adapter
+        netplan_filename = f"99-lxa-{adapter}.yaml"
+        netplan_path = f"/etc/netplan/{netplan_filename}"
+        backup_path = f"{netplan_path}.bak"
+
+        # Convert network dict to YAML
+        netplan_dict = network.to_netplan_dict()
+        netplan_yaml = yaml.dump(netplan_dict, sort_keys=False)
+
+        # Create temporary directory and files locally
+        tmp_dir = Path.home() / ".cache/lxa_multipass_vm"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        netplan_tmp_file = tmp_dir / f"{uuid.uuid4().hex}_{netplan_filename}"
+        script_file = tmp_dir / f"{uuid.uuid4().hex}_setup_netplan.sh"
+
+        # Write netplan YAML to temporary file
+        netplan_tmp_file.write_text(netplan_yaml, encoding="utf-8")
+
+        # Generate shell script content
+        script_content = (
+            "#!/bin/bash\n"
+            "set -e\n"
+            f"echo 'Setting up network...'\n"
+            f"# Backup existing netplan if exists\n"
+            f"if [ -f {netplan_path} ]; then\n"
+            f"    sudo cp {netplan_path} {backup_path}\n"
+            f"    backup_exists=true\n"
+            f"else\n"
+            f"    backup_exists=false\n"
+            f"fi\n"
+            f"# Move temporary netplan into place\n"
+            f"sudo mv /tmp/{netplan_tmp_file.name} {netplan_path}\n"
+            f"# Ensure correct permissions\n"
+            f"sudo chmod 600 {netplan_path}\n"
+            f"# Apply netplan, restore backup if it fails and backup exists\n"
+            f"if ! sudo netplan apply; then\n"
+            f"    echo 'Netplan apply failed'\n"
+            f'    if [ "$backup_exists" = true ]; then\n'
+            f"        echo 'Restoring backup'\n"
+            f"        sudo cp {backup_path} {netplan_path}\n"
+            f"        sudo netplan apply\n"
+            f"    else\n"
+            f"        sudo mv {netplan_path} {netplan_path}.failed\n"
+            f"        echo 'No backup exists, please fix `{netplan_path}.failed` manually'\n"
+            f"        sudo netplan apply\n"
+            f"    fi\n"
+            f"fi\n"
+        )
+
+        # Write script to file and make executable
+        script_file.write_text(script_content, encoding="utf-8")
+        script_file.chmod(0o755)
+
+        # Build command string: transfer netplan + transfer script + execute + cleanup
+        cmd = (
+            f"multipass transfer {netplan_tmp_file} {self.config.instance_name}:/tmp/{netplan_tmp_file.name} && "
+            f"multipass transfer {script_file} {self.config.instance_name}:/tmp/{script_file.name} && "
+            f"multipass exec {self.config.instance_name} -- bash /tmp/{script_file.name} && "
+            f"multipass exec {self.config.instance_name} -- rm /tmp/{script_file.name}"
+        )
+
+        return cmd
+
     def _append_script(
         self, shell_cmd: list, script: MultipassScript | MultipassVMOnlyScript | None
     ):
@@ -207,7 +282,7 @@ class MultipassVM(GenPollText):
             if self.config.disk:
                 launch_cmd += ["--disk", str(self.config.disk)]
             if self.config.network:
-                launch_cmd += ["--network", str(self.config.network)]
+                launch_cmd += ["--network", str(self.config.network.multipass_network)]
             if (
                 self.config.cloud_init_path
                 and Path(self.config.cloud_init_path).exists()
@@ -230,10 +305,14 @@ class MultipassVM(GenPollText):
                         f"multipass mount {shared_volume.source_path} {self.config.instance_name}:{shared_volume.target_path}"
                     )
 
-            # 3: Userdata script (inside VM)
+            # 3: Setup Network
+            if self.config.network:
+                shell_cmd.append(self._get_network_setup_cmd())
+
+            # 4: Userdata script (inside VM)
             self._append_script(shell_cmd, self.config.userdata_script)
 
-            # 4: Post-launch script (inside VM)
+            # 5: Post-launch script (inside VM)
             self._append_script(shell_cmd, self.config.post_launch_script)
 
         elif event == "start":
@@ -271,6 +350,9 @@ class MultipassVM(GenPollText):
             + "; echo Press any key to close..."
             + "; stty -echo -icanon time 0 min 1; dd bs=1 count=1 >/dev/null 2>&1; stty sane"
         )
+
+        # Debug TODO: Remove this
+        self.log(f"Running: {full_shell_command}")
 
         return full_shell_command
 

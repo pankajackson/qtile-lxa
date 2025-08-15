@@ -1,0 +1,32 @@
+#!/bin/bash
+set -e
+# set -x  # Uncomment for debugging
+
+# ===== Variables =====
+JOIN_SCRIPT_PATH="/common/join.sh"
+KUBECONFIG_SRC="/common/kubeconfig"
+KUBECONFIG_DEST="$HOME/.kube/config"
+WAIT_INTERVAL=2
+
+# ===== Functions =====
+wait_for_join_script() {
+    echo "=== Waiting for join script from master ==="
+    while [ ! -f "$JOIN_SCRIPT_PATH" ]; do
+        echo "waiting..."
+        sleep "$WAIT_INTERVAL"
+    done
+}
+
+setup_kubeconfig() {
+    mkdir -p "$(dirname "$KUBECONFIG_DEST")"
+    cp "$KUBECONFIG_SRC" "$KUBECONFIG_DEST"
+}
+
+run_join_script() {
+    bash "$JOIN_SCRIPT_PATH"
+}
+
+# ===== Main =====
+wait_for_join_script
+setup_kubeconfig
+run_join_script
