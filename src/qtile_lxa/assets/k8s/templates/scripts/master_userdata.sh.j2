@@ -1,27 +1,35 @@
 #!/bin/bash
 set -e
+set -x
 
 echo "=== Installing K3s master ==="
 curl -sfL https://get.k3s.io | \
-INSTALL_K3S_VERSION='{{ k3s_version }}' \
-{% if token %}K3S_TOKEN='{{ token }}' {% endif %}\
+{% if k3s_version %}INSTALL_K3S_VERSION='{{ k3s_version }}' \{% endif %}
 INSTALL_K3S_EXEC='{{ install_flags }}' sh -
 
 echo "=== Getting token ==="
-{% if k3s_token %}
-TOKEN="{{ k3s_token }}"
-{% else %}
 TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
-{% endif %}
+
 
 echo "=== Getting master ip ==="
 MASTER_IP=$(hostname -I | awk '{print $1}')
 
 echo "=== Preparing Join Command ==="
-JOIN_CMD="curl -sfL https://get.k3s.io | K3S_URL=https://${MASTER_IP}:6443 K3S_TOKEN=${TOKEN} sh -"
+JOIN_CMD="curl -sfL https://get.k3s.io | {% if k3s_version %}INSTALL_K3S_VERSION='{{ k3s_version }}' {% endif %}K3S_URL=https://${MASTER_IP}:6443 K3S_TOKEN=${TOKEN} sh -"
 echo $JOIN_CMD > /common/join.sh
 chmod +x /common/join.sh
 echo $JOIN_CMD
+
+# These commented lines are not working
+# TODO: Remove if not needed
+# sudo kubectl config rename-context default {{ cluster_name }}
+# sudo kubectl config set-context {{ cluster_name }} --cluster={{ cluster_name }} --user={{ cluster_name }}
+# sudo kubectl config rename-cluster default {{ cluster_name }}
+# sudo kubectl config rename-user default {{ cluster_name }}
+
+# sudo k3s kubectl config view --raw > /common/kubeconfig
+# mkdir -p ~/.kube
+# sudo k3s kubectl config view --raw > ~/.kube/config
 
 echo "=== Fetching Kube config ==="
 sudo cat /etc/rancher/k3s/k3s.yaml > /common/kubeconfig
