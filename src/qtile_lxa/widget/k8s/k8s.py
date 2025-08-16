@@ -97,7 +97,7 @@ class K8s(WidgetBox):
                         MultipassSharedVolume(self.common_data_dir, Path("/common")),
                     ],
                     userdata_script=MultipassVMOnlyScript(
-                        self.assets_dir / "worker_userdata.sh"
+                        self.resources.agent_userdata_path
                     ),
                     post_launch_script=MultipassScript(
                         self.assets_dir / "worker_post_start.sh", inside_vm=True

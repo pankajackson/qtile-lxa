@@ -59,7 +59,9 @@ class K8sResources:
         return rendered_text, final_path
 
     def _generate_master_userdata(self) -> tuple[str, Path]:
-        install_flags = "--write-kubeconfig-mode 644"
+        install_flags = (
+            "--write-kubeconfig-mode 644 --node-taint CriticalAddonsOnly=true:NoExecute"
+        )
         if self.config.disable_local_storage:
             install_flags += " --disable local-storage"
         if self.config.disable_traefik_ingress:
