@@ -72,7 +72,6 @@ class K8sResources:
             output_path=self.output_dir / "master_userdata.sh",
             strict=False,
             install_flags=install_flags,
-            token=self.config.token,
             k3s_version=self.config.k3s_version,
             cluster_name=self.config.cluster_name,
         )
