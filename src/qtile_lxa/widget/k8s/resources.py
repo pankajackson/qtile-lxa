@@ -16,6 +16,12 @@ class K8sResources:
             self._generate_master_userdata()
         )
         self.agent_userdata, self.agent_userdata_path = self._generate_agent_userdata()
+        self.agent_post_start_script, self.agent_post_start_script_path = (
+            self._generate_agent_post_start_script()
+        )
+        self.agent_pre_remove_script, self.agent_pre_remove_script_path = (
+            self._generate_agent_pre_remove_script()
+        )
 
     @staticmethod
     def load_template(
@@ -82,4 +88,16 @@ class K8sResources:
         return self.load_template(
             "scripts/worker_userdata.sh",
             output_path=self.output_dir / "agent_userdata.sh",
+        )
+
+    def _generate_agent_pre_remove_script(self) -> tuple[str, Path]:
+        return self.load_template(
+            "scripts/worker_pre_remove.sh",
+            output_path=self.output_dir / "agent_pre_remove.sh",
+        )
+
+    def _generate_agent_post_start_script(self) -> tuple[str, Path]:
+        return self.load_template(
+            "scripts/worker_post_start.sh",
+            output_path=self.output_dir / "agent_post_start.sh",
         )

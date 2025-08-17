@@ -16,6 +16,13 @@ wait_for_join_script() {
         sleep "$WAIT_INTERVAL"
     done
 }
+wait_for_kubeconfig() {
+    echo "=== Waiting for kubeconfig from master ==="
+    while [ ! -f "$KUBECONFIG_SRC" ]; do
+        echo "waiting..."
+        sleep "$WAIT_INTERVAL"
+    done
+}
 
 setup_kubeconfig() {
     mkdir -p "$(dirname "$KUBECONFIG_DEST")"
@@ -27,6 +34,7 @@ run_join_script() {
 }
 
 # ===== Main =====
+wait_for_kubeconfig
 wait_for_join_script
 setup_kubeconfig
 run_join_script

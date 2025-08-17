@@ -100,18 +100,20 @@ class K8s(WidgetBox):
                         self.resources.agent_userdata_path
                     ),
                     post_launch_script=MultipassScript(
-                        self.assets_dir / "worker_post_start.sh", inside_vm=True
+                        self.resources.agent_post_start_script_path, inside_vm=True
                     ),
                     post_start_script=MultipassScript(
-                        self.assets_dir / "worker_post_start.sh", inside_vm=True
+                        self.resources.agent_post_start_script_path, inside_vm=True
                     ),
                     pre_delete_script=MultipassScript(
-                        self.assets_dir / "worker_pre_remove.sh",
+                        self.resources.agent_pre_remove_script_path,
                         inside_vm=True,
                         ignore_errors=True,
                     ),
                     pre_stop_script=MultipassScript(
-                        self.assets_dir / "worker_pre_remove.sh", inside_vm=True
+                        self.resources.agent_pre_remove_script_path,
+                        inside_vm=True,
+                        ignore_errors=True,
                     ),
                 ),
                 update_interval=10,
