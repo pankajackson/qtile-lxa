@@ -1,42 +1,37 @@
 #!/bin/bash
 set -e
-set -x
+# set -x
 
-
-echo "=== Getting master ip ==="
+echo "=== Fetching master ip ==="
 MASTER_IP=$(hostname -I | awk '{print $1}')
 
 echo "=== Installing K3s master ==="
 curl -sfL https://get.k3s.io | {% if k3s_version %}INSTALL_K3S_VERSION={{ k3s_version }}{% endif %} sh -s - server {% if k3s_token %}--token={{ k3s_token }}{% endif %} --tls-san ${MASTER_IP} --cluster-init {{ install_flags }}
 
+echo "=== Preparing Join Command ==="
 {% if k3s_token %}
 TOKEN="{{ k3s_token }}"
 {% else %}
 TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
 {% endif %}
-
-
-echo "=== Preparing Join Command ==="
 JOIN_CMD="curl -sfL https://get.k3s.io | {% if k3s_version %}INSTALL_K3S_VERSION={{ k3s_version }}{% endif %} sh -s - agent --token=${TOKEN} --server https://${MASTER_IP}:6443"
 echo "$JOIN_CMD" > /common/join.sh
 chmod +x /common/join.sh
 echo "$JOIN_CMD"
 
-# These commented lines are not working
-# TODO: Remove if not needed
-# sudo kubectl config rename-context default {{ cluster_name }}
-# sudo kubectl config set-context {{ cluster_name }} --cluster={{ cluster_name }} --user={{ cluster_name }}
-# sudo kubectl config rename-cluster default {{ cluster_name }}
-# sudo kubectl config rename-user default {{ cluster_name }}
+echo "=== Setting up Context ==="
+sudo yq -y -i '
+    .clusters[0].name = "lxa-{{ cluster_name }}" |
+    .clusters[0].cluster.server = "https://'"${MASTER_IP}"':6443" |
+    .contexts[0].name = "lxa" |
+    .contexts[0].context.cluster = "lxa-{{ cluster_name }}" |
+    .contexts[0].context.user = "lxa-{{ cluster_name }}-admin" |
+    ."current-context" = "lxa" |
+    .users[0].name = "lxa-{{ cluster_name }}-admin"
+' /etc/rancher/k3s/k3s.yaml
 
-# sudo k3s kubectl config view --raw > /common/kubeconfig
-# mkdir -p ~/.kube
-# sudo k3s kubectl config view --raw > ~/.kube/config
 
-echo "=== Fetching Kube config ==="
-sudo cat /etc/rancher/k3s/k3s.yaml > /common/kubeconfig
-sed -i "s/127.0.0.1/$MASTER_IP/" /common/kubeconfig
-
-echo "=== Setting up Kube config ==="
+echo "=== Setting up Kube config  ==="
+sudo k3s kubectl config view --raw > /common/kubeconfig
 mkdir -p ~/.kube
-cp /common/kubeconfig ~/.kube/config
+sudo k3s kubectl config view --raw > ~/.kube/config

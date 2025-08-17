@@ -74,11 +74,12 @@ class K8SConfig:
     disable_local_storage: bool = False
     disable_metrics_server: bool = False
 
+    # TODO: Setup node group feature to enable these options
     # Labels & Taints
-    label: str | None = None
-    taints: list[str] = field(
-        default_factory=list
-    )  # e.g., ["node-role.kubernetes.io/master=true:NoSchedule"]
+    # label: str | None = None
+    # taints: list[str] = field(
+    #     default_factory=list
+    # )  # e.g., ["node-role.kubernetes.io/master=true:NoSchedule"]
 
     # Logs & Debug
     enable_logger: bool = True
