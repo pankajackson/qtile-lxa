@@ -76,6 +76,7 @@ class K8s(WidgetBox):
                     MultipassSharedVolume(self.master_data_dir, Path("/data")),
                     MultipassSharedVolume(self.common_data_dir, Path("/common")),
                 ],
+                cloud_init_path=self.resources.cloud_init_path,
                 userdata_script=MultipassVMOnlyScript(
                     self.resources.master_userdata_path
                 ),
@@ -96,6 +97,7 @@ class K8s(WidgetBox):
                         MultipassSharedVolume(self.worker_data_dir, Path("/data")),
                         MultipassSharedVolume(self.common_data_dir, Path("/common")),
                     ],
+                    cloud_init_path=self.resources.cloud_init_path,
                     userdata_script=MultipassVMOnlyScript(
                         self.resources.agent_userdata_path
                     ),

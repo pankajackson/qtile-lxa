@@ -1,6 +1,7 @@
 from pathlib import Path
 from jinja2 import Template, StrictUndefined, Undefined
 import tempfile
+import yaml
 from .typing import K8SConfig
 from qtile_lxa import __ASSETS_DIR__
 
@@ -12,6 +13,7 @@ class K8sResources:
         self.config = config
         self.output_dir = output_dir
 
+        self.cloud_init, self.cloud_init_path = self._generate_cloud_init()
         self.master_userdata, self.master_userdata_path = (
             self._generate_master_userdata()
         )
@@ -63,6 +65,20 @@ class K8sResources:
         final_path.write_text(rendered_text, encoding="utf-8")
 
         return rendered_text, final_path
+
+    def _generate_cloud_init(self):
+        cloud_init_dict = {
+            "package_update": True,
+            "packages": ["curl", "jq", "net-tools", "iputils-ping", "nfs-common", "yq"]
+            + self.config.extra_packages,
+            "timezone": "UTC",
+        }
+        cloud_init_yaml = yaml.dump(cloud_init_dict, sort_keys=False)
+        output_path = self.output_dir / "cloud_init.yaml"
+        final_path = output_path
+        final_path.parent.mkdir(parents=True, exist_ok=True)
+        final_path.write_text(cloud_init_yaml, encoding="utf-8")
+        return cloud_init_yaml, final_path
 
     def _generate_master_userdata(self) -> tuple[str, Path]:
         install_flags = (
