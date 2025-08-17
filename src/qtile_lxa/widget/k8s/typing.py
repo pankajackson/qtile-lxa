@@ -64,6 +64,7 @@ class K8SConfig:
     # K3s install options
     # check available version using `curl -sL https://api.github.com/repos/k3s-io/k3s/releases | jq -r '.[].tag_name'`
     k3s_version: str | None = None  # "v1.28.4+k3s1"
+    k3s_token: str | None = None  # Shared secret between master and agents
 
     # Feature toggles
     disable_traefik_ingress: bool = False
@@ -84,3 +85,7 @@ class K8SConfig:
     widgetbox_text_closed: str = " 󱃾 "
     widgetbox_text_open: str = "󱃾  "
     widgetbox_timeout: int = 5
+
+    def __post_init__(self):
+        if not self.k3s_token:
+            self.k3s_token = secrets.token_hex(16)

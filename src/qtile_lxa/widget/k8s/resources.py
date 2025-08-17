@@ -81,6 +81,7 @@ class K8sResources:
             strict=False,
             install_flags=install_flags,
             k3s_version=self.config.k3s_version,
+            k3s_token=self.config.k3s_token,
             cluster_name=self.config.cluster_name,
         )
 
