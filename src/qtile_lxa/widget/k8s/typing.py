@@ -60,6 +60,9 @@ class K8SConfig:
     data_dir: Path | None = None
     network: K8sNetwork | None = None
     extra_packages: list[str] = field(default_factory=list)
+    tls_san: list[str] = field(
+        default_factory=list
+    )  # e.g., ["kube.linuxastra.in", "kube.lxa.com, kube.linuxastra.in:443"]
 
     # K3s install options
     # check available version using `curl -sL https://api.github.com/repos/k3s-io/k3s/releases | jq -r '.[].tag_name'`

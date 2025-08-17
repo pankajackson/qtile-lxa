@@ -75,6 +75,9 @@ class K8sResources:
         if self.config.disable_metrics_server:
             install_flags += " --disable metrics-server"
 
+        for tls_san in self.config.tls_san:
+            install_flags += f" --tls-san {tls_san}"
+
         return self.load_template(
             "scripts/master_userdata.sh",
             output_path=self.output_dir / "master_userdata.sh",

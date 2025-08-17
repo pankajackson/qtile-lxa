@@ -7,7 +7,7 @@ echo "=== Getting master ip ==="
 MASTER_IP=$(hostname -I | awk '{print $1}')
 
 echo "=== Installing K3s master ==="
-curl -sfL https://get.k3s.io | {% if k3s_version %}INSTALL_K3S_VERSION={{ k3s_version }}{% endif %} sh -s - server {% if k3s_token %}--token={{ k3s_token }}{% endif %} --tls-san ${MASTER_IP} --tls-san kube.lxa.com --tls-san k3s.lxa.com --tls-san k3s.linuxastra.in --tls-san kube.linuxastra.in --cluster-init {{ install_flags }}
+curl -sfL https://get.k3s.io | {% if k3s_version %}INSTALL_K3S_VERSION={{ k3s_version }}{% endif %} sh -s - server {% if k3s_token %}--token={{ k3s_token }}{% endif %} --tls-san ${MASTER_IP} --cluster-init {{ install_flags }}
 
 {% if k3s_token %}
 TOKEN="{{ k3s_token }}"
