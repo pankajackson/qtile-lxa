@@ -21,10 +21,9 @@ class K8s(WidgetBox):
         self.assets_dir = __ASSETS_DIR__ / "k8s"
         self.base_dir = Path.home() / f".lxa_k8s/{self.config.cluster_name}"
         self.data_dir = self.config.data_dir or self.base_dir
-        self.master_data_dir = self.data_dir / "master"
-        self.worker_data_dir = self.data_dir / "worker"
-        self.common_data_dir = self.data_dir / "common"
-        self.resources = K8sResources(self.config, self.data_dir)
+        self.config_dir = self.data_dir / "config"
+        self.config_vol = MultipassSharedVolume(self.config_dir, Path("/lxa_k8s"))
+        self.resources = K8sResources(self.config, self.config_dir)
 
         self.node_list = cast(list[_Widget], self.get_node_list())
 
@@ -72,10 +71,7 @@ class K8s(WidgetBox):
                 memory=self.config.master_memory,
                 disk=self.config.master_disk,
                 network=self.get_master_network(),
-                shared_volumes=[
-                    MultipassSharedVolume(self.master_data_dir, Path("/data")),
-                    MultipassSharedVolume(self.common_data_dir, Path("/common")),
-                ],
+                shared_volumes=[self.config_vol],
                 cloud_init_path=self.resources.cloud_init_path,
                 userdata_script=MultipassVMOnlyScript(
                     self.resources.master_userdata_path
@@ -93,10 +89,7 @@ class K8s(WidgetBox):
                     memory=self.config.agent_memory,
                     disk=self.config.agent_disk,
                     network=self.get_agent_network(i),
-                    shared_volumes=[
-                        MultipassSharedVolume(self.worker_data_dir, Path("/data")),
-                        MultipassSharedVolume(self.common_data_dir, Path("/common")),
-                    ],
+                    shared_volumes=[self.config_vol],
                     cloud_init_path=self.resources.cloud_init_path,
                     userdata_script=MultipassVMOnlyScript(
                         self.resources.agent_userdata_path

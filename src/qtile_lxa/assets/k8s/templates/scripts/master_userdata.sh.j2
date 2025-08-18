@@ -15,8 +15,8 @@ TOKEN="{{ k3s_token }}"
 TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
 {% endif %}
 JOIN_CMD="curl -sfL https://get.k3s.io | {% if k3s_version %}INSTALL_K3S_VERSION={{ k3s_version }}{% endif %} sh -s - agent --token=${TOKEN} --server https://${MASTER_IP}:6443"
-echo "$JOIN_CMD" > /common/join.sh
-chmod +x /common/join.sh
+echo "$JOIN_CMD" > /lxa_k8s/join.sh
+chmod +x /lxa_k8s/join.sh
 echo "$JOIN_CMD"
 
 echo "=== Setting up Context ==="
@@ -32,6 +32,6 @@ sudo yq -y -i '
 
 
 echo "=== Setting up Kube config  ==="
-sudo k3s kubectl config view --raw > /common/kubeconfig
+sudo k3s kubectl config view --raw > /lxa_k8s/kubeconfig
 mkdir -p ~/.kube
 sudo k3s kubectl config view --raw > ~/.kube/config
