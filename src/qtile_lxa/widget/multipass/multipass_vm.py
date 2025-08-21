@@ -2,12 +2,19 @@ import subprocess
 import threading
 import json
 import uuid
+import yaml
 from pathlib import Path
 from qtile_extras.widget import GenPollText, decorations
 from libqtile.log_utils import logger
 from libqtile.utils import guess_terminal
 from typing import Any, Literal
-from .typing import MultipassConfig, MultipassScript, MultipassVMOnlyScript
+from .typing import (
+    MultipassConfig,
+    MultipassNetwork,
+    MultipassScript,
+    MultipassVMOnlyScript,
+)
+from qtile_lxa.utils.notification import send_notification
 
 terminal = guess_terminal()
 
@@ -68,22 +75,57 @@ class MultipassVM(GenPollText):
             self.log(f"JSON decode error: {e}")
             return None
 
-    def check_vm_status(self) -> Literal["running", "stopped", "unknown", "error"]:
+    def check_vm_status(
+        self,
+    ) -> Literal[
+        "not_created",
+        "running",
+        "stopped",
+        "deleted",
+        "starting",
+        "restarting",
+        "delayed_shutdown",
+        "suspending",
+        "suspended",
+        "unknown",
+        "error",
+    ]:
         info = self.get_instance_info()
         if not info:
-            return "unknown"
+            return "not_created"
         state = info.get("state", "").lower()
-        if "running" in state:
+        if state == "running":
             return "running"
-        elif "stopped" in state:
+        elif state == "stopped":
             return "stopped"
+        elif state == "deleted":
+            return "deleted"
+        elif state == "starting":
+            return "starting"
+        elif state == "restarting":
+            return "restarting"
+        elif state == "delayed shutdown":
+            return "delayed_shutdown"
+        elif state == "suspending":
+            return "suspending"
+        elif state == "suspended":
+            return "suspended"
+        elif state == "unknown":
+            return "unknown"
         else:
             return "error"
 
     def get_text(self):
         symbol_map = {
-            "stopped": self.config.stopped_symbol,
+            "not_created": self.config.not_created_symbol,
             "running": self.config.running_symbol,
+            "stopped": self.config.stopped_symbol,
+            "deleted": self.config.deleted_symbol,
+            "starting": self.config.starting_symbol,
+            "restarting": self.config.restarting_symbol,
+            "delayed_shutdown": self.config.delayed_shutdown_symbol,
+            "suspending": self.config.suspending_symbol,
+            "suspended": self.config.suspended_symbol,
             "unknown": self.config.unknown_symbol,
             "error": self.config.error_symbol,
         }
@@ -138,6 +180,75 @@ class MultipassVM(GenPollText):
             # Run directly on host
             return f"bash {script.path} {' '.join(script.args)}"
 
+    def _get_network_setup_cmd(self) -> str:
+        if not self.config.network:
+            self.log("No network config provided")
+            return ""
+
+        network = self.config.network
+        adapter = network.adapter
+        netplan_filename = f"99-lxa-{adapter}.yaml"
+        netplan_path = f"/etc/netplan/{netplan_filename}"
+        backup_path = f"{netplan_path}.bak"
+
+        # Convert network dict to YAML
+        netplan_dict = network.to_netplan_dict()
+        netplan_yaml = yaml.dump(netplan_dict, sort_keys=False)
+
+        # Create temporary directory and files locally
+        tmp_dir = Path.home() / ".cache/lxa_multipass_vm"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        netplan_tmp_file = tmp_dir / f"{uuid.uuid4().hex}_{netplan_filename}"
+        script_file = tmp_dir / f"{uuid.uuid4().hex}_setup_netplan.sh"
+
+        # Write netplan YAML to temporary file
+        netplan_tmp_file.write_text(netplan_yaml, encoding="utf-8")
+
+        # Generate shell script content
+        script_content = (
+            "#!/bin/bash\n"
+            "set -e\n"
+            f"echo 'Setting up network...'\n"
+            f"# Backup existing netplan if exists\n"
+            f"if [ -f {netplan_path} ]; then\n"
+            f"    sudo cp {netplan_path} {backup_path}\n"
+            f"    backup_exists=true\n"
+            f"else\n"
+            f"    backup_exists=false\n"
+            f"fi\n"
+            f"# Move temporary netplan into place\n"
+            f"sudo mv /tmp/{netplan_tmp_file.name} {netplan_path}\n"
+            f"# Ensure correct permissions\n"
+            f"sudo chmod 600 {netplan_path}\n"
+            f"# Apply netplan, restore backup if it fails and backup exists\n"
+            f"if ! sudo netplan apply; then\n"
+            f"    echo 'Netplan apply failed'\n"
+            f'    if [ "$backup_exists" = true ]; then\n'
+            f"        echo 'Restoring backup'\n"
+            f"        sudo cp {backup_path} {netplan_path}\n"
+            f"        sudo netplan apply\n"
+            f"    else\n"
+            f"        sudo mv {netplan_path} {netplan_path}.failed\n"
+            f"        echo 'No backup exists, please fix `{netplan_path}.failed` manually'\n"
+            f"        sudo netplan apply\n"
+            f"    fi\n"
+            f"fi\n"
+        )
+
+        # Write script to file and make executable
+        script_file.write_text(script_content, encoding="utf-8")
+        script_file.chmod(0o755)
+
+        # Build command string: transfer netplan + transfer script + execute + cleanup
+        cmd = (
+            f"multipass transfer {netplan_tmp_file} {self.config.instance_name}:/tmp/{netplan_tmp_file.name} && "
+            f"multipass transfer {script_file} {self.config.instance_name}:/tmp/{script_file.name} && "
+            f"multipass exec {self.config.instance_name} -- bash /tmp/{script_file.name} && "
+            f"multipass exec {self.config.instance_name} -- rm /tmp/{script_file.name}"
+        )
+
+        return cmd
+
     def _append_script(
         self, shell_cmd: list, script: MultipassScript | MultipassVMOnlyScript | None
     ):
@@ -171,7 +282,7 @@ class MultipassVM(GenPollText):
             if self.config.disk:
                 launch_cmd += ["--disk", str(self.config.disk)]
             if self.config.network:
-                launch_cmd += ["--network", str(self.config.network)]
+                launch_cmd += ["--network", str(self.config.network.multipass_network)]
             if (
                 self.config.cloud_init_path
                 and Path(self.config.cloud_init_path).exists()
@@ -194,10 +305,14 @@ class MultipassVM(GenPollText):
                         f"multipass mount {shared_volume.source_path} {self.config.instance_name}:{shared_volume.target_path}"
                     )
 
-            # 3: Userdata script (inside VM)
+            # 3: Setup Network
+            if self.config.network:
+                shell_cmd.append(self._get_network_setup_cmd())
+
+            # 4: Userdata script (inside VM)
             self._append_script(shell_cmd, self.config.userdata_script)
 
-            # 4: Post-launch script (inside VM)
+            # 5: Post-launch script (inside VM)
             self._append_script(shell_cmd, self.config.post_launch_script)
 
         elif event == "start":
@@ -214,7 +329,7 @@ class MultipassVM(GenPollText):
             self._append_script(shell_cmd, self.config.pre_stop_script)
 
             # 2: stop VM
-            shell_cmd.append(f"multipass stop {self.config.instance_name}")
+            shell_cmd.append(f"multipass stop {self.config.instance_name} --force")
 
             # 3: Post-stop script
             self._append_script(shell_cmd, self.config.post_stop_script)
@@ -224,9 +339,7 @@ class MultipassVM(GenPollText):
             self._append_script(shell_cmd, self.config.pre_delete_script)
 
             # 2: delete VM
-            shell_cmd.append(
-                f"multipass delete {self.config.instance_name} && multipass purge"
-            )
+            shell_cmd.append(f"multipass delete --purge {self.config.instance_name}")
 
             # 3: Post-delete script
             self._append_script(shell_cmd, self.config.post_delete_script)
@@ -238,6 +351,7 @@ class MultipassVM(GenPollText):
             + "; stty -echo -icanon time 0 min 1; dd bs=1 count=1 >/dev/null 2>&1; stty sane"
         )
 
+        # Debug TODO: Remove this
         self.log(f"Running: {full_shell_command}")
 
         return full_shell_command
@@ -249,24 +363,89 @@ class MultipassVM(GenPollText):
 
     def handle_start_vm(self):
         status = self.check_vm_status()
-        if status == "unknown":
+
+        if status in ("not_created", "deleted"):
             self.handle_launch_vm()
-        elif status == "stopped":
+
+        elif status in ["stopped", "suspended"]:
+            # Start the VM normally
             full_shell_command = self._get_full_event_shell_cmd("start")
             terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
             subprocess.Popen(terminal_cmd, shell=True)
-        else:
+
+        elif status in ("running",):
+            # Already running → just open shell
             self.open_shell()
 
+        elif status in (
+            "starting",
+            "restarting",
+            "delayed_shutdown",
+            "suspending",
+            "unknown",
+        ):
+            # VM is busy → maybe just log or notify user
+            msg = f"VM is currently {status.replace('_', ' ')}. Please wait..."
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
+
+        else:
+            msg = f"Unhandled VM status: {status}"
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
+
     def handle_stop_vm(self):
-        full_shell_command = self._get_full_event_shell_cmd("stop")
-        terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
-        subprocess.Popen(terminal_cmd, shell=True)
+        status = self.check_vm_status()
+
+        if status in ("running", "delayed_shutdown", "suspended"):
+            full_shell_command = self._get_full_event_shell_cmd("stop")
+            terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
+            subprocess.Popen(terminal_cmd, shell=True)
+
+        elif status == "stopped":
+            msg = "VM is already stopped."
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
+
+        elif status in (
+            "starting",
+            "restarting",
+            "suspending",
+            "unknown",
+        ):
+            msg = f"VM is currently {status.replace('_', ' ')}. Please wait..."
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
+
+        else:
+            msg = f"Unhandled VM status: {status}"
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
 
     def handle_delete_vm(self):
-        full_shell_command = self._get_full_event_shell_cmd("delete")
-        terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
-        subprocess.Popen(terminal_cmd, shell=True)
+        status = self.check_vm_status()
+
+        if status in [
+            "running",
+            "starting",
+            "restarting",
+            "suspending",
+            "stopped",
+            "delayed_shutdown",
+            "suspended",
+            "deleted",
+        ]:
+            full_shell_command = self._get_full_event_shell_cmd("delete")
+            terminal_cmd = f'{terminal} -e bash -c "{full_shell_command}"'
+            subprocess.Popen(terminal_cmd, shell=True)
+        elif status in ["not_created", "unknown"]:
+            msg = f"VM is currently {status.replace('_', ' ')}. Cannot be deleted."
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
+        else:
+            msg = f"Unhandled VM status: {status}"
+            self.log(msg)
+            send_notification(self.config.instance_name, msg)
 
     def open_shell(self):
         subprocess.Popen(

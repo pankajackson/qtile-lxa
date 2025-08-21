@@ -1,0 +1,40 @@
+#!/bin/bash
+set -e
+# set -x  # Uncomment for debugging
+
+# ===== Variables =====
+JOIN_SCRIPT_PATH="/lxa_k8s/join.sh"
+KUBECONFIG_SRC="/lxa_k8s/kubeconfig"
+KUBECONFIG_DEST="$HOME/.kube/config"
+WAIT_INTERVAL=2
+
+# ===== Functions =====
+wait_for_join_script() {
+    echo "=== Waiting for join script from master ==="
+    while [ ! -f "$JOIN_SCRIPT_PATH" ]; do
+        echo "waiting..."
+        sleep "$WAIT_INTERVAL"
+    done
+}
+wait_for_kubeconfig() {
+    echo "=== Waiting for kubeconfig from master ==="
+    while [ ! -f "$KUBECONFIG_SRC" ]; do
+        echo "waiting..."
+        sleep "$WAIT_INTERVAL"
+    done
+}
+
+setup_kubeconfig() {
+    mkdir -p "$(dirname "$KUBECONFIG_DEST")"
+    cp "$KUBECONFIG_SRC" "$KUBECONFIG_DEST"
+}
+
+run_join_script() {
+    bash "$JOIN_SCRIPT_PATH"
+}
+
+# ===== Main =====
+wait_for_kubeconfig
+wait_for_join_script
+setup_kubeconfig
+run_join_script
