@@ -1,10 +1,8 @@
 from .podman_compose import PodmanCompose
-from .typing import PodmanComposeConfig, PodmanNetworkConfig
-from .network import get_podman_network
+from .typing import PodmanComposeConfig, PodmanNetwork
 
 __all__ = [
     "PodmanCompose",
     "PodmanComposeConfig",
-    "PodmanNetworkConfig",
-    "get_podman_network",
+    "PodmanNetwork",
 ]
