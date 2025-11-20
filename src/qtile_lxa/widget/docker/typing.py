@@ -53,7 +53,6 @@ class DockerNetwork:
                 self._network = None
                 return
 
-            # AUTO MODE (auto subnet)
             if self.subnet is None:
                 network = self._client.networks.create(
                     name=self.name,
@@ -102,7 +101,12 @@ class DockerNetwork:
 class DockerComposeConfig:
     compose_file: Path
     service_name: str | None = None
-    network: DockerNetwork | None = field(default_factory=DockerNetwork)
+    network: DockerNetwork | None = field(
+        default_factory=lambda: DockerNetwork(
+            name=__DEFAULTS__.docker.network,
+            subnet=__DEFAULTS__.docker.subnet,
+        )
+    )
     ipaddress: str | None = None
     running_symbol: str = "🟢"
     stopped_symbol: str = "🔴"
