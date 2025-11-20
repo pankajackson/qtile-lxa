@@ -11,7 +11,7 @@ from qtile_lxa import __DEFAULTS__
 @dataclass
 class DockerNetwork:
     name: str = field(default_factory=lambda: __DEFAULTS__.docker.network)
-    subnet: str = field(default_factory=lambda: __DEFAULTS__.docker.subnet)
+    subnet: str | None = None
     gateway: str | None = None
     create_if_not_found: bool = True
 
@@ -35,21 +35,44 @@ class DockerNetwork:
             )
 
             if existing_networks:
-                network_data = existing_networks[0].attrs["IPAM"]["Config"][0]
-                self.subnet = network_data.get("Subnet", self.subnet)
-                self.gateway = network_data.get("Gateway", self.gateway)
-                self._network = ipaddress.ip_network(self.subnet, strict=False)
+                cfg = existing_networks[0].attrs["IPAM"]["Config"][0]
+                self.subnet = cfg.get("Subnet")
+                self.gateway = cfg.get("Gateway")
+                self._network = (
+                    ipaddress.ip_network(self.subnet, strict=False)
+                    if self.subnet
+                    else None
+                )
                 logger.info(f"Docker network '{self.name}' already exists.")
                 return
 
             if not self.create_if_not_found:
                 logger.warning(
-                    f"Docker network '{self.name}' not found and 'create_if_not_found' is False."
+                    f"Docker network '{self.name}' not found and creation disabled."
                 )
                 self._network = None
                 return
 
-            # Create new network
+            # AUTO MODE (auto subnet)
+            if self.subnet is None:
+                network = self._client.networks.create(
+                    name=self.name,
+                    driver="bridge",
+                    ipam=None,  # DO NOT pass IPAM → Docker auto-assigns subnet
+                )
+                cfg = network.attrs["IPAM"]["Config"][0]
+                self.subnet = cfg.get("Subnet")
+                self.gateway = cfg.get("Gateway")
+                if self.subnet is not None:
+                    self._network = ipaddress.ip_network(self.subnet, strict=False)
+                else:
+                    self._network = None
+                logger.info(
+                    f"Docker network '{self.name}' created with auto subnet {self.subnet}"
+                )
+                return
+
+            # NORMAL MODE (manual subnet)
             self._network = ipaddress.ip_network(self.subnet, strict=False)
             self.gateway = self.gateway or str(list(self._network.hosts())[0])
 
@@ -66,7 +89,7 @@ class DockerNetwork:
             logger.info(f"Docker network '{self.name}' created successfully.")
 
         except Exception as e:
-            logger.error(f"An error occurred during docker network setup: {e}")
+            logger.error(f"Error during docker network setup: {e}")
             self._network = None
 
     @property
