@@ -57,7 +57,7 @@ class K3D(GenPollText):
         if self.config.kube_api_host_port:
             k3d_config["kubeAPI"]["hostPort"] = self.config.kube_api_host_port
         if self.config.network:
-            k3d_config["network"] = self.config.network
+            k3d_config["network"] = self.config.network.name
         if self.config.volumes:
             k3d_config["volumes"] = [
                 {"volume": f"{volume}:{self.config.volumes[volume]}"}

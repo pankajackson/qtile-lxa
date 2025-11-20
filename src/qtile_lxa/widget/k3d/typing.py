@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
+from qtile_lxa.widget.docker import DockerNetwork
 
 
 @dataclass
@@ -13,7 +14,7 @@ class K3DConfig:
     kube_api_host: str | None = None
     kube_api_host_ip: str | None = None
     kube_api_host_port: str | None = None
-    network: str | None = None
+    network: DockerNetwork | None = field(default_factory=DockerNetwork)
     subnet: str | None = None
     volumes: dict[Path, Path] = field(
         default_factory=lambda: {Path.home() / "kube_storage": Path("/data/")}

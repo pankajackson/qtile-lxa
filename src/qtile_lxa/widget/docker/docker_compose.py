@@ -7,7 +7,6 @@ from libqtile.utils import guess_terminal
 from pathlib import Path
 from typing import Any
 from .typing import DockerComposeConfig
-from .network import get_docker_network
 
 terminal = guess_terminal()
 
@@ -121,8 +120,6 @@ class DockerCompose(GenPollText):
                 subprocess.Popen(cmd_logs, shell=True)
                 return
 
-        if self.config.network is not None:
-            get_docker_network(self.config.network)
         cmd = f"{terminal} -e docker-compose -f {self.config.compose_file} up -d"
         if self.config.service_name:
             cmd = f"{cmd} {self.config.service_name}"
