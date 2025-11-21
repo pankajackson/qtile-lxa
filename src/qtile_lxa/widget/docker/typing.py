@@ -23,9 +23,9 @@ class DockerNetwork:
         default_factory=docker.from_env, init=False, repr=False
     )
 
-    def __post_init__(self) -> None:
-        """Automatically get or create the Docker network when the object is initialized."""
-        self._get_or_create_network()
+    def resolve_network(self):
+        if self._network is None:
+            self._get_or_create_network()
 
     def _get_or_create_network(self) -> None:
         """Internal logic to get or create the network."""

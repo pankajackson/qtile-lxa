@@ -106,6 +106,13 @@ class PodmanCompose(GenPollText):
             self.run_in_thread(self.handle_remove_service)
 
     def handle_start_service(self):
+        # Ensure network exists before starting podman-compose
+        if self.config.network:
+            try:
+                self.config.network.resolve_network()
+            except Exception as e:
+                self.log_errors(f"Network setup failed: {e}")
+
         service = self.fetch_service_details()
         if service["State"] is not None:
             if "running" in str(service["State"]):

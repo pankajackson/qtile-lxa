@@ -27,9 +27,9 @@ class PodmanNetwork:
         repr=False,
     )
 
-    def __post_init__(self) -> None:
-        """Automatically get or create the Podman network."""
-        self._get_or_create_network()
+    def resolve_network(self):
+        if self._network is None:
+            self._get_or_create_network()
 
     def _get_or_create_network(self) -> None:
         try:
