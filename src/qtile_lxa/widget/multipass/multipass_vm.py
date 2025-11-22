@@ -148,6 +148,20 @@ class MultipassVM(GenPollText):
             self.run_in_thread(self.handle_delete_vm)
 
     def _get_script_cmd(self, script: MultipassScript | MultipassVMOnlyScript):
+        TMP_DIR = Path.home() / ".multipass_tmp"
+        TMP_DIR.mkdir(exist_ok=True)
+        if script.cmd:
+            tmp_path = TMP_DIR / f"cmd_{uuid.uuid4().hex}.sh"
+            tmp_path.write_text(f"#!/usr/bin/env bash\n{script.cmd}\n")
+            tmp_path.chmod(0o755)
+            if script.path:
+                logger.warning(
+                    f"`path` {script.path} will be ignored when `cmd` is specified"
+                )
+            script.path = tmp_path
+        if not script.path:
+            self.log(f"Script not found: {script.path}")
+            return
         if not script.path.exists():
             self.log(f"Script not found: {script.path}")
             return

@@ -61,22 +61,34 @@ class MultipassSharedVolume:
 
 @dataclass
 class MultipassScript:
-    path: Path
+    path: Path | None = None
+    cmd: str | None = None
     args: list[str] = field(default_factory=list)
     inside_vm: bool = False
     ignore_errors: bool = False
 
     def __post_init__(self):
-        if not isinstance(self.path, Path):
+        if not self.path and not self.cmd:
+            raise ValueError("Either 'path' or 'cmd' must be provided.")
+
+        if self.path and not isinstance(self.path, Path):
             raise TypeError(f"path must be a Path, got {type(self.path).__name__}")
 
 
 class MultipassVMOnlyScript(MultipassScript):
     def __init__(
-        self, path: Path, args: list[str] | None = None, ignore_errors: bool = False
+        self,
+        path: Path | None = None,
+        cmd: str | None = None,
+        args: list[str] | None = None,
+        ignore_errors: bool = False,
     ):
         super().__init__(
-            path=path, args=args or [], inside_vm=True, ignore_errors=ignore_errors
+            path=path,
+            cmd=cmd,
+            args=args or [],
+            inside_vm=True,
+            ignore_errors=ignore_errors,
         )
 
 
