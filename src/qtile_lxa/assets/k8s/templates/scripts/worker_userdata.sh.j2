@@ -8,6 +8,16 @@ KUBECONFIG_SRC="/lxa_k8s/kubeconfig"
 KUBECONFIG_DEST="$HOME/.kube/config"
 WAIT_INTERVAL=2
 
+{% if worker_only %}
+echo "=== Preparing Join Command ==="
+TOKEN="{{ k3s_token }}"
+MASTER_IP="{{ master_address }}"
+JOIN_CMD="curl -sfL https://get.k3s.io | {% if k3s_version %}INSTALL_K3S_VERSION={{ k3s_version }}{% endif %} sh -s - agent --token=${TOKEN} --server https://${MASTER_IP}:6443"
+echo "$JOIN_CMD" > /lxa_k8s/join.sh
+chmod +x /lxa_k8s/join.sh
+echo "$JOIN_CMD"
+{% endif %}
+
 # ===== Functions =====
 wait_for_join_script() {
     echo "=== Waiting for join script from master ==="
@@ -16,6 +26,7 @@ wait_for_join_script() {
         sleep "$WAIT_INTERVAL"
     done
 }
+
 wait_for_kubeconfig() {
     echo "=== Waiting for kubeconfig from master ==="
     while [ ! -f "$KUBECONFIG_SRC" ]; do
@@ -34,7 +45,9 @@ run_join_script() {
 }
 
 # ===== Main =====
+{% if not worker_only %}
 wait_for_kubeconfig
-wait_for_join_script
 setup_kubeconfig
+{% endif %}
+wait_for_join_script
 run_join_script

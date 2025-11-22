@@ -108,6 +108,10 @@ class K8sResources:
         return self.load_template(
             "scripts/worker_userdata.sh",
             output_path=self.output_dir / "agent_userdata.sh",
+            worker_only=self.config.worker_only,
+            master_address=self.config.master_address,
+            k3s_version=self.config.k3s_version,
+            k3s_token=self.config.k3s_token,
         )
 
     def _generate_agent_pre_remove_script(self) -> tuple[str, Path]:

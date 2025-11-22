@@ -63,23 +63,29 @@ class K8s(WidgetBox):
         return MultipassNetwork(**config)
 
     def get_node_list(self) -> list[MultipassVM]:
-        master_node = MultipassVM(
-            config=MultipassConfig(
-                instance_name=f"lxa-{self.config.cluster_name}-master",
-                label="M",
-                cpus=self.config.master_cpus,
-                memory=self.config.master_memory,
-                disk=self.config.master_disk,
-                network=self.get_master_network(),
-                shared_volumes=[self.config_vol],
-                cloud_init_path=self.resources.cloud_init_path,
-                userdata_script=MultipassVMOnlyScript(
-                    self.resources.master_userdata_path
-                ),
-            ),
-            update_interval=10,
-        )
+        nodes: list[MultipassVM] = []
 
+        # ---- Master Node ----
+        if not self.config.worker_only:
+            master_node = MultipassVM(
+                config=MultipassConfig(
+                    instance_name=f"lxa-{self.config.cluster_name}-master",
+                    label="M",
+                    cpus=self.config.master_cpus,
+                    memory=self.config.master_memory,
+                    disk=self.config.master_disk,
+                    network=self.get_master_network(),
+                    shared_volumes=[self.config_vol],
+                    cloud_init_path=self.resources.cloud_init_path,
+                    userdata_script=MultipassVMOnlyScript(
+                        self.resources.master_userdata_path
+                    ),
+                ),
+                update_interval=10,
+            )
+            nodes.append(master_node)
+
+        # ---- Agent Nodes ----
         agent_nodes = [
             MultipassVM(
                 config=MultipassConfig(
@@ -115,4 +121,6 @@ class K8s(WidgetBox):
             )
             for i in range(self.config.agent_count)
         ]
-        return [master_node] + agent_nodes
+
+        nodes.extend(agent_nodes)
+        return nodes

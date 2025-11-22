@@ -57,6 +57,8 @@ class K8SConfig:
     agent_memory: str | None = None  # default "1G"
     agent_disk: str | None = None  # default "5G"
     agent_count: int = 1  # Number of agent nodes
+    worker_only: bool = False
+    master_address: str | None = None  # eg "192.168.1.10"
     data_dir: Path | None = None
     network: K8sNetwork | None = None
     extra_packages: list[str] = field(default_factory=list)
@@ -91,5 +93,10 @@ class K8SConfig:
     widgetbox_timeout: int = 5
 
     def __post_init__(self):
+        if self.worker_only:
+            if not self.master_address:
+                raise ValueError("Must specify master address when worker_only is True")
+            if not self.k3s_token:
+                raise ValueError("Must specify k3s token when worker_only is True")
         if not self.k3s_token:
             self.k3s_token = secrets.token_hex(16)
