@@ -20,21 +20,30 @@ class PodmanNetwork:
         default=None, init=False, repr=False
     )
 
-    def _get_client(self) -> podman.PodmanClient:
-        return podman.PodmanClient()
+    def _get_client(self) -> podman.PodmanClient | None:
+        try:
+            return podman.PodmanClient()
+        except Exception as e:
+            logger.error(f"Podman unavailable: {e}")
+            return None
 
     def resolve_network(self):
         if self._network is None:
             self._get_or_create_network()
 
     def _get_or_create_network(self) -> None:
+        """Internal logic to get or create the network."""
         try:
             client = self._get_client()
+            if client is None:
+                logger.warning("Podman client not available. Skipping network setup.")
+                self._network = None
+                return
 
             try:
                 existing = client.networks.get(self.name)
-                cfg = existing.attrs.get("subnets", [{}])[0]
 
+                cfg = existing.attrs.get("subnets", [{}])[0]
                 self.subnet = cfg.get("subnet", self.subnet)
                 self.gateway = cfg.get("gateway", self.gateway)
 
@@ -55,11 +64,11 @@ class PodmanNetwork:
                     self._network = None
                     return
 
-            # -----------------------
-            #  CREATE NEW NETWORK
-            # -----------------------
+            # ----------------------------
+            # CREATE NEW NETWORK
+            # ----------------------------
             if self.subnet is None:
-                # Auto subnet IPAM(Podman decides)
+                # Auto subnet
                 network = client.networks.create(
                     name=self.name,
                     driver="bridge",
@@ -80,7 +89,7 @@ class PodmanNetwork:
                 )
                 return
 
-            # Manual subnet IPAM mode
+            # Manual subnet
             self._network = ipaddress.ip_network(self.subnet, strict=False)
             self.gateway = self.gateway or str(list(self._network.hosts())[0])
 

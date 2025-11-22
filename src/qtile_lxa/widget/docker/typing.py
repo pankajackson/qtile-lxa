@@ -20,8 +20,12 @@ class DockerNetwork:
         default=None, init=False, repr=False
     )
 
-    def _get_client(self):
-        return docker.from_env()
+    def _get_client(self) -> docker.DockerClient | None:
+        try:
+            return docker.from_env()
+        except Exception as e:
+            logger.error(f"Docker unavailable: {e}")
+            return None
 
     def resolve_network(self):
         if self._network is None:
@@ -31,6 +35,10 @@ class DockerNetwork:
         """Internal logic to get or create the network."""
         try:
             client = self._get_client()
+            if client is None:
+                logger.warning("Docker client not available. Skipping network setup.")
+                self._network = None
+                return
 
             existing_networks: list[Network] = client.networks.list(names=[self.name])
 
@@ -53,7 +61,11 @@ class DockerNetwork:
                 self._network = None
                 return
 
+            # ----------------------------
+            # CREATE NEW NETWORK
+            # ----------------------------
             if self.subnet is None:
+                # Auto subnet
                 network = client.networks.create(
                     name=self.name,
                     driver="bridge",
@@ -62,29 +74,26 @@ class DockerNetwork:
                 cfg = network.attrs["IPAM"]["Config"][0]
                 self.subnet = cfg.get("Subnet")
                 self.gateway = cfg.get("Gateway")
-                if self.subnet is not None:
-                    self._network = ipaddress.ip_network(self.subnet, strict=False)
-                else:
-                    self._network = None
-                logger.info(
-                    f"Docker network '{self.name}' created with auto subnet {self.subnet}"
+                self._network = (
+                    ipaddress.ip_network(self.subnet, strict=False)
+                    if self.subnet
+                    else None
                 )
+                logger.info(f"Docker network '{self.name}' created with auto subnet.")
                 return
 
-            # NORMAL MODE (manual subnet)
+            # Manual subnet
             self._network = ipaddress.ip_network(self.subnet, strict=False)
             self.gateway = self.gateway or str(list(self._network.hosts())[0])
 
             ipam_pool = IPAMPool(subnet=self.subnet, gateway=self.gateway)
             ipam_config = IPAMConfig(pool_configs=[ipam_pool])
-
             client.networks.create(
                 name=self.name,
                 driver="bridge",
                 ipam=ipam_config,
                 options={"com.docker.network.bridge.enable_ip_masquerade": "true"},
             )
-
             logger.info(f"Docker network '{self.name}' created successfully.")
 
         except Exception as e:
