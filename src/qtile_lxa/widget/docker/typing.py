@@ -19,9 +19,9 @@ class DockerNetwork:
     _network: ipaddress._BaseNetwork | None = field(
         default=None, init=False, repr=False
     )
-    _client: docker.DockerClient = field(
-        default_factory=docker.from_env, init=False, repr=False
-    )
+
+    def _get_client(self):
+        return docker.from_env()
 
     def resolve_network(self):
         if self._network is None:
@@ -30,9 +30,9 @@ class DockerNetwork:
     def _get_or_create_network(self) -> None:
         """Internal logic to get or create the network."""
         try:
-            existing_networks: list[Network] = self._client.networks.list(
-                names=[self.name]
-            )
+            client = self._get_client()
+
+            existing_networks: list[Network] = client.networks.list(names=[self.name])
 
             if existing_networks:
                 cfg = existing_networks[0].attrs["IPAM"]["Config"][0]
@@ -54,7 +54,7 @@ class DockerNetwork:
                 return
 
             if self.subnet is None:
-                network = self._client.networks.create(
+                network = client.networks.create(
                     name=self.name,
                     driver="bridge",
                     ipam=None,  # DO NOT pass IPAM → Docker auto-assigns subnet
@@ -78,7 +78,7 @@ class DockerNetwork:
             ipam_pool = IPAMPool(subnet=self.subnet, gateway=self.gateway)
             ipam_config = IPAMConfig(pool_configs=[ipam_pool])
 
-            self._client.networks.create(
+            client.networks.create(
                 name=self.name,
                 driver="bridge",
                 ipam=ipam_config,
