@@ -60,9 +60,9 @@ class K3D(GenPollText):
             # Ensure network exists if defined
             try:
                 self.config.network.resolve_network()
-                k3d_config["network"] = self.config.network.name
             except Exception as e:
                 self.log_errors(f"Network setup failed: {e}")
+            k3d_config["network"] = self.config.network.name
         if self.config.volumes:
             k3d_config["volumes"] = [
                 {"volume": f"{volume}:{self.config.volumes[volume]}"}
