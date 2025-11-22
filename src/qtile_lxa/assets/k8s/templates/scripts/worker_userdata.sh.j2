@@ -12,7 +12,7 @@ WAIT_INTERVAL=2
 echo "=== Preparing Join Command ==="
 TOKEN="{{ k3s_token }}"
 MASTER_IP="{{ master_address }}"
-JOIN_CMD="curl -sfL https://get.k3s.io | {% if k3s_version %}INSTALL_K3S_VERSION={{ k3s_version }}{% endif %} sh -s - agent --token=${TOKEN} --server https://${MASTER_IP}:6443"
+JOIN_CMD="curl -sfL https://get.k3s.io | {% if k3s_version %}INSTALL_K3S_VERSION={{ k3s_version }}{% endif %} sh -s - agent --token=${TOKEN} --server https://${MASTER_IP}:6443 {{ other_flags }}" 
 echo "$JOIN_CMD" > /lxa_k8s/join.sh
 chmod +x /lxa_k8s/join.sh
 echo "$JOIN_CMD"

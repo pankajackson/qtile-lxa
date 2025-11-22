@@ -1,6 +1,5 @@
 from pathlib import Path
 from libqtile.widget.base import _Widget
-from qtile_lxa import __ASSETS_DIR__
 from qtile_lxa.widget.multipass import (
     MultipassVM,
     MultipassConfig,
@@ -18,7 +17,6 @@ from .resources import K8sResources
 class K8s(WidgetBox):
     def __init__(self, config: K8SConfig, **kwargs: Any) -> None:
         self.config = config
-        self.assets_dir = __ASSETS_DIR__ / "k8s"
         self.base_dir = Path.home() / f".lxa_k8s/{self.config.cluster_name}"
         self.data_dir = self.config.data_dir or self.base_dir
         self.config_dir = self.data_dir / "config"
