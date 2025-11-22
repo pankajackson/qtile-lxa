@@ -19,25 +19,31 @@ class PodmanNetwork:
     _network: ipaddress._BaseNetwork | None = field(
         default=None, init=False, repr=False
     )
-    _client: podman.PodmanClient = field(
-        default_factory=lambda: podman.PodmanClient(
-            # base_url="unix:/run/podman/podman.sock"
-        ),
-        init=False,
-        repr=False,
-    )
+
+    def _get_client(self) -> podman.PodmanClient | None:
+        try:
+            return podman.PodmanClient()
+        except Exception as e:
+            logger.error(f"Podman unavailable: {e}")
+            return None
 
     def resolve_network(self):
         if self._network is None:
             self._get_or_create_network()
 
     def _get_or_create_network(self) -> None:
+        """Internal logic to get or create the network."""
         try:
-            # Try to get the network if it exists
-            try:
-                existing = self._client.networks.get(self.name)
-                cfg = existing.attrs.get("subnets", [{}])[0]
+            client = self._get_client()
+            if client is None:
+                logger.warning("Podman client not available. Skipping network setup.")
+                self._network = None
+                return
 
+            try:
+                existing = client.networks.get(self.name)
+
+                cfg = existing.attrs.get("subnets", [{}])[0]
                 self.subnet = cfg.get("subnet", self.subnet)
                 self.gateway = cfg.get("gateway", self.gateway)
 
@@ -58,12 +64,12 @@ class PodmanNetwork:
                     self._network = None
                     return
 
-            # -----------------------
-            #  CREATE NEW NETWORK
-            # -----------------------
+            # ----------------------------
+            # CREATE NEW NETWORK
+            # ----------------------------
             if self.subnet is None:
-                # Auto IPAM mode
-                network = self._client.networks.create(
+                # Auto subnet
+                network = client.networks.create(
                     name=self.name,
                     driver="bridge",
                 )
@@ -83,11 +89,11 @@ class PodmanNetwork:
                 )
                 return
 
-            # Manual IPAM mode
+            # Manual subnet
             self._network = ipaddress.ip_network(self.subnet, strict=False)
             self.gateway = self.gateway or str(list(self._network.hosts())[0])
 
-            self._client.networks.create(
+            client.networks.create(
                 name=self.name,
                 driver="bridge",
                 subnets=[{"subnet": self.subnet, "gateway": self.gateway}],
