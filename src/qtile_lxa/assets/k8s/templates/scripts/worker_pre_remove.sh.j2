@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+# set -x  # Uncomment for debugging
+
+# ==============================
+# Node Deletion Script Template
+# ==============================
+
+NODE_NAME="${HOSTNAME}"  # Default to current host's name
+# NODE_NAME="my-node-name"  # Or set manually
+
+# Check if kubectl is available
+if ! command -v kubectl &>/dev/null; then
+    echo "❌ kubectl not found. Please install it first."
+    exit 1
+fi
+
+# Force delete without confirmation or waiting
+echo "🗑 Deleting node: $NODE_NAME"
+kubectl delete node "$NODE_NAME" --grace-period=0 --force --ignore-not-found
+
+echo "✅ Node '$NODE_NAME' deleted successfully."

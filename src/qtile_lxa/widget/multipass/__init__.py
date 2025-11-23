@@ -1,6 +1,7 @@
 from .multipass_vm import MultipassVM
 from .typing import (
     MultipassConfig,
+    MultipassNetwork,
     MultipassSharedVolume,
     MultipassScript,
     MultipassVMOnlyScript,
@@ -9,6 +10,7 @@ from .typing import (
 __all__ = [
     "MultipassVM",
     "MultipassConfig",
+    "MultipassNetwork",
     "MultipassSharedVolume",
     "MultipassScript",
     "MultipassVMOnlyScript",

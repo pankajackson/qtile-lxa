@@ -14,6 +14,7 @@ from . import (
     vagrant,
     widgetbox,
     multipass,
+    k8s,
 )
 
 __all__ = [
@@ -32,4 +33,5 @@ __all__ = [
     "vagrant",
     "widgetbox",
     "multipass",
+    "k8s",
 ]
