@@ -100,7 +100,7 @@ class K8s(WidgetBox):
                     ),
                     pre_launch_script=MultipassScript(
                         cmd=(
-                            f"echo launching agent {i} && cp -rv {self.config.kubeconfig_path} {self.config_dir/'kubeconfig'}"
+                            f"echo launching agent {i} && cp -v {self.config.kubeconfig_path} {self.config_dir/'kubeconfig'}"
                             if self.config.worker_only and self.config.kubeconfig_path
                             else f"echo launching agent {i}"
                         )
