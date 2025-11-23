@@ -3,6 +3,7 @@ import ipaddress
 from pathlib import Path
 import secrets
 from typing import Literal
+from libqtile.log_utils import logger
 
 
 @dataclass
@@ -74,15 +75,19 @@ class K8SConfig:
     disable_local_storage: bool = False
     disable_metrics_server: bool = False
 
-    # TODO: Setup node group feature to enable these options
     # Labels & Taints
-    # label: str | None = None
-    # taints: list[str] = field(
-    #     default_factory=list
-    # )  # e.g., ["node-role.kubernetes.io/master=true:NoSchedule"]
+    labels: list[str] = field(default_factory=list)
+    taints: list[str] = field(
+        default_factory=list
+    )  # e.g., ["node-role.kubernetes.io/master=true:NoSchedule"]
 
     # Logs & Debug
     enable_logger: bool = True
+
+    # Worker only configs
+    worker_only: bool = False
+    master_address: str | None = None  # eg "192.168.1.10"
+    kubeconfig_path: Path | None = None
 
     # WidgetBoxConfig
     widgetbox_close_button_location: Literal["left", "right"] = "left"
@@ -91,5 +96,18 @@ class K8SConfig:
     widgetbox_timeout: int = 5
 
     def __post_init__(self):
+        if self.worker_only:
+            if not self.master_address:
+                raise ValueError("Must specify master address when worker_only is True")
+            if not self.k3s_token:
+                raise ValueError("Must specify k3s token when worker_only is True")
+            if not self.kubeconfig_path:
+                logger.warning(
+                    "⚠️  WARNING: worker_only=True but kubeconfig_path is not provided.\n"
+                    "    → Worker will run normally, but cluster actions requiring kubectl will NOT work on this node.\n"
+                    "    Affected features:\n"
+                    "      - Applying labels to this worker\n"
+                    "      - 'delete node' operation before deleting VM",
+                )
         if not self.k3s_token:
             self.k3s_token = secrets.token_hex(16)

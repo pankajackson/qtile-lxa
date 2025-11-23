@@ -1,6 +1,5 @@
 from pathlib import Path
 from libqtile.widget.base import _Widget
-from qtile_lxa import __ASSETS_DIR__
 from qtile_lxa.widget.multipass import (
     MultipassVM,
     MultipassConfig,
@@ -18,7 +17,6 @@ from .resources import K8sResources
 class K8s(WidgetBox):
     def __init__(self, config: K8SConfig, **kwargs: Any) -> None:
         self.config = config
-        self.assets_dir = __ASSETS_DIR__ / "k8s"
         self.base_dir = Path.home() / f".lxa_k8s/{self.config.cluster_name}"
         self.data_dir = self.config.data_dir or self.base_dir
         self.config_dir = self.data_dir / "config"
@@ -63,23 +61,29 @@ class K8s(WidgetBox):
         return MultipassNetwork(**config)
 
     def get_node_list(self) -> list[MultipassVM]:
-        master_node = MultipassVM(
-            config=MultipassConfig(
-                instance_name=f"lxa-{self.config.cluster_name}-master",
-                label="M",
-                cpus=self.config.master_cpus,
-                memory=self.config.master_memory,
-                disk=self.config.master_disk,
-                network=self.get_master_network(),
-                shared_volumes=[self.config_vol],
-                cloud_init_path=self.resources.cloud_init_path,
-                userdata_script=MultipassVMOnlyScript(
-                    self.resources.master_userdata_path
-                ),
-            ),
-            update_interval=10,
-        )
+        nodes: list[MultipassVM] = []
 
+        # ---- Master Node ----
+        if not self.config.worker_only:
+            master_node = MultipassVM(
+                config=MultipassConfig(
+                    instance_name=f"lxa-{self.config.cluster_name}-master",
+                    label="M",
+                    cpus=self.config.master_cpus,
+                    memory=self.config.master_memory,
+                    disk=self.config.master_disk,
+                    network=self.get_master_network(),
+                    shared_volumes=[self.config_vol],
+                    cloud_init_path=self.resources.cloud_init_path,
+                    userdata_script=MultipassVMOnlyScript(
+                        self.resources.master_userdata_path
+                    ),
+                ),
+                update_interval=10,
+            )
+            nodes.append(master_node)
+
+        # ---- Agent Nodes ----
         agent_nodes = [
             MultipassVM(
                 config=MultipassConfig(
@@ -93,6 +97,13 @@ class K8s(WidgetBox):
                     cloud_init_path=self.resources.cloud_init_path,
                     userdata_script=MultipassVMOnlyScript(
                         self.resources.agent_userdata_path
+                    ),
+                    pre_launch_script=MultipassScript(
+                        cmd=(
+                            f"echo launching agent {i} && cp -v {self.config.kubeconfig_path} {self.config_dir/'kubeconfig'}"
+                            if self.config.worker_only and self.config.kubeconfig_path
+                            else f"echo launching agent {i}"
+                        )
                     ),
                     post_launch_script=MultipassScript(
                         self.resources.agent_post_start_script_path, inside_vm=True
@@ -115,4 +126,6 @@ class K8s(WidgetBox):
             )
             for i in range(self.config.agent_count)
         ]
-        return [master_node] + agent_nodes
+
+        nodes.extend(agent_nodes)
+        return nodes

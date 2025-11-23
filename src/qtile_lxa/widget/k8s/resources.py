@@ -94,20 +94,39 @@ class K8sResources:
         for tls_san in self.config.tls_san:
             install_flags += f" --tls-san {tls_san}"
 
+        other_flags = ""
+        for label in self.config.labels:
+            other_flags += f" --node-label {label}"
+        for taint in self.config.taints:
+            other_flags += f" --node-taint {taint}"
+
         return self.load_template(
             "scripts/master_userdata.sh",
             output_path=self.output_dir / "master_userdata.sh",
             strict=False,
             install_flags=install_flags,
+            other_flags=other_flags,
             k3s_version=self.config.k3s_version,
             k3s_token=self.config.k3s_token,
             cluster_name=self.config.cluster_name,
         )
 
     def _generate_agent_userdata(self) -> tuple[str, Path]:
+        other_flags = ""
+        for label in self.config.labels:
+            other_flags += f" --node-label {label}"
+        for taint in self.config.taints:
+            other_flags += f" --node-taint {taint}"
+
         return self.load_template(
             "scripts/worker_userdata.sh",
             output_path=self.output_dir / "agent_userdata.sh",
+            worker_only=self.config.worker_only,
+            master_address=self.config.master_address,
+            k3s_version=self.config.k3s_version,
+            k3s_token=self.config.k3s_token,
+            other_flags=other_flags,
+            kubeconfig_path=str(self.config.kubeconfig_path),
         )
 
     def _generate_agent_pre_remove_script(self) -> tuple[str, Path]:
