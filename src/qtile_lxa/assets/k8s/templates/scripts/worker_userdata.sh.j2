@@ -45,7 +45,7 @@ run_join_script() {
 }
 
 # ===== Main =====
-{% if not worker_only %}
+{% if not worker_only or (worker_only and kubeconfig_path not in ["", "None"]) %}
 wait_for_kubeconfig
 setup_kubeconfig
 {% endif %}

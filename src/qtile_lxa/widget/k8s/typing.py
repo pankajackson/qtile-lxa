@@ -3,6 +3,7 @@ import ipaddress
 from pathlib import Path
 import secrets
 from typing import Literal
+from libqtile.log_utils import logger
 
 
 @dataclass
@@ -57,8 +58,6 @@ class K8SConfig:
     agent_memory: str | None = None  # default "1G"
     agent_disk: str | None = None  # default "5G"
     agent_count: int = 1  # Number of agent nodes
-    worker_only: bool = False
-    master_address: str | None = None  # eg "192.168.1.10"
     data_dir: Path | None = None
     network: K8sNetwork | None = None
     extra_packages: list[str] = field(default_factory=list)
@@ -85,6 +84,11 @@ class K8SConfig:
     # Logs & Debug
     enable_logger: bool = True
 
+    # Worker only configs
+    worker_only: bool = False
+    master_address: str | None = None  # eg "192.168.1.10"
+    kubeconfig_path: Path | None = None
+
     # WidgetBoxConfig
     widgetbox_close_button_location: Literal["left", "right"] = "left"
     widgetbox_text_closed: str = " 󱃾 "
@@ -97,5 +101,13 @@ class K8SConfig:
                 raise ValueError("Must specify master address when worker_only is True")
             if not self.k3s_token:
                 raise ValueError("Must specify k3s token when worker_only is True")
+            if not self.kubeconfig_path:
+                logger.warning(
+                    "⚠️  WARNING: worker_only=True but kubeconfig_path is not provided.\n"
+                    "    → Worker will run normally, but cluster actions requiring kubectl will NOT work on this node.\n"
+                    "    Affected features:\n"
+                    "      - Applying labels to this worker\n"
+                    "      - 'delete node' operation before deleting VM",
+                )
         if not self.k3s_token:
             self.k3s_token = secrets.token_hex(16)

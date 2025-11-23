@@ -126,6 +126,7 @@ class K8sResources:
             k3s_version=self.config.k3s_version,
             k3s_token=self.config.k3s_token,
             other_flags=other_flags,
+            kubeconfig_path=str(self.config.kubeconfig_path),
         )
 
     def _generate_agent_pre_remove_script(self) -> tuple[str, Path]:
