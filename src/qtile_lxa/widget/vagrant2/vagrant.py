@@ -6,6 +6,8 @@ from libqtile.log_utils import logger
 from libqtile.utils import guess_terminal
 from typing import Any
 from .typing import VagrantConfig
+import csv
+from io import StringIO
 
 terminal = guess_terminal()
 
@@ -65,7 +67,54 @@ class Vagrant(GenPollText):
             self.log_errors(f"Error running command: {str(e)}")
             return None
 
+    def get_vm_list(self):
+        output = self.run_command("vagrant status --machine-readable")
+        if not output:
+            return []
+
+        vms = {}
+
+        reader = csv.reader(StringIO(output))
+        for row in reader:
+            # Machine-readable must have 4+ columns
+            if len(row) < 4:
+                continue
+
+            _, machine, field, value = row[:4]
+
+            # Skip the final UI summary line where machine = ""
+            if machine == "":
+                continue
+
+            # Ensure entry exists
+            if machine not in vms:
+                vms[machine] = {
+                    "name": machine,
+                    "provider": None,
+                    "state": None,
+                    "state_short": None,
+                    "state_long": None,
+                }
+
+            # Map fields to our structure
+            if field == "provider-name":
+                vms[machine]["provider"] = value
+
+            elif field == "state":
+                vms[machine]["state"] = value
+
+            elif field == "state-human-short":
+                vms[machine]["state_short"] = value
+
+            elif field == "state-human-long":
+                # Make multiline text cleaner
+                vms[machine]["state_long"] = value.replace("\\n", "\n")
+
+        # Convert dict → list
+        return list(vms.values())
+
     def check_vagrant_status(self):
+        logger.error(self.get_vm_list())
         label = (
             self.config.label
             if self.config.label is not None
