@@ -149,7 +149,7 @@ class VagrantSharedVolume:
 
 
 @dataclass
-class MultipassScript:
+class VagrantScript:
     path: Path | None = None
     cmd: str | None = None
     args: list[str] = field(default_factory=list)
@@ -164,7 +164,7 @@ class MultipassScript:
             raise TypeError(f"path must be a Path, got {type(self.path).__name__}")
 
 
-class MultipassVMOnlyScript(MultipassScript):
+class VagrantVMOnlyScript(VagrantScript):
     def __init__(
         self,
         path: Path | None = None,
