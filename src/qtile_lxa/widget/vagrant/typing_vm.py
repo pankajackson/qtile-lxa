@@ -47,10 +47,7 @@ class VagrantNetwork:
     # forward struct (safe default)
     forward: VagrantNetworkForward = field(default_factory=VagrantNetworkForward)
 
-    # ------------------------------------------------------------------
-    # VALIDATION
-    # ------------------------------------------------------------------
-    def validate(self):
+    def __post_init__(self):
         t = self.vagrant_network
         forwarding_enabled = self.forward.is_enabled()
 
@@ -81,50 +78,74 @@ class VagrantNetwork:
             if self.interface:
                 raise ValueError("FORWARDED cannot use 'interface'.")
 
-    # ------------------------------------------------------------------
-    # CONVERSION
-    # ------------------------------------------------------------------
-    def to_vagrant_config(
-        self, provider: VagrantProvider = VagrantProvider.Virtualbox
-    ) -> dict:
 
-        self.validate()
-
-        cfg = {
-            "type": self.vagrant_network.value,
-            "dhcp": len(self.addresses) == 0,
-        }
-
-        # static IP
-        if self.addresses:
-            cfg["ip"] = self.addresses[0]
-
-        # provider-specific mapping
-        if self.interface:
-            if provider in (VagrantProvider.Virtualbox, VagrantProvider.Vmware):
-                cfg["bridge"] = self.interface
-            elif provider == VagrantProvider.Libvirt:
-                cfg["dev"] = self.interface
-            else:
-                cfg["interface"] = self.interface
-
-        # forwarded port
-        if self.vagrant_network == VagrantNetworkType.FORWARDED:
-            cfg.update(
-                {
-                    "guest": self.forward.guest_port,
-                    "host": self.forward.host_port,
-                    "protocol": self.forward.protocol.value,
-                }
-            )
-
-        return cfg
+class VagrantSyncType(Enum):
+    VIRTUALBOX = "virtualbox"  # Vagrant's default mechanism
+    RSYNC = "rsync"
+    SMB = "smb"  # Windows hosts only
+    NFS = "nfs"
+    NINE_P = "9p"  # Special for Libvirt
+    VMWARE = "vmware"  # VMware-specific
 
 
 @dataclass
 class VagrantSharedVolume:
     source_path: Path
     target_path: Path
+
+    # Sync type
+    type: VagrantSyncType = VagrantSyncType.VIRTUALBOX
+
+    # Common options
+    create: bool = True
+    owner: str | None = None
+    group: str | None = None
+    disabled: bool = False
+    mount_options: list[str] = field(default_factory=list)
+
+    # Provider-specific options
+    smb_username: str | None = None
+    smb_password: str | None = None
+
+    nfs_version: int | None = None
+    nfs_udp: bool | None = None
+
+    ninep_accessmode: str | None = None  # "mapped", "passthrough", "squash"
+    ninep_readonly: bool | None = None
+    ninep_mount_tag: str | None = None
+
+    # Rsync specific
+    rsync_exclude: list[str] = field(default_factory=list)
+    rsync_args: list[str] = field(default_factory=list)
+    rsync_auto: bool = True
+
+    def __post_init__(self):
+
+        # SMB requires username + password
+        if self.type == VagrantSyncType.SMB:
+            if not (self.smb_username and self.smb_password):
+                raise ValueError(
+                    "SMB synced folder requires smb_username and smb_password."
+                )
+
+        # NFS options must be valid
+        if self.type == VagrantSyncType.NFS:
+            if self.nfs_version not in (None, 3, 4):
+                raise ValueError("NFS sync supports only versions 3 or 4.")
+
+        # 9p options (libvirt)
+        if self.type == VagrantSyncType.NINE_P:
+            if self.ninep_accessmode not in (None, "mapped", "passthrough", "squash"):
+                raise ValueError(
+                    "9p accessmode must be 'mapped', 'passthrough', or 'squash'."
+                )
+
+        # Rsync only options
+        if self.type != VagrantSyncType.RSYNC:
+            if self.rsync_exclude or self.rsync_args:
+                raise ValueError(
+                    "rsync_exclude and rsync_args allowed only for RSYNC type."
+                )
 
 
 @dataclass
