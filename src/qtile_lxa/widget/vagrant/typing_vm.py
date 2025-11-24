@@ -148,37 +148,161 @@ class VagrantSharedVolume:
                 )
 
 
+class VagrantProvisionerType(Enum):
+    SHELL = "shell"
+    FILE = "file"
+    ANSIBLE = "ansible"
+    ANSIBLE_LOCAL = "ansible_local"
+    CHEF_SOLO = "chef_solo"
+    CHEF_ZERO = "chef_zero"
+    PUPPET = "puppet"
+    PUPPET_SERVER = "puppet_server"
+    SALT = "salt"
+    DOCKER = "docker"
+    DOCKER_COMPOSE = "docker_compose"
+
+
 @dataclass
-class VagrantScript:
-    path: Path | None = None
-    cmd: str | None = None
+class VagrantShellProvisioner:
+    inline: str | None = None
+    script: Path | None = None
     args: list[str] = field(default_factory=list)
-    inside_vm: bool = False
-    ignore_errors: bool = False
+    env: dict[str, str] = field(default_factory=dict)
+    privileged: bool = True
 
     def __post_init__(self):
-        if not self.path and not self.cmd:
-            raise ValueError("Either 'path' or 'cmd' must be provided.")
+        if not self.inline and not self.script:
+            raise ValueError("Shell provisioner requires either 'inline' or 'script'.")
 
-        if self.path and not isinstance(self.path, Path):
-            raise TypeError(f"path must be a Path, got {type(self.path).__name__}")
+        if self.script and not isinstance(self.script, Path):
+            raise TypeError("script must be Path.")
+
+        if self.inline and self.script:
+            raise ValueError("Use either 'inline' OR 'script', not both.")
 
 
-class VagrantVMOnlyScript(VagrantScript):
-    def __init__(
-        self,
-        path: Path | None = None,
-        cmd: str | None = None,
-        args: list[str] | None = None,
-        ignore_errors: bool = False,
-    ):
-        super().__init__(
-            path=path,
-            cmd=cmd,
-            args=args or [],
-            inside_vm=True,
-            ignore_errors=ignore_errors,
-        )
+@dataclass
+class VagrantFileProvisioner:
+    source: Path
+    destination: Path
+
+    def __post_init__(self):
+        if not isinstance(self.source, Path):
+            raise TypeError("source must be Path.")
+
+        if not isinstance(self.destination, Path):
+            raise TypeError("destination must be Path.")
+
+
+@dataclass
+class VagrantAnsibleProvisioner:
+    playbook: Path
+    inventory_path: Path | None = None
+    extra_vars: dict[str, str] = field(default_factory=dict)
+    limit: str | None = None
+
+    def __post_init__(self):
+        if not isinstance(self.playbook, Path):
+            raise TypeError("playbook must be Path.")
+
+        if self.inventory_path and not isinstance(self.inventory_path, Path):
+            raise TypeError("inventory_path must be Path.")
+
+
+@dataclass
+class VagrantAnsibleLocalProvisioner:
+    playbook: Path
+    install: bool = True
+    extra_vars: dict[str, str] = field(default_factory=dict)
+
+    def __post_init__(self):
+        if not isinstance(self.playbook, Path):
+            raise TypeError("playbook must be Path.")
+
+
+@dataclass
+class DockerContainerConfig:
+    name: str
+    image: str
+    cmd: str | None = None
+    ports: list[str] = field(default_factory=list)  # ["8080:80"]
+    volumes: list[str] = field(default_factory=list)  # ["/host:/container"]
+    env: dict[str, str] = field(default_factory=dict)
+    restart: str | None = None  # "always", "no", etc.
+    daemonize: bool = True
+
+    def __post_init__(self):
+        if not self.name:
+            raise ValueError("Container config requires name.")
+        if not self.image:
+            raise ValueError("Container config requires image.")
+
+
+@dataclass
+class VagrantDockerProvisioner:
+    install: bool = True
+    pull_images: list[str] = field(default_factory=list)
+    containers: list[DockerContainerConfig] = field(default_factory=list)
+
+    def __post_init__(self):
+        # ensure no accidental None entries
+        self.pull_images = [img for img in self.pull_images if img]
+        self.containers = [c for c in self.containers if c]
+
+
+@dataclass
+class VagrantDockerComposeProvisioner:
+    compose_dir: Path
+    build: bool = False
+    project_name: str | None = None
+    env: dict[str, str] = field(default_factory=dict)
+
+    def __post_init__(self):
+        if not isinstance(self.compose_dir, Path):
+            raise TypeError("compose_dir must be Path.")
+
+
+VagrantProvisionerConfig = (
+    VagrantShellProvisioner
+    | VagrantFileProvisioner
+    | VagrantAnsibleProvisioner
+    | VagrantAnsibleLocalProvisioner
+    | VagrantDockerProvisioner
+    | VagrantDockerComposeProvisioner
+)
+
+
+@dataclass
+class VagrantProvisioner:
+    type: VagrantProvisionerType
+    config: VagrantProvisionerConfig
+
+    # supported provisioners mapping
+    _mapping = {
+        VagrantProvisionerType.SHELL: VagrantShellProvisioner,
+        VagrantProvisionerType.FILE: VagrantFileProvisioner,
+        VagrantProvisionerType.ANSIBLE: VagrantAnsibleProvisioner,
+        VagrantProvisionerType.ANSIBLE_LOCAL: VagrantAnsibleLocalProvisioner,
+        VagrantProvisionerType.DOCKER: VagrantDockerProvisioner,
+        VagrantProvisionerType.DOCKER_COMPOSE: VagrantDockerComposeProvisioner,
+    }
+
+    def __post_init__(self):
+        # reject unsupported provisioner types
+        if self.type not in self._mapping:
+            supported = ", ".join(t.value for t in self._mapping.keys())
+            raise ValueError(
+                f"Provisioner '{self.type.value}' is not supported. "
+                f"Supported types: {supported}"
+            )
+
+        # validate config class
+        expected_cls = self._mapping[self.type]
+        if not isinstance(self.config, expected_cls):
+            raise TypeError(
+                f"Provisioner '{self.type.value}' expects config "
+                f"{expected_cls.__name__}, got {type(self.config).__name__}"
+            )
 
 
 @dataclass(frozen=True)
