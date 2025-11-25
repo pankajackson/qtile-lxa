@@ -246,55 +246,11 @@ class VagrantAnsibleLocalProvisioner(VagrantAnsibleCommon):
             raise TypeError("playbook must be Path.")
 
 
-@dataclass
-class DockerContainerConfig:
-    name: str
-    image: str
-    cmd: str | None = None
-    ports: list[str] = field(default_factory=list)  # ["8080:80"]
-    volumes: list[str] = field(default_factory=list)  # ["/host:/container"]
-    env: dict[str, str] = field(default_factory=dict)
-    restart: str | None = None  # "always", "no", etc.
-    daemonize: bool = True
-
-    def __post_init__(self):
-        if not self.name:
-            raise ValueError("Container config requires name.")
-        if not self.image:
-            raise ValueError("Container config requires image.")
-
-
-@dataclass
-class VagrantDockerProvisioner:
-    install: bool = True
-    pull_images: list[str] = field(default_factory=list)
-    containers: list[DockerContainerConfig] = field(default_factory=list)
-
-    def __post_init__(self):
-        # ensure no accidental None entries
-        self.pull_images = [img for img in self.pull_images if img]
-        self.containers = [c for c in self.containers if c]
-
-
-@dataclass
-class VagrantDockerComposeProvisioner:
-    compose_dir: Path
-    build: bool = False
-    project_name: str | None = None
-    env: dict[str, str] = field(default_factory=dict)
-
-    def __post_init__(self):
-        if not isinstance(self.compose_dir, Path):
-            raise TypeError("compose_dir must be Path.")
-
-
 VagrantProvisionerConfig = (
     VagrantShellProvisioner
     | VagrantFileProvisioner
     | VagrantAnsibleProvisioner
     | VagrantAnsibleLocalProvisioner
-    | VagrantDockerProvisioner
-    | VagrantDockerComposeProvisioner
 )
 
 
@@ -309,8 +265,6 @@ class VagrantProvisioner:
         VagrantProvisionerType.FILE: VagrantFileProvisioner,
         VagrantProvisionerType.ANSIBLE: VagrantAnsibleProvisioner,
         VagrantProvisionerType.ANSIBLE_LOCAL: VagrantAnsibleLocalProvisioner,
-        VagrantProvisionerType.DOCKER: VagrantDockerProvisioner,
-        VagrantProvisionerType.DOCKER_COMPOSE: VagrantDockerComposeProvisioner,
     }
 
     def __post_init__(self):
