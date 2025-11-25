@@ -593,37 +593,3 @@ class VagrantVMConfig:
         # vagrant_dir
         if self.vagrant_dir and not isinstance(self.vagrant_dir, Path):
             raise TypeError("vagrant_dir must be Path or None.")
-
-
-@dataclass(frozen=True)
-class MultipassConfig:
-    instance_name: str
-    cloud_init_path: Path | None = None
-    image: str | None = None
-    cpus: int | None = None  # default 1
-    memory: str | None = None  # default "1G"
-    disk: str | None = None  # default "5G"
-    network: MultipassNetwork | None = None
-    shared_volumes: list[MultipassSharedVolume] = field(default_factory=list)
-    userdata_script: MultipassVMOnlyScript | None = None
-    pre_launch_script: MultipassScript | None = None
-    post_launch_script: MultipassScript | None = None
-    pre_start_script: MultipassScript | None = None
-    post_start_script: MultipassScript | None = None
-    pre_stop_script: MultipassScript | None = None
-    post_stop_script: MultipassScript | None = None
-    pre_delete_script: MultipassScript | None = None
-    post_delete_script: MultipassScript | None = None
-    label: str | None = None
-    not_created_symbol: str = "⚪"
-    running_symbol: str = "🟢"
-    stopped_symbol: str = "🔴"
-    deleted_symbol: str = "🗑️"
-    starting_symbol: str = "🟡"
-    restarting_symbol: str = "🔄"
-    delayed_shutdown_symbol: str = "🛑"
-    suspending_symbol: str = "⏱️"
-    suspended_symbol: str = "❄️"
-    unknown_symbol: str = "❓"
-    error_symbol: str = "❌"
-    enable_logger: bool = False
