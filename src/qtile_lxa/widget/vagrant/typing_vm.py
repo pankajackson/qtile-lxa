@@ -375,6 +375,106 @@ class VagrantDisk:
                 )
 
 
+class VagrantTriggerTiming(Enum):
+    BEFORE = "before"
+    AFTER = "after"
+
+
+class VagrantTriggerAction(Enum):
+    ALL = "all"
+    UP = "up"
+    DESTROY = "destroy"
+    HALT = "halt"
+    PROVISION = "provision"
+    RELOAD = "reload"
+    RESUME = "resume"
+    SUSPEND = "suspend"
+
+
+class VagrantTriggerType(Enum):
+    ACTION = "action"
+    COMMAND = "command"
+    HOOK = "hook"
+
+
+class VagrantOnError(Enum):
+    HALT = "halt"
+    CONTINUE = "continue"
+
+
+@dataclass
+class VagrantTriggerRunConfig:
+    """Configuration for code to run on the host (run) or inside guest (run_remote)."""
+
+    inline: str | None = None
+    path: str | None = None
+    args: list[str] = field(default_factory=list)
+
+    def __post_init__(self):
+        if not self.inline and not self.path:
+            raise ValueError(
+                "Trigger run or run_remote requires either `inline` or `path` defined."
+            )
+
+
+@dataclass
+class VagrantTrigger:
+    # When the trigger should run
+    timing: VagrantTriggerTiming
+    actions: list[VagrantTriggerAction] = field(default_factory=list)
+    trigger_type: VagrantTriggerType | None = None
+
+    # Optional constraints / behavior
+    ignore: list[str] = field(default_factory=list)
+    name: str | None = None
+    info: str | None = None  # print message  at the beginning of a trigger
+    warn: str | None = None  # print warning message  at the beginning of a trigger
+    on_error: VagrantOnError = VagrantOnError.HALT
+    only_on: list[str] | None = None  # limit only these machines
+
+    # Code to run
+    run: VagrantTriggerRunConfig | None = None  # shell command(s)
+    run_remote: VagrantTriggerRunConfig | None = None  # guest
+
+    # Ruby callback (rare, advanced)
+    # Represent as a string containing Ruby code, or a callable in Python if you map later
+    ruby: str | None = None
+
+    def __post_init__(self):
+        # Validate actions
+        if not self.actions:
+            raise ValueError(
+                "At least one action must be specified for trigger actions."
+            )
+        # Validate on_error
+        if not isinstance(self.on_error, VagrantOnError):
+            raise TypeError("on_error must be VagrantOnError enum")
+
+        # Validate run vs run_remote
+        if (
+            self.run is None
+            and self.run_remote is None
+            and self.ruby is None
+            and not self.info
+            and not self.warn
+        ):
+            raise ValueError(
+                "Trigger must have at least one: run, run_remote, ruby, info or warn"
+            )
+
+        # Validate run config objects
+        if self.run:
+            if not isinstance(self.run, VagrantTriggerRunConfig):
+                raise TypeError("run must be a VagrantTriggerRunConfig")
+        if self.run_remote:
+            if not isinstance(self.run_remote, VagrantTriggerRunConfig):
+                raise TypeError("run_remote must be a VagrantTriggerRunConfig")
+
+        # only_on can be str or list
+        if self.only_on and not isinstance(self.only_on, (str, list)):
+            raise TypeError("only_on must be either a string or list of strings")
+
+
 @dataclass(frozen=True)
 class MultipassConfig:
     instance_name: str
