@@ -305,6 +305,34 @@ class VagrantProvisioner:
             )
 
 
+class VagrantCloudInitContentType(Enum):
+    CloudBootHook = "text/cloud-boothook"
+    CloudConfig = "text/cloud-config"
+    CloudConfigArchive = "text/cloud-config-archive"
+    Jinja2 = "text/jinja2"
+    PartHandler = "text/part-handler"
+    UpstartJob = "text/upstart-job"
+    XIncludeOnceUrl = "text/x-include-once-url"
+    XIncludeUrl = "text/x-include-url"
+    XShellScript = "text/x-shellscript"
+
+
+class VagrantCloudInitType(Enum):
+    UserData = ":user_data"
+
+
+@dataclass
+class VagrantCloudInitConfig:
+    content_type: VagrantCloudInitContentType
+    path: Path | None = None
+    inline: str | None = None
+    type: VagrantCloudInitType = VagrantCloudInitType.UserData
+
+    def __post_init__(self):
+        if self.path is not None and self.inline is not None:
+            raise ValueError("Only one of path and inline can be specified")
+
+
 @dataclass(frozen=True)
 class MultipassConfig:
     instance_name: str
