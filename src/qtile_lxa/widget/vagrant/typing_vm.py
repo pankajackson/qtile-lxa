@@ -475,6 +475,110 @@ class VagrantTrigger:
             raise TypeError("only_on must be either a string or list of strings")
 
 
+@dataclass
+class VagrantVMConfig:
+    name: str
+    provider: VagrantProvider = VagrantProvider.Virtualbox
+
+    # Compute resources
+    cpus: int | None = None
+    memory: str | None = None  # "2G", "512M"
+    disk: str | None = (
+        None  # Primary disk size ("20G") — optional, not the same as VagrantDisk
+    )
+
+    # Networking
+    networks: list[VagrantNetwork] = field(default_factory=list)
+
+    # Synced folders
+    synced_folders: list[VagrantSyncedFolders] = field(default_factory=list)
+
+    # Provisioners
+    provisioners: list[VagrantProvisioner] = field(default_factory=list)
+
+    # Cloud-init
+    cloud_init: list[VagrantCloudInit] = field(default_factory=list)
+
+    # Additional disks
+    disks: list[VagrantDisk] = field(default_factory=list)
+
+    # Triggers
+    triggers: list[VagrantTrigger] = field(default_factory=list)
+
+    # Extra provider configuration (advanced)
+    provider_config: dict[str, Any] = field(default_factory=dict)
+
+    # Root Vagrantfile directory (optional)
+    vagrant_dir: Path | None = None
+
+    def __post_init__(self):
+        # name validation
+        if not self.name or not isinstance(self.name, str):
+            raise ValueError("VagrantVMConfig requires a valid VM name (string).")
+
+        # provider validation
+        if not isinstance(self.provider, VagrantProvider):
+            raise TypeError("provider must be VagrantProvider enum.")
+
+        # CPUS
+        if self.cpus is not None and self.cpus <= 0:
+            raise ValueError("cpus must be > 0")
+
+        # Memory
+        if self.memory is not None:
+            if not any(self.memory.lower().endswith(suffix) for suffix in ("mb", "gb")):
+                raise ValueError("memory must be a string like '512MB', '2GB'")
+
+        # Disk string
+        if self.disk is not None:
+            if not any(
+                self.disk.lower().endswith(suffix) for suffix in ("mb", "gb", "tb")
+            ):
+                raise ValueError("disk must be a string like '10GB', '500MB'")
+
+        # Networks
+        for net in self.networks:
+            if not isinstance(net, VagrantNetwork):
+                raise TypeError("All items in 'networks' must be VagrantNetwork.")
+
+        # Synced folders
+        for sf in self.synced_folders:
+            if not isinstance(sf, VagrantSyncedFolders):
+                raise TypeError(
+                    "All items in 'synced_folders' must be VagrantSyncedFolders."
+                )
+
+        # Provisioners
+        for prov in self.provisioners:
+            if not isinstance(prov, VagrantProvisioner):
+                raise TypeError(
+                    "All items in 'provisioners' must be VagrantProvisioner."
+                )
+
+        # Cloud init
+        for ci in self.cloud_init:
+            if not isinstance(ci, VagrantCloudInit):
+                raise TypeError("All items in 'cloud_init' must be VagrantCloudInit.")
+
+        # Disks
+        for d in self.disks:
+            if not isinstance(d, VagrantDisk):
+                raise TypeError("All items in 'disks' must be VagrantDisk.")
+
+        # Triggers
+        for t in self.triggers:
+            if not isinstance(t, VagrantTrigger):
+                raise TypeError("All items in 'triggers' must be VagrantTrigger.")
+
+        # provider_config
+        if not isinstance(self.provider_config, dict):
+            raise TypeError("provider_config must be dict[str, Any].")
+
+        # vagrant_dir
+        if self.vagrant_dir and not isinstance(self.vagrant_dir, Path):
+            raise TypeError("vagrant_dir must be Path or None.")
+
+
 @dataclass(frozen=True)
 class MultipassConfig:
     instance_name: str

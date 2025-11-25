@@ -1,0 +1,91 @@
+Vagrant.configure("2") do |config|
+  config.vm.define "{{ vm.name }}" do |vm|
+
+    # --- PROVIDER CONFIG ---
+    vm.vm.provider "{{ vm.provider.value }}" do |p|
+      {% if vm.cpus %}
+      p.cpus = {{ vm.cpus }}
+      {% endif %}
+      {% if vm.memory %}
+      p.memory = "{{ vm.memory }}"
+      {% endif %}
+      {% for key, value in vm.provider_config.items() %}
+      p.{{ key }} = {{ value | tojson }}
+      {% endfor %}
+    end
+
+    # --- NETWORKS ---
+    {% for net in vm.networks %}
+      {% if net.type.value == "forwarded_port" %}
+    vm.vm.network :forwarded_port, guest: {{ net.guest }}, host: {{ net.host }}
+      {% elif net.type.value == "private_network" %}
+    vm.vm.network "private_network"{% if net.addresses %}, ip: "{{ net.addresses[0] }}"{% endif %}
+      {% elif net.type.value == "public_network" %}
+    vm.vm.network "public_network"
+      {% endif %}
+    {% endfor %}
+
+    # --- SYNCED FOLDERS ---
+    {% for sf in vm.synced_folders %}
+    vm.vm.synced_folder "{{ sf.host }}", "{{ sf.guest }}"
+      {%- set opts = [] -%}
+      {%- if sf.owner %}{% set _ = opts.append('owner: "' ~ sf.owner ~ '"') %}{% endif %}
+      {%- if sf.group %}{% set _ = opts.append('group: "' ~ sf.group ~ '"') %}{% endif %}
+      {%- if sf.type %}{% set _ = opts.append('type: "' ~ sf.type.value ~ '"') %}{% endif %}
+      {%- if sf.mount_options %}{% set _ = opts.append('mount_options: ' ~ sf.mount_options | tojson ) %}{% endif %}
+      {%- if opts %}, {{ opts | join(", ") }}{% endif %}
+    {% endfor %}
+
+    # --- DISKS ---
+    {% for d in vm.disks %}
+    vm.vm.disk :{{ d.type.value }}, name: "{{ d.name }}"
+      {%- if d.size %}, size: "{{ d.size }}"{% endif %}
+      {%- if d.primary %}, primary: true{% endif %}
+      {%- if d.auto_delete %}, auto_delete: true{% endif %}
+    {% endfor %}
+
+    # --- PROVISIONERS ---
+    {% for p in vm.provisioners %}
+      {% if p.type.value == "shell" %}
+        {% if p.inline %}
+    vm.vm.provision "shell", inline: "{{ p.inline | replace('"', '\\"') }}"
+        {% elif p.path %}
+    vm.vm.provision "shell", path: "{{ p.path }}"
+        {% endif %}
+
+      {% elif p.type.value == "ansible" %}
+    vm.vm.provision "ansible" do |a|
+      {% if p.playbook %}a.playbook = "{{ p.playbook }}"{% endif %}
+      {% if p.extra_vars %}a.extra_vars = {{ p.extra_vars | tojson }}{% endif %}
+    end
+
+      {% elif p.type.value == "ansible_local" %}
+    vm.vm.provision "ansible_local" do |a|
+      {% if p.playbook %}a.playbook = "{{ p.playbook }}"{% endif %}
+      {% if p.extra_vars %}a.extra_vars = {{ p.extra_vars | tojson }}{% endif %}
+    end
+
+      {% elif p.type.value == "docker" %}
+    vm.vm.provision "docker" do |d|
+      {% for img in p.images %}d.pull_images "{{ img }}"{% endfor %}
+      {% for c in p.containers %}d.run "{{ c.name }}", image: "{{ c.image }}"{% endfor %}
+    end
+
+      {% elif p.type.value == "docker_compose" %}
+    vm.vm.provision "docker_compose" do |d|
+      d.compose = "{{ p.compose_file }}"
+    end
+      {% endif %}
+    {% endfor %}
+
+    # --- TRIGGERS ---
+    {% for t in vm.triggers %}
+    vm.trigger.{{ t.when.value }} do |tr|
+      {% if t.name %}tr.name = "{{ t.name }}"{% endif %}
+      {% if t.only %}tr.only = ["{{ t.only }}"]{% endif %}
+      {% if t.run %}tr.run = "{{ t.run }}"{% endif %}
+    end
+    {% endfor %}
+
+  end
+end
