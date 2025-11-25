@@ -16,8 +16,8 @@ terminal = guess_terminal()
 class VagrantVM(GenPollText):
     def __init__(self, config: VagrantVMConfig, **kwargs: Any):
         self.config = config
-        self.base_dir = Path.home() / f".lxa_vagrant/{self.config.name}"
-        self.data_dir = self.config.data_dir or self.base_dir
+        self.base_dir = Path.home() / f".lxa_vagrant"
+        self.vagrant_dir = self.config.vagrant_dir or self.base_dir / self.config.name
         self.resources = VagrantVMConfigResources(
             config=config, output_dir=self.data_dir
         )
@@ -45,7 +45,7 @@ class VagrantVM(GenPollText):
             )
         ]
         self.format = "{symbol} {label}"
-        super().__init__(func=self.check_vagrant_status, **kwargs)
+        super().__init__(func=self.check_vm_status, **kwargs)
 
     def log_errors(self, msg):
         if self.config.enable_logger:
@@ -59,7 +59,7 @@ class VagrantVM(GenPollText):
         try:
             result = subprocess.run(
                 command,
-                cwd=self.config.vagrant_dir,
+                cwd=self.vagrant_dir,
                 shell=True,
                 text=True,
                 capture_output=True,
@@ -119,6 +119,21 @@ class VagrantVM(GenPollText):
         # Convert dict → list
         return list(vms.values())
 
+    def check_vm_status(self):
+        vm_list = self.get_vm_list()
+        if not vm_list:
+            return self.format.format(
+                symbol=self.state_symbols_map["unknown"],
+                label=self.config.label if self.config.label else self.config.name,
+            )
+        else:
+            if len(vm_list) > 1:
+                logger.warning("More than one VM detected!")
+            return self.format.format(
+                symbol=self.state_symbols_map[vm_list[0]["state"]],
+                label=self.config.label if self.config.label else vm_list[0]["name"],
+            )
+
     def button_press(self, x, y, button):
         if button == 1:  # Left-click: Start all machines
             self.run_in_thread(self.handle_start_vagrant)
@@ -131,7 +146,7 @@ class VagrantVM(GenPollText):
         cmd = f"{terminal} -e vagrant up"
         subprocess.Popen(
             cmd,
-            cwd=self.config.vagrant_dir,
+            cwd=self.vagrant_dir,
             shell=True,
         )
 
@@ -139,7 +154,7 @@ class VagrantVM(GenPollText):
         cmd = f"{terminal} -e vagrant halt"
         subprocess.Popen(
             cmd,
-            cwd=self.config.vagrant_dir,
+            cwd=self.vagrant_dir,
             shell=True,
         )
 
@@ -147,6 +162,6 @@ class VagrantVM(GenPollText):
         cmd = f"{terminal} -e vagrant destroy -f"
         subprocess.Popen(
             cmd,
-            cwd=self.config.vagrant_dir,
+            cwd=self.vagrant_dir,
             shell=True,
         )

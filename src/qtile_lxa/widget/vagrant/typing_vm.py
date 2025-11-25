@@ -478,7 +478,6 @@ class VagrantTrigger:
 @dataclass
 class VagrantVMConfig:
     name: str
-    data_dir: Path | None = None
     provider: VagrantProvider = VagrantProvider.Virtualbox
 
     # Compute resources
