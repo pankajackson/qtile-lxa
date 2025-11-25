@@ -1,9 +1,7 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 from enum import Enum
-
-from dataclasses import dataclass, field
-from enum import Enum
+from typing import Any, Literal
 
 
 class VagrantProvider(Enum):
@@ -302,7 +300,7 @@ class VagrantCloudInitType(Enum):
 
 
 @dataclass
-class VagrantCloudInitConfig:
+class VagrantCloudInit:
     content_type: VagrantCloudInitContentType
     path: Path | None = None
     inline: str | None = None
@@ -311,6 +309,70 @@ class VagrantCloudInitConfig:
     def __post_init__(self):
         if self.path is not None and self.inline is not None:
             raise ValueError("Only one of path and inline can be specified")
+
+
+@dataclass
+class VagrantDisk:
+    name: str
+    type: Literal["disk", "dvd", "floppy"] = "disk"
+
+    # Optional fields
+    size: str | None = None  # Only valid for "disk"
+    file: str | None = None  # ISO for dvd; raw disk for disk/floppy
+    disk_ext: Literal["vdi", "vdi.gz"] = "vdi"  # Extension only for disk type
+    primary: bool = False  # Mark as primary disk
+
+    # Provider-specific configuration
+    provider_config: dict[str, Any] = field(default_factory=dict)
+    # Example:
+    # { "virtualbox": {"iot_mode": "async"}, "libvirt": {"bus": "virtio"} }
+
+    def __post_init__(self):
+
+        # Validate type
+        allowed_types = {"disk", "dvd", "floppy"}
+        if self.type not in allowed_types:
+            raise ValueError(
+                f"Invalid disk type='{self.type}'. Must be one of {allowed_types}"
+            )
+
+        # DVD requires a file (ISO)
+        if self.type == "dvd" and not self.file:
+            raise ValueError("DVD disk requires `file` pointing to ISO image.")
+
+        # Floppy: file optional, but MUST NOT have a size
+        if self.type == "floppy":
+            if self.size:
+                raise ValueError("Floppy disks cannot specify a `size`.")
+
+        # Disks: size is optional but must look valid if set
+        if self.type == "disk":
+            if self.size is not None:
+                if not isinstance(self.size, str) or not any(
+                    self.size.lower().endswith(suffix) for suffix in ("mb", "gb", "tb")
+                ):
+                    raise ValueError(
+                        "Disk `size` must be a string like '10GB', '500MB', '1TB'."
+                    )
+
+        # Prevent disk_ext on non-disk
+        if self.type != "disk" and self.disk_ext != "vdi":
+            raise ValueError("disk_ext is only valid for disk type 'disk'.")
+
+        # Validate provider_config
+        if not isinstance(self.provider_config, dict):
+            raise TypeError("provider_config must be dict[str, Any].")
+
+        # Provider config keys should be provider names
+        for provider, config in self.provider_config.items():
+            if not isinstance(provider, str):
+                raise TypeError(
+                    f"Provider name must be string, got {type(provider).__name__}"
+                )
+            if not isinstance(config, dict):
+                raise TypeError(
+                    f"Provider '{provider}' config must be a dict, got {type(config).__name__}"
+                )
 
 
 @dataclass(frozen=True)
