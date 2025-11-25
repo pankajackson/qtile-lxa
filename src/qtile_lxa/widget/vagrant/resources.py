@@ -1,4 +1,4 @@
-from jinja2 import Environment, FileSystemLoader, StrictUndefined
+from jinja2 import Environment, FileSystemLoader, StrictUndefined, Undefined
 from pathlib import Path
 import tempfile
 from qtile_lxa import __ASSETS_DIR__
@@ -13,30 +13,29 @@ class VagrantVMConfigResources:
         self.config = config
         self.output_dir = output_dir
 
-        # Initialize the environment ONCE (best practice)
-        self.env = Environment(
-            loader=FileSystemLoader(self.templates_dir),
-            undefined=StrictUndefined,  # catch missing variables early
+        self.vagrantfile, self.vagrantfile_path = self.render_template(
+            "Vagrantfile",
+            output_path=output_dir / "Vagrantfile",
+            strict=True,
+            vm=config,
+        )
+
+    @staticmethod
+    def render_template(
+        name: str,
+        output_path: Path | None = None,
+        strict: bool = True,
+        **kwargs,
+    ) -> tuple[str, Path]:
+        env = env = Environment(
+            loader=FileSystemLoader(VagrantVMConfigResources.templates_dir),
             autoescape=False,
             trim_blocks=True,
             lstrip_blocks=True,
+            undefined=StrictUndefined if strict else Undefined,
         )
 
-        # Generate + write Vagrantfile when object is created
-        self.vagrantfile, self.vagrantfile_path = self.render_template(
-            "vagrantfile",
-            output_path=self.output_dir / "Vagrantfile",
-            vm=self.config,
-        )
-
-    def render_template(
-        self,
-        name: str,
-        output_path: Path | None = None,
-        **kwargs,
-    ) -> tuple[str, Path]:
-
-        template = self.env.get_template(f"{name}.j2")
+        template = env.get_template(f"{name}.j2")
         rendered = template.render(**kwargs)
 
         # Determine output file path

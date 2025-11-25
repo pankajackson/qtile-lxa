@@ -478,6 +478,7 @@ class VagrantTrigger:
 @dataclass
 class VagrantVMConfig:
     name: str
+    data_dir: Path | None = None
     provider: VagrantProvider = VagrantProvider.Virtualbox
 
     # Compute resources
@@ -510,6 +511,21 @@ class VagrantVMConfig:
 
     # Root Vagrantfile directory (optional)
     vagrant_dir: Path | None = None
+
+    # VM Status
+    running_symbol: str = "🟢"
+    partial_running_symbol: str = "🟡"
+    poweroff_symbol: str = "🔴"
+    stopped_symbol: str = "🛑"
+    not_created_symbol: str = "⚪"
+    aborted_symbol: str = "⚡"
+    saved_symbol: str = "💤"
+    frozen_symbol: str = "❄️"
+    shutoff_symbol: str = "🔌"
+    unknown_symbol: str = "❓"
+    error_symbol: str = "❌"
+    label: str | None = None
+    enable_logger: bool = True
 
     def __post_init__(self):
         # name validation
