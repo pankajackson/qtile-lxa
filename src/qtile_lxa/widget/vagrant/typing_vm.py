@@ -478,6 +478,9 @@ class VagrantTrigger:
 @dataclass
 class VagrantVMConfig:
     name: str
+    box: str  # e.g. "bento/ubuntu-22.04"
+    box_version: str | None = None  # e.g. "20240215.01"
+
     provider: VagrantProvider = VagrantProvider.Virtualbox
 
     # Compute resources
@@ -505,13 +508,10 @@ class VagrantVMConfig:
     # Triggers
     triggers: list[VagrantTrigger] = field(default_factory=list)
 
-    # Extra provider configuration (advanced)
     provider_config: dict[str, Any] = field(default_factory=dict)
-
-    # Root Vagrantfile directory (optional)
     vagrant_dir: Path | None = None
 
-    # VM Status
+    # Status symbols
     running_symbol: str = "🟢"
     partial_running_symbol: str = "🟡"
     poweroff_symbol: str = "🔴"
@@ -523,15 +523,25 @@ class VagrantVMConfig:
     shutoff_symbol: str = "🔌"
     unknown_symbol: str = "❓"
     error_symbol: str = "❌"
+
     label: str | None = None
     enable_logger: bool = True
 
     def __post_init__(self):
         # name validation
-        if not self.name or not isinstance(self.name, str):
-            raise ValueError("VagrantVMConfig requires a valid VM name (string).")
+        if not self.name:
+            raise ValueError("VagrantVMConfig requires a valid VM name.")
 
-        # provider validation
+        # box validation
+        if not self.box or not isinstance(self.box, str):
+            raise ValueError("VagrantVMConfig requires a box name (string).")
+
+        # Validate box_version
+        if self.box_version is not None:
+            if not isinstance(self.box_version, str):
+                raise TypeError("box_version must be a string.")
+
+        # Provider
         if not isinstance(self.provider, VagrantProvider):
             raise TypeError("provider must be VagrantProvider enum.")
 
@@ -539,51 +549,47 @@ class VagrantVMConfig:
         if self.cpus is not None and self.cpus <= 0:
             raise ValueError("cpus must be > 0")
 
-        # Memory
+        # Memory format
         if self.memory is not None:
             if not any(self.memory.lower().endswith(suffix) for suffix in ("mb", "gb")):
-                raise ValueError("memory must be a string like '512MB', '2GB'")
+                raise ValueError("memory must be like '512MB', '2GB'")
 
-        # Disk string
+        # Disk size format
         if self.disk is not None:
             if not any(
                 self.disk.lower().endswith(suffix) for suffix in ("mb", "gb", "tb")
             ):
-                raise ValueError("disk must be a string like '10GB', '500MB'")
+                raise ValueError("disk must be like '10GB', '500MB'")
 
-        # Networks
+        # List type validations...
         for net in self.networks:
             if not isinstance(net, VagrantNetwork):
-                raise TypeError("All items in 'networks' must be VagrantNetwork.")
+                raise TypeError("All networks must be VagrantNetwork.")
 
         # Synced folders
         for sf in self.synced_folders:
             if not isinstance(sf, VagrantSyncedFolders):
-                raise TypeError(
-                    "All items in 'synced_folders' must be VagrantSyncedFolders."
-                )
+                raise TypeError("All synced_folders must be VagrantSyncedFolders.")
 
         # Provisioners
-        for prov in self.provisioners:
-            if not isinstance(prov, VagrantProvisioner):
-                raise TypeError(
-                    "All items in 'provisioners' must be VagrantProvisioner."
-                )
+        for p in self.provisioners:
+            if not isinstance(p, VagrantProvisioner):
+                raise TypeError("All provisioners must be VagrantProvisioner.")
 
         # Cloud init
         for ci in self.cloud_init:
             if not isinstance(ci, VagrantCloudInit):
-                raise TypeError("All items in 'cloud_init' must be VagrantCloudInit.")
+                raise TypeError("All cloud_init must be VagrantCloudInit.")
 
         # Disks
         for d in self.disks:
             if not isinstance(d, VagrantDisk):
-                raise TypeError("All items in 'disks' must be VagrantDisk.")
+                raise TypeError("All disks must be VagrantDisk.")
 
         # Triggers
         for t in self.triggers:
             if not isinstance(t, VagrantTrigger):
-                raise TypeError("All items in 'triggers' must be VagrantTrigger.")
+                raise TypeError("All triggers must be VagrantTrigger.")
 
         # provider_config
         if not isinstance(self.provider_config, dict):
@@ -591,4 +597,4 @@ class VagrantVMConfig:
 
         # vagrant_dir
         if self.vagrant_dir and not isinstance(self.vagrant_dir, Path):
-            raise TypeError("vagrant_dir must be Path or None.")
+            raise TypeError("vagrant_dir must be Path.")

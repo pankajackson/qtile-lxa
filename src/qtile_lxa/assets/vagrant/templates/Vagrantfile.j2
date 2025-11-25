@@ -1,6 +1,12 @@
 Vagrant.configure("2") do |config|
   config.vm.define "{{ vm.name }}" do |vm|
 
+    # --- BASE IMAGE (REQUIRED) ---
+    vm.vm.box = "{{ vm.box }}"
+    {% if vm.box_version %}
+    vm.vm.box_version = "{{ vm.box_version }}"
+    {% endif %}
+
     # --- PROVIDER CONFIG ---
     vm.vm.provider "{{ vm.provider.value }}" do |p|
       {% if vm.cpus %}

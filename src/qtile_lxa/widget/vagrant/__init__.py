@@ -1,6 +1,6 @@
 from .vagrant import Vagrant
 from .typing import VagrantConfig
-from vagrant_vm import VagrantVM
+from .vagrant_vm import VagrantVM
 from .typing_vm import (
     VagrantVMConfig,
     VagrantProvider,
