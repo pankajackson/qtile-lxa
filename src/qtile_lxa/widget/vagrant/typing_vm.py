@@ -89,7 +89,7 @@ class VagrantSyncType(Enum):
 
 
 @dataclass
-class VagrantSharedVolume:
+class VagrantSyncedFolders:
     source_path: Path
     target_path: Path
 
@@ -195,11 +195,27 @@ class VagrantFileProvisioner:
 
 
 @dataclass
-class VagrantAnsibleProvisioner:
+class VagrantAnsibleCommon:
     playbook: Path
+    become: bool = False
+    become_user: str = "root"
+    compatibility_mode: str = "auto"  # "auto", "2.0", "1.8"
+    config_file: Path | None = None
+    extra_vars: dict = field(default_factory=dict)
     inventory_path: Path | None = None
-    extra_vars: dict[str, str] = field(default_factory=dict)
-    limit: str | None = None
+    limit: str = "all"
+    tags: list[str] = field(default_factory=list)
+    skip_tags: list[str] = field(default_factory=list)
+    vault_password_file: Path | None = None
+
+
+@dataclass
+class VagrantAnsibleProvisioner(VagrantAnsibleCommon):
+    ask_become_pass: bool = False
+    ask_sudo_pass: bool = False
+    force_remote_user: bool = True
+    host_key_checking: bool = False
+    raw_ssh_args: list[str] = field(default_factory=list)  # eg: ['-o ControlMaster=no']
 
     def __post_init__(self):
         if not isinstance(self.playbook, Path):
@@ -209,11 +225,21 @@ class VagrantAnsibleProvisioner:
             raise TypeError("inventory_path must be Path.")
 
 
+class VagrantAnsibleLocalInstallMode(Enum):
+    Default = "default"
+    Pip = "pip"
+    PipArgsOnly = "pip_args_only"
+
+
 @dataclass
-class VagrantAnsibleLocalProvisioner:
-    playbook: Path
+class VagrantAnsibleLocalProvisioner(VagrantAnsibleCommon):
     install: bool = True
-    extra_vars: dict[str, str] = field(default_factory=dict)
+    install_mode: VagrantAnsibleLocalInstallMode = (
+        VagrantAnsibleLocalInstallMode.Default
+    )
+    pip_args: str | None = None
+    provisioning_path: Path = Path("/vagrant")
+    tmp_path: Path = Path("/tmp/vagrant-ansible")
 
     def __post_init__(self):
         if not isinstance(self.playbook, Path):
