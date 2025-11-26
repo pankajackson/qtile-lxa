@@ -154,8 +154,17 @@ class VagrantVM(GenPollText):
         elif button == 2:  # Middle-click: Destroy all machines
             self.run_in_thread(self.handle_destroy_vagrant)
 
+    def get_full_cmd(self, cmd: str) -> str:
+        # Wrap inside bash -c so everything runs inside the terminal
+        return (
+            # f'{terminal} -e "{cmd}; '
+            f'{terminal} -e bash -c "{cmd}; '
+            "echo; echo Press any key to close...; "
+            'read -n 1 -s -r"'
+        )
+
     def handle_start_vagrant(self):
-        cmd = f"{terminal} -e vagrant up"
+        cmd = self.get_full_cmd("vagrant up")
         subprocess.Popen(
             cmd,
             cwd=self.vagrant_dir,
@@ -163,7 +172,7 @@ class VagrantVM(GenPollText):
         )
 
     def handle_stop_vagrant(self):
-        cmd = f"{terminal} -e vagrant halt"
+        cmd = self.get_full_cmd("vagrant halt")
         subprocess.Popen(
             cmd,
             cwd=self.vagrant_dir,
@@ -171,7 +180,7 @@ class VagrantVM(GenPollText):
         )
 
     def handle_destroy_vagrant(self):
-        cmd = f"{terminal} -e vagrant destroy -f"
+        cmd = self.get_full_cmd("vagrant destroy -f")
         subprocess.Popen(
             cmd,
             cwd=self.vagrant_dir,

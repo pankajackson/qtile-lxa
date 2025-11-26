@@ -40,7 +40,7 @@ Vagrant.configure("2") do |config|
 
     # --- SYNCED FOLDERS ---
     {% for sf in vm.synced_folders %}
-    vm.vm.synced_folder "{{ sf.host }}", "{{ sf.guest }}"
+    vm.vm.synced_folder "{{ sf.source_path }}", "{{ sf.target_path }}"
       {%- set opts = [] -%}
       {%- if sf.owner %}{% set _ = opts.append('owner: "' ~ sf.owner ~ '"') %}{% endif %}
       {%- if sf.group %}{% set _ = opts.append('group: "' ~ sf.group ~ '"') %}{% endif %}
