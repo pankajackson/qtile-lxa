@@ -47,6 +47,7 @@ Vagrant.configure("2") do |config|
       {%- if sf.type %}{% set _ = opts.append('type: "' ~ sf.type.value ~ '"') %}{% endif %}
       {%- if sf.mount_options %}{% set _ = opts.append('mount_options: ' ~ sf.mount_options | tojson ) %}{% endif %}
       {%- if opts %}, {{ opts | join(", ") }}{% endif %}
+
     {% endfor %}
 
     # --- DISKS ---
