@@ -5,9 +5,9 @@ from typing import Any, Literal
 
 
 class VagrantProvider(Enum):
-    Virtualbox = "virtualbox"
-    Libvirt = "libvirt"
-    Vmware = "vmware"
+    VIRTUALBOX = "virtualbox"
+    LIBVIRT = "libvirt"
+    VMWARE = "vmware"
 
 
 class VagrantNetworkType(Enum):
@@ -336,6 +336,15 @@ class VagrantDisk:
                 f"Invalid disk type='{self.type}'. Must be one of {allowed_types}"
             )
 
+        if self.size:
+            val = self.size.lower().strip()
+            if val.endswith("gb"):
+                self.size_mb = int(val[:-2]) * 1024
+            elif val.endswith("mb"):
+                self.size_mb = int(val[:-2])
+            else:
+                raise ValueError(f"Invalid disk size format: {self.size}")
+
         # DVD requires a file (ISO)
         if self.type == "dvd" and not self.file:
             raise ValueError("DVD disk requires `file` pointing to ISO image.")
@@ -481,7 +490,7 @@ class VagrantVMConfig:
     box: str  # e.g. "bento/ubuntu-22.04"
     box_version: str | None = None  # e.g. "20240215.01"
 
-    provider: VagrantProvider = VagrantProvider.Virtualbox
+    provider: VagrantProvider = VagrantProvider.VIRTUALBOX
 
     # Compute resources
     cpus: int | None = None
