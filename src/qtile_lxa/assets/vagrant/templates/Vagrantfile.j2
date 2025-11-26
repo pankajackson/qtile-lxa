@@ -160,15 +160,59 @@ Vagrant.configure("2") do |config|
 
     {% endfor %}
 
-
     # --- TRIGGERS ---
     {% for t in vm.triggers %}
-    vm.trigger.{{ t.when.value }} do |tr|
-      {% if t.name %}tr.name = "{{ t.name }}"{% endif %}
-      {% if t.only %}tr.only = ["{{ t.only }}"]{% endif %}
-      {% if t.run %}tr.run = "{{ t.run }}"{% endif %}
+    vm.trigger.{{ t.timing.value }} do |tr|
+      {% if t.name %}{{ "    "}}tr.name = "{{ t.name }}"{% endif %}
+      {% if t.info %}tr.info = "{{ t.info }}"{% endif %}
+      {% if t.warn %}tr.warn = "{{ t.warn }}"{% endif %}
+      {% if t.on_error %}tr.on_error = "{{ t.on_error.value }}"{% endif %}
+
+      {% if t.only_on %}
+      tr.only_on = [
+        {% for i in t.only_on %}"{{ i }}"{% if not loop.last %}, {% endif %}{% endfor %}
+      ]
+      {% endif %}
+
+      {% if t.ignore %}
+      tr.ignore = [
+        {% for i in t.ignore %}"{{ i }}"{% if not loop.last %}, {% endif %}{% endfor %}
+      ]
+      {% endif %}
+
+      {% if t.run %}
+        {% if t.run.inline %}
+      tr.run = "{{ t.run.inline }}"
+        {% endif %}
+        {% if t.run.path %}
+      tr.run = "{{ t.run.path }}"
+        {% endif %}
+        {% if t.run.args %}
+      tr.run_args = [{% for a in t.run.args %}"{{ a }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+        {% endif %}
+      {% endif %}
+
+      {% if t.run_remote %}
+        {% if t.run_remote.inline %}
+      tr.run_remote = "{{ t.run_remote.inline }}"
+        {% endif %}
+        {% if t.run_remote.path %}
+      tr.run_remote = "{{ t.run_remote.path }}"
+        {% endif %}
+        {% if t.run_remote.args %}
+      tr.run_remote_args = [{% for a in t.run_remote.args %}"{{ a }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+        {% endif %}
+      {% endif %}
+
+      {% if t.ruby %}
+      tr.ruby = <<-RUBY
+{{ t.ruby }}
+      RUBY
+      {% endif %}
+
     end
     {% endfor %}
+
 
   end
 end

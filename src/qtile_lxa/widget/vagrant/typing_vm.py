@@ -401,8 +401,8 @@ class VagrantTriggerType(Enum):
 
 
 class VagrantOnError(Enum):
-    HALT = "halt"
-    CONTINUE = "continue"
+    HALT = ":halt"
+    CONTINUE = ":continue"
 
 
 @dataclass
@@ -424,7 +424,7 @@ class VagrantTriggerRunConfig:
 class VagrantTrigger:
     # When the trigger should run
     timing: VagrantTriggerTiming
-    actions: list[VagrantTriggerAction] = field(default_factory=list)
+    on_actions: list[VagrantTriggerAction] = field(default_factory=list)
     trigger_type: VagrantTriggerType | None = None
 
     # Optional constraints / behavior
@@ -432,7 +432,7 @@ class VagrantTrigger:
     name: str | None = None
     info: str | None = None  # print message  at the beginning of a trigger
     warn: str | None = None  # print warning message  at the beginning of a trigger
-    on_error: VagrantOnError = VagrantOnError.HALT
+    on_error: VagrantOnError = VagrantOnError.CONTINUE
     only_on: list[str] | None = None  # limit only these machines
 
     # Code to run
@@ -445,7 +445,7 @@ class VagrantTrigger:
 
     def __post_init__(self):
         # Validate actions
-        if not self.actions:
+        if not self.on_actions:
             raise ValueError(
                 "At least one action must be specified for trigger actions."
             )
