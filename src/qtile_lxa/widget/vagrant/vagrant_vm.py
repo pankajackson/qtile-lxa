@@ -31,7 +31,7 @@ class VagrantVM(GenPollText):
 
         # Load + render template resources
         self.resources = VagrantVMConfigResources(
-            config=config, output_dir=self.data_dir
+            config=config, output_dir=self.vagrant_dir
         )
 
         # Vagrant → symbol mapping

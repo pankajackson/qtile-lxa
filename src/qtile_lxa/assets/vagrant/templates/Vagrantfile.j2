@@ -23,12 +23,19 @@ Vagrant.configure("2") do |config|
     # --- NETWORKS ---
     {% for net in vm.networks %}
       {% if net.type.value == "forwarded_port" %}
-    vm.vm.network :forwarded_port, guest: {{ net.guest }}, host: {{ net.host }}
+    vm.vm.network :forwarded_port, guest: {{ net.forward.guest_port }}, host: {{ net.forward.host_port }}, protocol: "{{ net.forward.protocol.value }}"
+    
       {% elif net.type.value == "private_network" %}
     vm.vm.network "private_network"{% if net.addresses %}, ip: "{{ net.addresses[0] }}"{% endif %}
-      {% elif net.type.value == "public_network" %}
-    vm.vm.network "public_network"
+    
+      {% elif net.type.value == "public_network" and vm.provider.value == "libvirt" %}
+    vm.vm.network "public_network"{% if net.addresses %}, ip: "{{ net.addresses[0] }}" {% endif %}{% if net.interface %}, dev: "{{ net.interface }}" {% endif %}
+    
+      {% elif net.type.value == "public_network" and vm.provider.value != "libvirt" %}
+    vm.vm.network "public_network"{% if net.addresses %}, ip: "{{ net.addresses[0] }}" {% endif %}{% if net.interface %}, bridge: "{{ net.interface }}" {% endif %}
+    
       {% endif %}
+    
     {% endfor %}
 
     # --- SYNCED FOLDERS ---

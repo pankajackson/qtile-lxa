@@ -36,7 +36,7 @@ class VagrantNetworkForward:
 class VagrantNetwork:
     """Vagrant network configuration with a unified 'interface' key."""
 
-    vagrant_network: VagrantNetworkType
+    type: VagrantNetworkType
     addresses: list[str] = field(default_factory=list)
 
     # unified interface for both “bridge” and “dev”
@@ -46,7 +46,7 @@ class VagrantNetwork:
     forward: VagrantNetworkForward = field(default_factory=VagrantNetworkForward)
 
     def __post_init__(self):
-        t = self.vagrant_network
+        t = self.type
         forwarding_enabled = self.forward.is_enabled()
 
         # ---- PRIVATE NETWORK ----
