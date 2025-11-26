@@ -51,11 +51,18 @@ Vagrant.configure("2") do |config|
 
     # --- DISKS ---
     {% for d in vm.disks %}
-    vm.vm.disk :{{ d.type.value }}, name: "{{ d.name }}"
-      {%- if d.size %}, size: "{{ d.size }}"{% endif %}
-      {%- if d.primary %}, primary: true{% endif %}
-      {%- if d.auto_delete %}, auto_delete: true{% endif %}
+    vm.vm.disk :{{ d.type }},
+        name: "{{ d.name }}"
+        {%- if d.size and d.type == "disk" %}, size: "{{ d.size }}"{% endif %}
+        {%- if d.file %}, file: "{{ d.file }}"{% endif %}
+        {%- if d.primary %}, primary: true{% endif %}
+        {%- if d.auto_delete %}, auto_delete: true{% endif %}
+        {%- for provider, cfg in d.provider_config.items() %}
+        , {{ provider }}: {{ cfg | tojson }}
+        {%- endfor %}
+
     {% endfor %}
+
     # --- PROVISIONERS ---
     {% for prov in vm.provisioners %}
 
