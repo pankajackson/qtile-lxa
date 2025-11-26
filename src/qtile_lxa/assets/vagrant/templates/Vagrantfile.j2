@@ -56,40 +56,72 @@ Vagrant.configure("2") do |config|
       {%- if d.primary %}, primary: true{% endif %}
       {%- if d.auto_delete %}, auto_delete: true{% endif %}
     {% endfor %}
-
     # --- PROVISIONERS ---
-    {% for p in vm.provisioners %}
-      {% if p.type.value == "shell" %}
-        {% if p.inline %}
-    vm.vm.provision "shell", inline: "{{ p.inline | replace('"', '\\"') }}"
-        {% elif p.path %}
-    vm.vm.provision "shell", path: "{{ p.path }}"
+    {% for prov in vm.provisioners %}
+
+      {% if prov.type.value == "shell" %}
+    vm.vm.provision "shell",
+      {% if prov.config.inline %}
+        inline: "{{ prov.config.inline }}",
+      {% endif %}
+      {% if prov.config.script %}
+        path: "{{ prov.config.script }}",
+      {% endif %}
+      {% if prov.config.args %}
+        args: [{% for arg in prov.config.args %}"{{ arg }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+      {% endif %}
+      {% if prov.config.env %}
+        env: { {% for k, v in prov.config.env.items() %} "{{ k }}": "{{ v }}" {% if not loop.last %}, {% endif %}{% endfor %} },
+      {% endif %}
+        privileged: {{ "true" if prov.config.privileged else "false" }}
+      
+
+      {% elif prov.type.value == "file" %}
+    vm.vm.provision "file",
+        source: "{{ prov.config.source }}",
+        destination: "{{ prov.config.destination }}"
+      
+
+      {% elif prov.type.value == "ansible" %}
+    vm.vm.provision "ansible" do |ans|
+        ans.playbook = "{{ prov.config.playbook }}"
+        ans.become = {{ "true" if prov.config.become else "false" }}
+        ans.become_user = "{{ prov.config.become_user }}"
+        ans.compatibility_mode = "{{ prov.config.compatibility_mode }}"
+        {% if prov.config.config_file %}
+        ans.config_file = "{{ prov.config.config_file }}"
         {% endif %}
-
-      {% elif p.type.value == "ansible" %}
-    vm.vm.provision "ansible" do |a|
-      {% if p.playbook %}a.playbook = "{{ p.playbook }}"{% endif %}
-      {% if p.extra_vars %}a.extra_vars = {{ p.extra_vars | tojson }}{% endif %}
+        {% if prov.config.inventory_path %}
+        ans.inventory_path = "{{ prov.config.inventory_path }}"
+        {% endif %}
+        ans.limit = "{{ prov.config.limit }}"
+        {% if prov.config.extra_vars %}
+        ans.extra_vars = {
+          {% for k, v in prov.config.extra_vars.items() %}
+            "{{ k }}": "{{ v }}"{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        }
+        {% endif %}
     end
+      
 
-      {% elif p.type.value == "ansible_local" %}
-    vm.vm.provision "ansible_local" do |a|
-      {% if p.playbook %}a.playbook = "{{ p.playbook }}"{% endif %}
-      {% if p.extra_vars %}a.extra_vars = {{ p.extra_vars | tojson }}{% endif %}
-    end
-
-      {% elif p.type.value == "docker" %}
-    vm.vm.provision "docker" do |d|
-      {% for img in p.images %}d.pull_images "{{ img }}"{% endfor %}
-      {% for c in p.containers %}d.run "{{ c.name }}", image: "{{ c.image }}"{% endfor %}
-    end
-
-      {% elif p.type.value == "docker_compose" %}
-    vm.vm.provision "docker_compose" do |d|
-      d.compose = "{{ p.compose_file }}"
+      {% elif prov.type.value == "ansible_local" %}
+    vm.vm.provision "ansible_local" do |ans|
+        ans.playbook = "{{ prov.config.playbook }}"
+        ans.become = {{ "true" if prov.config.become else "false" }}
+        ans.become_user = "{{ prov.config.become_user }}"
+        ans.install = {{ "true" if prov.config.install else "false" }}
+        ans.install_mode = "{{ prov.config.install_mode.value }}"
+        {% if prov.config.pip_args %}
+        ans.pip_args = "{{ prov.config.pip_args }}"
+        {% endif %}
+        ans.provisioning_path = "{{ prov.config.provisioning_path }}"
+        ans.tmp_path = "{{ prov.config.tmp_path }}"
     end
       {% endif %}
+
     {% endfor %}
+
 
     # --- TRIGGERS ---
     {% for t in vm.triggers %}
