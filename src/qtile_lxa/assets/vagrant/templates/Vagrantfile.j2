@@ -54,6 +54,7 @@ Vagrant.configure("2") do |config|
     vm.vm.disk :{{ d.type }},
         name: "{{ d.name }}"
         {%- if d.size_mb and d.type == "disk" and not d.file %}, size: "{{ d.size_mb }}MB"{% endif %}
+        {%- if d.disk_ext and d.type == "disk" and not d.file %}, disk_ext: "{{ d.disk_ext }}"{% endif %}
         {%- if d.file %}, file: "{{ d.file }}"{% endif %}
         {%- if d.primary %}, primary: true{% endif %}
         {%- if d.auto_delete %}, auto_delete: true{% endif %}

@@ -316,71 +316,65 @@ class VagrantDisk:
     name: str
     type: Literal["disk", "dvd", "floppy"] = "disk"
 
-    # Optional fields
-    size: str | None = None  # Only valid for "disk"
-    file: str | None = None  # ISO for dvd; raw disk for disk/floppy
-    disk_ext: Literal["vdi", "vdi.gz"] = "vdi"  # Extension only for disk type
-    primary: bool = False  # Mark as primary disk
+    # Options (depending on type)
+    size: str | None = None  # Only for type="disk"
+    file: str | None = None  # ISO=DVD (required), Disk/Floppy (optional)
+    disk_ext: Literal["vdi", "vmdk", "vhd"] | None = None  # Only for disk
 
-    # Provider-specific configuration
+    primary: bool = False
     provider_config: dict[str, Any] = field(default_factory=dict)
-    # Example:
-    # { "virtualbox": {"iot_mode": "async"}, "libvirt": {"bus": "virtio"} }
 
     def __post_init__(self):
-
-        # Validate type
         allowed_types = {"disk", "dvd", "floppy"}
         if self.type not in allowed_types:
             raise ValueError(
-                f"Invalid disk type='{self.type}'. Must be one of {allowed_types}"
+                f"Invalid disk type '{self.type}'. Must be one of {allowed_types}"
             )
-
-        if self.size:
-            val = self.size.lower().strip()
-            if val.endswith("gb"):
-                self.size_mb = int(val[:-2]) * 1024
-            elif val.endswith("mb"):
-                self.size_mb = int(val[:-2])
-            else:
-                raise ValueError(f"Invalid disk size format: {self.size}")
-
-        # DVD requires a file (ISO)
-        if self.type == "dvd" and not self.file:
-            raise ValueError("DVD disk requires `file` pointing to ISO image.")
-
-        # Floppy: file optional, but MUST NOT have a size
-        if self.type == "floppy":
-            if self.size:
-                raise ValueError("Floppy disks cannot specify a `size`.")
-
-        # Disks: size is optional but must look valid if set
         if self.type == "disk":
+            # Validate size (optional)
+            if self.size:
+                s = self.size.lower().strip()
+                if s.endswith("gb"):
+                    self.size_mb = int(s[:-2]) * 1024
+                elif s.endswith("mb"):
+                    self.size_mb = int(s[:-2])
+                elif s.endswith("tb"):
+                    self.size_mb = int(s[:-2]) * 1024 * 1024
+                else:
+                    raise ValueError("Disk size must be like '10GB', '500MB', '1TB'.")
+
+            # Validate disk_ext
+            if self.disk_ext and self.disk_ext not in {"vdi", "vmdk", "vhd"}:
+                raise ValueError("disk_ext must be one of: 'vdi', 'vmdk', 'vhd'.")
+
+        elif self.type == "dvd":
+            if not self.file:
+                raise ValueError("DVD type requires `file` pointing to an ISO image.")
+
             if self.size is not None:
-                if not isinstance(self.size, str) or not any(
-                    self.size.lower().endswith(suffix) for suffix in ("mb", "gb", "tb")
-                ):
-                    raise ValueError(
-                        "Disk `size` must be a string like '10GB', '500MB', '1TB'."
-                    )
+                raise ValueError("DVD does not support `size`.")
 
-        # Prevent disk_ext on non-disk
-        if self.type != "disk" and self.disk_ext != "vdi":
-            raise ValueError("disk_ext is only valid for disk type 'disk'.")
+            if self.disk_ext is not None:
+                raise ValueError("DVD does not support `disk_ext`.")
 
-        # Validate provider_config
+        elif self.type == "floppy":
+            if self.size is not None:
+                raise ValueError("Floppy does not support `size`.")
+
+            if self.disk_ext is not None:
+                raise ValueError("Floppy does not support `disk_ext`.")
+
         if not isinstance(self.provider_config, dict):
             raise TypeError("provider_config must be dict[str, Any].")
 
-        # Provider config keys should be provider names
-        for provider, config in self.provider_config.items():
+        for provider, cfg in self.provider_config.items():
             if not isinstance(provider, str):
                 raise TypeError(
                     f"Provider name must be string, got {type(provider).__name__}"
                 )
-            if not isinstance(config, dict):
+            if not isinstance(cfg, dict):
                 raise TypeError(
-                    f"Provider '{provider}' config must be a dict, got {type(config).__name__}"
+                    f"Provider '{provider}' config must be a dict, got {type(cfg).__name__}"
                 )
 
 
