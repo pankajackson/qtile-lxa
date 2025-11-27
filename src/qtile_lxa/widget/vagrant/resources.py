@@ -3,21 +3,35 @@ from pathlib import Path
 import tempfile
 from qtile_lxa import __ASSETS_DIR__
 from .typing_vm import VagrantVMConfig
+from .typing_vm_group import VagrantVMGroupConfig
 
 
 class VagrantVMConfigResources:
 
     templates_dir = __ASSETS_DIR__ / "vagrant/templates"
 
-    def __init__(self, config: VagrantVMConfig, output_dir: Path):
+    def __init__(
+        self, config: VagrantVMConfig | VagrantVMGroupConfig, output_dir: Path
+    ):
         self.config = config
         self.output_dir = output_dir
 
+        if isinstance(config, VagrantVMConfig):
+            template_name = "vagrantfile_vm"
+            vagrant_config = {"vm": config}
+
+        elif isinstance(config, VagrantVMGroupConfig):
+            template_name = "vagrantfile_vm_group"
+            vagrant_config = {"group": config}
+
+        else:
+            raise TypeError(f"Invalid type for config: {type(config)}")
+
         self.vagrantfile, self.vagrantfile_path = self.render_template(
-            "Vagrantfile",
+            template_name,
             output_path=output_dir / "Vagrantfile",
             strict=True,
-            vm=config,
+            **vagrant_config,
         )
 
     @staticmethod
