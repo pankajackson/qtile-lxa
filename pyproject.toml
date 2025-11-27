@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qtile-lxa"
-version = "x.x.x"
+version = "0.0.28.6"
 authors = [
     { name = "Pankaj Jackson", email = "pankajackson@live.co.uk" }
 ]

@@ -1,7 +1,9 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 from enum import Enum
+import re, string, random
 from typing import Any, Literal
+from libqtile.log_utils import logger
 
 
 class VagrantProvider(Enum):
@@ -483,6 +485,7 @@ class VagrantVMConfig:
     name: str
     box: str  # e.g. "bento/ubuntu-22.04"
     box_version: str | None = None  # e.g. "20240215.01"
+    hostname: str | None = None
 
     provider: VagrantProvider = VagrantProvider.VIRTUALBOX
 
@@ -530,6 +533,25 @@ class VagrantVMConfig:
     label: str | None = None
     enable_logger: bool = True
 
+    def _random_suffix(self, length: int = 4) -> str:
+        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
+
+    def _sanitize_hostname(self, name: str) -> str:
+        # Replace unsupported characters with hyphens
+        name = re.sub(r"[^A-Za-z0-9.-]", "-", name)
+
+        # Collapse multiple hyphens
+        name = re.sub(r"-+", "-", name)
+
+        # Strip leading/trailing hyphens or dots
+        name = name.strip("-.")
+
+        # If empty → generate safe hostname with random suffix
+        if not name:
+            return f"vm-{self._random_suffix()}"
+
+        return name
+
     def __post_init__(self):
         # name validation
         if not self.name:
@@ -543,6 +565,20 @@ class VagrantVMConfig:
         if self.box_version is not None:
             if not isinstance(self.box_version, str):
                 raise TypeError("box_version must be a string.")
+
+        # Hostname
+        if self.hostname is None:
+            self.hostname = self._sanitize_hostname(self.name)
+        else:
+            sanitize_hostname = self._sanitize_hostname(self.hostname)
+            if sanitize_hostname != self.hostname:
+                logger.warning(
+                    f"Invalid hostname '{self.hostname}'. "
+                    f"Allowed: letters, digits, hyphens, dots. "
+                    f"It cannot start or end with '-' or '.'. "
+                    f"using Sanitized valid hostname: '{sanitize_hostname}'."
+                )
+            self.hostname = sanitize_hostname
 
         # Provider
         if not isinstance(self.provider, VagrantProvider):
