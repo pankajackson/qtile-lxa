@@ -18,7 +18,7 @@ Vagrant.configure("2") do |config|
       p.cpus = {{ vm.cpus }}
       {% endif %}
       {% if vm.memory %}
-      p.memory = "{{ vm.memory }}"
+      p.memory = {{ vm.memory }}
       {% endif %}
       {% for key, value in vm.provider_config.items() %}
       p.{{ key }} = {{ value | tojson }}

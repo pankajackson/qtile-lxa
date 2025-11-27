@@ -492,7 +492,7 @@ class VagrantVMConfig:
 
     # Compute resources
     cpus: int | None = None
-    memory: str | None = None  # "2G", "512M"
+    memory: int | None = None  # in MB (eg. "2048", "1024")
     disk: str | None = (
         None  # Primary disk size ("20G") — optional, not the same as VagrantDisk
     )
@@ -590,9 +590,8 @@ class VagrantVMConfig:
             raise ValueError("cpus must be > 0")
 
         # Memory format
-        if self.memory is not None:
-            if not any(self.memory.lower().endswith(suffix) for suffix in ("mb", "gb")):
-                raise ValueError("memory must be like '512MB', '2GB'")
+        if self.memory is not None and self.memory <= 0:
+            raise ValueError("memory must be > 0")
 
         # Disk size format
         if self.disk is not None:
