@@ -324,6 +324,7 @@ class VagrantDisk:
     disk_ext: Literal["vdi", "vmdk", "vhd"] | None = None  # Only for disk
 
     primary: bool = False
+    auto_delete: bool = False
     provider_config: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):

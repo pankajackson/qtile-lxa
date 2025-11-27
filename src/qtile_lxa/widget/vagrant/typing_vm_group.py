@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 from .typing_vm import VagrantVMConfig
 
 
@@ -7,5 +8,11 @@ from .typing_vm import VagrantVMConfig
 class VagrantVMGroupConfig:
     name: str
     vm_config: VagrantVMConfig
-    replicas: int
+    replicas: int = 1
     vagrant_dir: Path | None = None
+
+    # WidgetBoxConfig
+    widgetbox_close_button_location: Literal["left", "right"] = "left"
+    widgetbox_text_closed: str = "  "
+    widgetbox_text_open: str = "  "
+    widgetbox_timeout: int = 5

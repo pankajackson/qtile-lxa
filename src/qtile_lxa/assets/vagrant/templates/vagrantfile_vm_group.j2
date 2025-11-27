@@ -1,5 +1,6 @@
 Vagrant.configure("2") do |config|
   (1..{{ group.replicas }}).each do |i|
+  {% set vm = group.vm_config %}
   config.vm.define "{{ vm.name }}-#{i}" do |vm|
 
     # --- BASE IMAGE (REQUIRED) ---
@@ -26,10 +27,10 @@ Vagrant.configure("2") do |config|
 
     # --- NETWORKS ---
     {% for net in vm.networks %}
-      {% if net.type.value == "forwarded_port" %}
+    {% if net.type.value == "forwarded_port" %}
     vm.vm.network :forwarded_port, guest: {{ net.forward.guest_port }}, host: {{ net.forward.host_port }}, protocol: "{{ net.forward.protocol.value }}"
     
-      {% elif net.type.value == "private_network" %}
+    {% elif net.type.value == "private_network" %}
     vm.vm.network "private_network"{% if net.addresses %}, ip: "{{ net.addresses[#{i}] }}"{% endif %}
     
       {% elif net.type.value == "public_network" and vm.provider.value == "libvirt" %}

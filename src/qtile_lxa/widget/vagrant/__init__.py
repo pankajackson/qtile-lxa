@@ -29,6 +29,8 @@ from .typing_vm import (
     VagrantTriggerRunConfig,
     VagrantTrigger,
 )
+from .vagrant_vm_group import VagrantVMGroup
+from .typing_vm_group import VagrantVMGroupConfig
 
 
 __all__ = [
@@ -61,4 +63,6 @@ __all__ = [
     "VagrantOnError",
     "VagrantTriggerRunConfig",
     "VagrantTrigger",
+    "VagrantVMGroup",
+    "VagrantVMGroupConfig",
 ]

@@ -7,8 +7,6 @@ from .typing_vm_group import VagrantVMGroupConfig
 
 class VagrantVMGroup(WidgetBox):
     def __init__(self, config: VagrantVMGroupConfig, **kwargs: Any):
-        super().__init__(**kwargs)
-        self.config = config
         self.config = config
 
         # Root directory where VM-specific folders live
@@ -24,4 +22,15 @@ class VagrantVMGroup(WidgetBox):
         # Load + render template resources
         self.resources = VagrantVMConfigResources(
             config=config.vm_config, output_dir=self.vagrant_dir
+        )
+        super().__init__(
+            config=WidgetBoxConfig(
+                name=self.config.name,
+                widgets=[],
+                close_button_location=self.config.widgetbox_close_button_location,
+                text_closed=self.config.widgetbox_text_closed,
+                text_open=self.config.widgetbox_text_open,
+                timeout=self.config.widgetbox_timeout,
+                **kwargs,
+            )
         )
