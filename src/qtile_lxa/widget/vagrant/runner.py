@@ -144,3 +144,6 @@ class VagrantCLI(Runner):
 
     def destroy_vm(self, vm: str) -> None:
         self.run_in_terminal(cmd=f"vagrant destroy -f {vm}")
+
+    def ssh_vm(self, vm: str) -> None:
+        self.run_in_terminal(cmd=f"vagrant ssh {vm}")

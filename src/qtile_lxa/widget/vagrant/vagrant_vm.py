@@ -9,6 +9,7 @@ class VagrantVM(GenPollText):
     def __init__(self, config: VagrantVMConfig, **kwargs: Any):
         self.config = config
         self.vm_name = "unknown"
+        self.vm_state = "unknown"
 
         self.resources = VagrantVMConfigResources(
             config=config,
@@ -51,6 +52,7 @@ class VagrantVM(GenPollText):
                 label=self.config.label or self.config.name or "unknown",
             )
         self.vm_name = vm.name
+        self.vm_state = vm.state
         state = vm.state
         symbol = self.state_symbols_map.get(state, self.config.unknown_symbol)
         return self.format.format(symbol=symbol, label=self.config.label or vm.name)
@@ -66,7 +68,10 @@ class VagrantVM(GenPollText):
 
     def handle_start_vagrant(self):
         vg_cli = VagrantCLI(self.vagrant_dir)
-        vg_cli.start_vm(self.vm_name)
+        if self.vm_state == "running":
+            vg_cli.ssh_vm(self.vm_name)
+        else:
+            vg_cli.start_vm(self.vm_name)
 
     def handle_stop_vagrant(self):
         vg_cli = VagrantCLI(self.vagrant_dir)
