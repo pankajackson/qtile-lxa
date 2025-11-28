@@ -564,6 +564,22 @@ class VagrantVMConfig:
             # vagrant_dir
             if self.vagrant_dir and not isinstance(self.vagrant_dir, Path):
                 raise TypeError("vagrant_dir must be Path.")
+            if not self.vagrant_dir.exists():
+                raise FileNotFoundError(
+                    f"Vagrant directory {self.vagrant_dir} does not exist."
+                )
+            if not self.vagrant_dir.is_dir():
+                raise TypeError(
+                    f"Vagrant directory {self.vagrant_dir} is not a directory."
+                )
+            if not (self.vagrant_dir / "Vagrantfile").exists():
+                raise FileNotFoundError(
+                    f"Vagrant directory {self.vagrant_dir} does not contain a Vagrantfile."
+                )
+            if not (self.vagrant_dir / "Vagrantfile").is_file():
+                raise TypeError(
+                    f"Vagrant directory {self.vagrant_dir} does not contain a Vagrantfile."
+                )
             return
 
         # name validation

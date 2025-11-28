@@ -24,10 +24,11 @@ class VagrantVMGroup(WidgetBox):
         self.vagrant_dir = self.config.vagrant_dir or self.base_dir / self.config.name
         self.vagrant_dir.mkdir(parents=True, exist_ok=True)
 
-        # Load + render template resources
-        self.resources = VagrantVMConfigResources(
-            config=config, output_dir=self.vagrant_dir
-        )
+        if not self.config.skip_vagrantfile:
+            self.resources = VagrantVMConfigResources(
+                config=config, output_dir=self.vagrant_dir
+            )
+
         self.vm_list = cast(list[_Widget], self.get_vagrant_vms())
         super().__init__(
             config=WidgetBoxConfig(
