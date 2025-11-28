@@ -127,6 +127,8 @@ class VagrantCLI(Runner):
 
     def get_vm(self, vm_name: str | None = None) -> VagrantVMStatus | None:
         vms = self.get_vm_list()
+        if not vms:
+            return None
         if vm_name:
             filtered_list = [vm for vm in vms if vm.name == vm_name]
             if len(filtered_list) == 0:

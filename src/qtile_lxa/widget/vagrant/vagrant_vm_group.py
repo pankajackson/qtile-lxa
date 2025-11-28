@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Any, cast
 from libqtile.widget.base import _Widget
 from qtile_lxa.widget.widgetbox import WidgetBox, WidgetBoxConfig
@@ -7,7 +6,6 @@ from .typing_vm_group import VagrantVMGroupConfig
 from .vagrant_vm import VagrantVM
 from .typing_vm import VagrantVMConfig
 from .runner import VagrantCLI
-from libqtile.log_utils import logger
 
 
 class VagrantVMGroup(WidgetBox):

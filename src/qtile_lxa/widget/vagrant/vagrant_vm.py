@@ -1,19 +1,8 @@
-import threading
-import subprocess
-from pathlib import Path
-import csv
-from io import StringIO
-
-from libqtile.log_utils import logger
-from libqtile.utils import guess_terminal
 from qtile_extras.widget import GenPollText, decorations
 from typing import Any
-
 from .typing_vm import VagrantVMConfig
 from .resources import VagrantVMConfigResources
 from .runner import VagrantCLI
-
-terminal = guess_terminal()
 
 
 class VagrantVM(GenPollText):
@@ -67,9 +56,7 @@ class VagrantVM(GenPollText):
         return self.format.format(symbol=symbol, label=self.config.label or vm.name)
 
     def button_press(self, x, y, button):
-        if not self.config.vagrant_dir:
-            raise ValueError("Vagrant directory not specified")
-        vg_cli = VagrantCLI(self.config.vagrant_dir)
+        vg_cli = VagrantCLI(self.vagrant_dir)
         if button == 1:  # Left-click: Start all machines
             vg_cli.run_in_thread(self.handle_start_vagrant)
         elif button == 3:  # Right-click: Stop all machines
@@ -78,16 +65,13 @@ class VagrantVM(GenPollText):
             vg_cli.run_in_thread(self.handle_destroy_vagrant)
 
     def handle_start_vagrant(self):
-        if self.config.vagrant_dir:
-            vg_cli = VagrantCLI(self.config.vagrant_dir)
-            vg_cli.start_vm(self.vm_name)
+        vg_cli = VagrantCLI(self.vagrant_dir)
+        vg_cli.start_vm(self.vm_name)
 
     def handle_stop_vagrant(self):
-        if self.config.vagrant_dir:
-            vg_cli = VagrantCLI(self.config.vagrant_dir)
-            vg_cli.stop_vm(self.vm_name)
+        vg_cli = VagrantCLI(self.vagrant_dir)
+        vg_cli.stop_vm(self.vm_name)
 
     def handle_destroy_vagrant(self):
-        if self.config.vagrant_dir:
-            vg_cli = VagrantCLI(self.config.vagrant_dir)
-            vg_cli.destroy_vm(self.vm_name)
+        vg_cli = VagrantCLI(self.vagrant_dir)
+        vg_cli.destroy_vm(self.vm_name)

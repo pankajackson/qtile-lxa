@@ -557,8 +557,9 @@ class VagrantVMConfig:
     def __post_init__(self):
         if not self.vagrant_dir and not self.name:
             raise ValueError(
-                "VagrantVMGroupConfig: Either `name` or `vagrant_dir` must be provided."
+                "VagrantVMConfig: Either `name` or `vagrant_dir` must be provided."
             )
+
         if self.vagrant_dir:
             # vagrant_dir
             if self.vagrant_dir and not isinstance(self.vagrant_dir, Path):
