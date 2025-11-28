@@ -20,11 +20,11 @@ class VagrantVMGroupConfig:
     widgetbox_timeout: int = 5
 
     def __post_init__(self):
+        if not self.vagrant_dir and not self.name:
+            raise ValueError(
+                "VagrantVMGroupConfig: Either `name` or `vagrant_dir` must be provided."
+            )
         if self.skip_vagrantfile:
-            if not self.vagrant_dir and not self.name:
-                raise ValueError(
-                    "`vagrant_dir` is empty. Requires a valid Vagrant directory."
-                )
             if self.vagrant_dir:
                 # vagrant_dir
                 if self.vagrant_dir and not isinstance(self.vagrant_dir, Path):
@@ -46,10 +46,6 @@ class VagrantVMGroupConfig:
                         f"Vagrant directory {self.vagrant_dir} does not contain a Vagrantfile."
                     )
             return
-
-        # name validation
-        if not self.name:
-            raise ValueError("VagrantVMConfig requires a valid VM name.")
 
         # name validation
         if not self.vm_config:

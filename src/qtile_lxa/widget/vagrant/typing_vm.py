@@ -555,23 +555,23 @@ class VagrantVMConfig:
         return name
 
     def __post_init__(self):
-        if self.skip_vagrantfile:
-            if not self.vagrant_dir and not self.name:
-                raise ValueError(
-                    "`vagrant_dir` is empty. Requires a valid Vagrant directory."
+        if not self.vagrant_dir and not self.name:
+            raise ValueError(
+                "VagrantVMGroupConfig: Either `name` or `vagrant_dir` must be provided."
+            )
+        if self.vagrant_dir:
+            # vagrant_dir
+            if self.vagrant_dir and not isinstance(self.vagrant_dir, Path):
+                raise TypeError("vagrant_dir must be Path.")
+            if not self.vagrant_dir.exists():
+                raise FileNotFoundError(
+                    f"Vagrant directory {self.vagrant_dir} does not exist."
                 )
-            if self.vagrant_dir:
-                # vagrant_dir
-                if self.vagrant_dir and not isinstance(self.vagrant_dir, Path):
-                    raise TypeError("vagrant_dir must be Path.")
-                if not self.vagrant_dir.exists():
-                    raise FileNotFoundError(
-                        f"Vagrant directory {self.vagrant_dir} does not exist."
-                    )
-                if not self.vagrant_dir.is_dir():
-                    raise TypeError(
-                        f"Vagrant directory {self.vagrant_dir} is not a directory."
-                    )
+            if not self.vagrant_dir.is_dir():
+                raise TypeError(
+                    f"Vagrant directory {self.vagrant_dir} is not a directory."
+                )
+            if self.skip_vagrantfile:
                 if not (self.vagrant_dir / "Vagrantfile").exists():
                     raise FileNotFoundError(
                         f"Vagrant directory {self.vagrant_dir} does not contain a Vagrantfile."
@@ -580,7 +580,7 @@ class VagrantVMConfig:
                     raise TypeError(
                         f"Vagrant directory {self.vagrant_dir} does not contain a Vagrantfile."
                     )
-            return
+                return
 
         # name validation
         if not self.name:
