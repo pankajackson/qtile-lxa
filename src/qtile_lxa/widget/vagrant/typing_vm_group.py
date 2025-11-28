@@ -10,6 +10,7 @@ class VagrantVMGroupConfig:
     vm_config: VagrantVMConfig
     replicas: int = 1
     vagrant_dir: Path | None = None
+    use_short_name: bool = False
 
     # WidgetBoxConfig
     widgetbox_close_button_location: Literal["left", "right"] = "left"

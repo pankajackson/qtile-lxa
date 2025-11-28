@@ -11,6 +11,7 @@ from typing import Any
 
 from .typing_vm import VagrantVMConfig
 from .resources import VagrantVMConfigResources
+from .runner import VagrantCLI
 
 terminal = guess_terminal()
 
@@ -18,21 +19,25 @@ terminal = guess_terminal()
 class VagrantVM(GenPollText):
     def __init__(self, config: VagrantVMConfig, **kwargs: Any):
         self.config = config
+        self.vm_name = "unknown"
 
         # Root directory where VM-specific folders live
         self.base_dir = Path.home() / ".lxa_vagrant"
 
-        # Folder for this specific VM
-        self.vagrant_dir = self.config.vagrant_dir or self.base_dir / self.config.name
+        if not self.config.skip_vagrantfile:
+            if not self.config.name or not self.config.box:
+                raise ValueError("VM `name` and `box` is required")
 
-        # Data directory inside VM folder (for rendered configs)
-        self.data_dir = self.vagrant_dir / "data"
-        self.data_dir.mkdir(parents=True, exist_ok=True)
+            # Folder for this specific VM
+            self.vagrant_dir = (
+                self.config.vagrant_dir or self.base_dir / self.config.name
+            )
+            self.vagrant_dir.mkdir(parents=True, exist_ok=True)
 
-        # Load + render template resources
-        self.resources = VagrantVMConfigResources(
-            config=config, output_dir=self.vagrant_dir
-        )
+            # Load + render template resources
+            self.resources = VagrantVMConfigResources(
+                config=config, output_dir=self.vagrant_dir
+            )
 
         # Vagrant → symbol mapping
         self.state_symbols_map = {
@@ -87,64 +92,23 @@ class VagrantVM(GenPollText):
             self.log_errors(f"Error running command '{command}': {e}")
             return None
 
-    def get_vm_list(self):
-        output = self.run_command("vagrant status --machine-readable")
-        if not output:
-            return []
-
-        vms = {}
-
-        reader = csv.reader(StringIO(output))
-        for row in reader:
-            # Machine-readable must have 4+ columns
-            if len(row) < 4:
-                continue
-
-            _, machine, field, value = row[:4]
-
-            # Skip the final UI summary line where machine = ""
-            if machine == "":
-                continue
-
-            vm = vms.setdefault(
-                machine,
-                {
-                    "name": machine,
-                    "provider": None,
-                    "state": None,
-                    "state_short": None,
-                    "state_long": None,
-                },
-            )
-
-            if field == "provider-name":
-                vm["provider"] = value
-            elif field == "state":
-                vm["state"] = value
-            elif field == "state-human-short":
-                vm["state_short"] = value
-            elif field == "state-human-long":
-                vm["state_long"] = value.replace("\\n", "\n")
-
-        return list(vms.values())
-
     def check_vm_status(self):
-        vm_list = self.get_vm_list()
-
-        label = self.config.label or self.config.name
-
-        if not vm_list:
+        if self.config.vagrant_dir is None:
             return self.format.format(
                 symbol=self.state_symbols_map["unknown"],
-                label=label,
+                label=self.config.label or self.config.name or "unknown",
             )
-
-        vm = vm_list[0]
-        state = vm.get("state", "unknown")
-
+        vg_cli = VagrantCLI(self.config.vagrant_dir)
+        vm = vg_cli.get_vm(self.config.name)
+        if not vm:
+            return self.format.format(
+                symbol=self.state_symbols_map["unknown"],
+                label=self.config.label or self.config.name or "unknown",
+            )
+        self.vm_name = vm.name
+        state = vm.state
         symbol = self.state_symbols_map.get(state, self.config.unknown_symbol)
-
-        return self.format.format(symbol=symbol, label=label)
+        return self.format.format(symbol=symbol, label=self.config.label or vm.name)
 
     def button_press(self, x, y, button):
         if button == 1:  # Left-click: Start all machines
@@ -154,35 +118,17 @@ class VagrantVM(GenPollText):
         elif button == 2:  # Middle-click: Destroy all machines
             self.run_in_thread(self.handle_destroy_vagrant)
 
-    def get_full_cmd(self, cmd: str) -> str:
-        # Wrap inside bash -c so everything runs inside the terminal
-        return (
-            # f'{terminal} -e "{cmd}; '
-            f'{terminal} -e bash -c "{cmd}; '
-            "echo; echo Press any key to close...; "
-            'read -n 1 -s -r"'
-        )
-
     def handle_start_vagrant(self):
-        cmd = self.get_full_cmd("vagrant up")
-        subprocess.Popen(
-            cmd,
-            cwd=self.vagrant_dir,
-            shell=True,
-        )
+        if self.config.vagrant_dir:
+            vg_cli = VagrantCLI(self.config.vagrant_dir)
+            vg_cli.start_vm(self.vm_name)
 
     def handle_stop_vagrant(self):
-        cmd = self.get_full_cmd("vagrant halt")
-        subprocess.Popen(
-            cmd,
-            cwd=self.vagrant_dir,
-            shell=True,
-        )
+        if self.config.vagrant_dir:
+            vg_cli = VagrantCLI(self.config.vagrant_dir)
+            vg_cli.stop_vm(self.vm_name)
 
     def handle_destroy_vagrant(self):
-        cmd = self.get_full_cmd("vagrant destroy -f")
-        subprocess.Popen(
-            cmd,
-            cwd=self.vagrant_dir,
-            shell=True,
-        )
+        if self.config.vagrant_dir:
+            vg_cli = VagrantCLI(self.config.vagrant_dir)
+            vg_cli.destroy_vm(self.vm_name)

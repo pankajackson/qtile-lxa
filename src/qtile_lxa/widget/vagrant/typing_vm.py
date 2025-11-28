@@ -483,8 +483,8 @@ class VagrantTrigger:
 
 @dataclass
 class VagrantVMConfig:
-    name: str
-    box: str  # e.g. "bento/ubuntu-22.04"
+    name: str | None = None
+    box: str | None = None  # e.g. "bento/ubuntu-22.04"
     box_version: str | None = None  # e.g. "20240215.01"
     hostname: str | None = None
 
@@ -533,6 +533,7 @@ class VagrantVMConfig:
 
     label: str | None = None
     enable_logger: bool = True
+    skip_vagrantfile: bool = False
 
     def _random_suffix(self, length: int = 4) -> str:
         return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
@@ -554,6 +555,17 @@ class VagrantVMConfig:
         return name
 
     def __post_init__(self):
+        if self.skip_vagrantfile:
+            if not self.vagrant_dir:
+                raise ValueError(
+                    "`vagrant_dir` is empty. Requires a valid Vagrant directory."
+                )
+
+            # vagrant_dir
+            if self.vagrant_dir and not isinstance(self.vagrant_dir, Path):
+                raise TypeError("vagrant_dir must be Path.")
+            return
+
         # name validation
         if not self.name:
             raise ValueError("VagrantVMConfig requires a valid VM name.")
