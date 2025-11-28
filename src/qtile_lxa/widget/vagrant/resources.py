@@ -7,14 +7,22 @@ from .typing_vm_group import VagrantVMGroupConfig
 
 
 class VagrantVMConfigResources:
-
     templates_dir = __ASSETS_DIR__ / "vagrant/templates"
 
     def __init__(
-        self, config: VagrantVMConfig | VagrantVMGroupConfig, output_dir: Path
+        self,
+        config: VagrantVMConfig | VagrantVMGroupConfig,
+        skip_vagrantfile_generation: bool = False,
     ):
         self.config = config
-        self.output_dir = output_dir
+        self.base_dir = Path.home() / ".lxa_vagrant"
+        if self.config.vagrant_dir:
+            self.vagrant_dir = self.config.vagrant_dir
+        elif self.config.name:
+            self.vagrant_dir = self.base_dir / self.config.name
+        else:
+            raise ValueError(f"Missing 'vagrant_dir' or 'name' in config for {config}")
+        self.vagrant_dir.mkdir(parents=True, exist_ok=True)
 
         if isinstance(config, VagrantVMConfig):
             template_name = "vagrantfile_vm"
@@ -27,12 +35,15 @@ class VagrantVMConfigResources:
         else:
             raise TypeError(f"Invalid type for config: {type(config)}")
 
-        self.vagrantfile, self.vagrantfile_path = self.render_template(
-            template_name,
-            output_path=output_dir / "Vagrantfile",
-            strict=True,
-            **vagrant_config,
-        )
+        if not skip_vagrantfile_generation:
+            self.vagrantfile_path = self.render_template(
+                template_name,
+                output_path=self.vagrant_dir / "Vagrantfile",
+                strict=True,
+                **vagrant_config,
+            )
+        else:
+            self.vagrantfile_path = self.vagrant_dir / "Vagrantfile"
 
     @staticmethod
     def render_template(
@@ -40,7 +51,7 @@ class VagrantVMConfigResources:
         output_path: Path | None = None,
         strict: bool = True,
         **kwargs,
-    ) -> tuple[str, Path]:
+    ) -> Path:
         env = env = Environment(
             loader=FileSystemLoader(VagrantVMConfigResources.templates_dir),
             autoescape=False,
@@ -64,4 +75,4 @@ class VagrantVMConfigResources:
         # Write to file
         final_path.write_text(rendered, encoding="utf-8")
 
-        return rendered, final_path
+        return final_path

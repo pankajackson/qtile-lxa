@@ -16,18 +16,11 @@ class VagrantVMGroup(WidgetBox):
     ):
         self.config = config
         self.update_interval = update_interval
-
-        # Root directory where VM-specific folders live
-        self.base_dir = Path.home() / ".lxa_vagrant"
-
-        # Folder for this specific VM
-        self.vagrant_dir = self.config.vagrant_dir or self.base_dir / self.config.name
-        self.vagrant_dir.mkdir(parents=True, exist_ok=True)
-
-        if not self.config.skip_vagrantfile:
-            self.resources = VagrantVMConfigResources(
-                config=config, output_dir=self.vagrant_dir
-            )
+        self.resources = VagrantVMConfigResources(
+            config=config,
+            skip_vagrantfile_generation=config.skip_vagrantfile,
+        )
+        self.vagrant_dir = self.resources.vagrant_dir
 
         self.vm_list = cast(list[_Widget], self.get_vagrant_vms())
         super().__init__(
@@ -45,11 +38,8 @@ class VagrantVMGroup(WidgetBox):
     def get_vagrant_vms(self) -> list[VagrantVM]:
         runner = VagrantCLI(self.vagrant_dir)
         vms = runner.get_vm_list()
-        logger.error(f"Vagrant CLI returned {vms} VMs")
         if not vms:
             return []
-        for vm in vms:
-            logger.error(f"VM: {vm.name}")
         return [
             VagrantVM(
                 config=VagrantVMConfig(

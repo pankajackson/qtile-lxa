@@ -21,23 +21,11 @@ class VagrantVM(GenPollText):
         self.config = config
         self.vm_name = "unknown"
 
-        # Root directory where VM-specific folders live
-        self.base_dir = Path.home() / ".lxa_vagrant"
-
-        if not self.config.skip_vagrantfile:
-            if not self.config.name or not self.config.box:
-                raise ValueError("VM `name` and `box` is required")
-
-            # Folder for this specific VM
-            self.vagrant_dir = (
-                self.config.vagrant_dir or self.base_dir / self.config.name
-            )
-            self.vagrant_dir.mkdir(parents=True, exist_ok=True)
-
-            # Load + render template resources
-            self.resources = VagrantVMConfigResources(
-                config=config, output_dir=self.vagrant_dir
-            )
+        self.resources = VagrantVMConfigResources(
+            config=config,
+            skip_vagrantfile_generation=config.skip_vagrantfile,
+        )
+        self.vagrant_dir = self.resources.vagrant_dir
 
         # Vagrant → symbol mapping
         self.state_symbols_map = {
@@ -65,40 +53,8 @@ class VagrantVM(GenPollText):
         self.format = "{symbol} {label}"
         super().__init__(func=self.check_vm_status, **kwargs)
 
-    def log_errors(self, msg):
-        if self.config.enable_logger:
-            logger.error(msg)
-
-    def run_in_thread(self, target, *args):
-        t = threading.Thread(target=target, args=args, daemon=True)
-        t.start()
-
-    def run_command(self, command):
-        try:
-            result = subprocess.run(
-                command,
-                cwd=self.vagrant_dir,
-                shell=True,
-                text=True,
-                capture_output=True,
-            )
-            if result.returncode == 0:
-                return result.stdout.strip()
-
-            self.log_errors(f"Command failed ({command}):\n{result.stderr.strip()}")
-            return None
-
-        except Exception as e:
-            self.log_errors(f"Error running command '{command}': {e}")
-            return None
-
     def check_vm_status(self):
-        if self.config.vagrant_dir is None:
-            return self.format.format(
-                symbol=self.state_symbols_map["unknown"],
-                label=self.config.label or self.config.name or "unknown",
-            )
-        vg_cli = VagrantCLI(self.config.vagrant_dir)
+        vg_cli = VagrantCLI(self.vagrant_dir)
         vm = vg_cli.get_vm(self.config.name)
         if not vm:
             return self.format.format(
@@ -111,12 +67,15 @@ class VagrantVM(GenPollText):
         return self.format.format(symbol=symbol, label=self.config.label or vm.name)
 
     def button_press(self, x, y, button):
+        if not self.config.vagrant_dir:
+            raise ValueError("Vagrant directory not specified")
+        vg_cli = VagrantCLI(self.config.vagrant_dir)
         if button == 1:  # Left-click: Start all machines
-            self.run_in_thread(self.handle_start_vagrant)
+            vg_cli.run_in_thread(self.handle_start_vagrant)
         elif button == 3:  # Right-click: Stop all machines
-            self.run_in_thread(self.handle_stop_vagrant)
+            vg_cli.run_in_thread(self.handle_stop_vagrant)
         elif button == 2:  # Middle-click: Destroy all machines
-            self.run_in_thread(self.handle_destroy_vagrant)
+            vg_cli.run_in_thread(self.handle_destroy_vagrant)
 
     def handle_start_vagrant(self):
         if self.config.vagrant_dir:
