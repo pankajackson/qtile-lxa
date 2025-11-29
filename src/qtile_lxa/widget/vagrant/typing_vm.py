@@ -533,7 +533,7 @@ class VagrantVMConfig:
 
     label: str | None = None
     enable_logger: bool = True
-    skip_vagrantfile: bool = False
+    manage_vagrantfile: bool = True
 
     def _random_suffix(self, length: int = 4) -> str:
         return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
@@ -572,7 +572,7 @@ class VagrantVMConfig:
                 raise TypeError(
                     f"Vagrant directory {self.vagrant_dir} is not a directory."
                 )
-            if self.skip_vagrantfile:
+            if not self.manage_vagrantfile:
                 if not (self.vagrant_dir / "Vagrantfile").exists():
                     raise FileNotFoundError(
                         f"Vagrant directory {self.vagrant_dir} does not contain a Vagrantfile."

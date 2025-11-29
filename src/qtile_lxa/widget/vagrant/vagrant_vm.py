@@ -13,7 +13,7 @@ class VagrantVM(GenPollText):
 
         self.resources = VagrantVMConfigResources(
             config=config,
-            skip_vagrantfile_generation=config.skip_vagrantfile,
+            skip_vagrantfile_generation=not config.manage_vagrantfile,
         )
         self.vagrant_dir = self.resources.vagrant_dir
 

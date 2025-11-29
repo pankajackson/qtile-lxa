@@ -11,7 +11,7 @@ class VagrantVMGroupConfig:
     replicas: int = 1
     vagrant_dir: Path | None = None
     use_short_name: bool = False
-    skip_vagrantfile: bool = False
+    manage_vagrantfile: bool = True
 
     # WidgetBoxConfig
     widgetbox_close_button_location: Literal["left", "right"] = "left"
@@ -24,7 +24,7 @@ class VagrantVMGroupConfig:
             raise ValueError(
                 "VagrantVMGroupConfig: Either `name` or `vagrant_dir` must be provided."
             )
-        if self.skip_vagrantfile:
+        if not self.manage_vagrantfile:
             if self.vagrant_dir:
                 # vagrant_dir
                 if self.vagrant_dir and not isinstance(self.vagrant_dir, Path):

@@ -16,7 +16,7 @@ class VagrantVMGroup(WidgetBox):
         self.update_interval = update_interval
         self.resources = VagrantVMConfigResources(
             config=config,
-            skip_vagrantfile_generation=config.skip_vagrantfile,
+            skip_vagrantfile_generation=not config.manage_vagrantfile,
         )
         self.vagrant_dir = self.resources.vagrant_dir
 
@@ -47,7 +47,7 @@ class VagrantVMGroup(WidgetBox):
                         if self.config.use_short_name
                         else None
                     ),
-                    skip_vagrantfile=True,
+                    manage_vagrantfile=False,
                     vagrant_dir=self.vagrant_dir,
                 ),
                 update_interval=self.update_interval,
