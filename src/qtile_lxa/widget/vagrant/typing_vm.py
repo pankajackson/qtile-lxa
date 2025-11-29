@@ -662,16 +662,3 @@ class VagrantVMConfig:
         # provider_config
         if not isinstance(self.provider_config, dict):
             raise TypeError("provider_config must be dict[str, Any].")
-
-        # vagrant_dir
-        if self.vagrant_dir:
-            if not isinstance(self.vagrant_dir, Path):
-                raise TypeError("vagrant_dir must be Path.")
-            if not self.vagrant_dir.exists():
-                raise FileNotFoundError(
-                    f"Vagrant directory {self.vagrant_dir} does not exist."
-                )
-            if not self.vagrant_dir.is_dir():
-                raise TypeError(
-                    f"Vagrant directory {self.vagrant_dir} is not a directory."
-                )
