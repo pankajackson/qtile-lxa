@@ -11,7 +11,7 @@ Vagrant.configure("2") do |config|
 
     # --- PROVIDER CONFIG ---
     vm.vm.provider "{{ vm.provider.value }}" do |p|
-      p.name = "{{ vm.name }}"
+      
       {% if vm.cpus %}
       p.cpus = {{ vm.cpus }}
       {% endif %}
