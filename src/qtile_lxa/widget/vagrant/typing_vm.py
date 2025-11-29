@@ -518,6 +518,8 @@ class VagrantVMConfig:
     provider_config: dict[str, Any] = field(default_factory=dict)
     vagrant_dir: Path | None = None
 
+    env: dict[str, Any] = field(default_factory=dict)
+
     # Status symbols
     running_symbol: str = "🟢"
     partial_running_symbol: str = "🟡"

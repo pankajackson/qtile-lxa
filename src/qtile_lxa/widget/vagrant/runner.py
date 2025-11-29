@@ -1,8 +1,7 @@
+import subprocess, os, csv
 from dataclasses import dataclass
-import subprocess
 from io import StringIO
-import threading
-import csv
+from threading import Thread
 from pathlib import Path
 from libqtile.utils import guess_terminal
 from libqtile.log_utils import logger
@@ -15,6 +14,10 @@ terminal = guess_terminal()
 class Runner:
     def __init__(self, workdir: Path, **kwargs: Any):
         self.workdir = workdir
+        self.env = os.environ.copy()
+        self.env.update(kwargs.pop("env", {}) or {})
+
+        # remaining kwargs are pure subprocess kwargs
         self.kwargs = kwargs
 
     def run(self, command: str):
@@ -25,6 +28,7 @@ class Runner:
                 shell=True,
                 text=True,
                 capture_output=True,
+                env=self.env,
                 **self.kwargs,
             )
             if result.returncode == 0:
@@ -38,7 +42,7 @@ class Runner:
             return None
 
     def run_in_thread(self, target, *args):
-        t = threading.Thread(target=target, args=args, daemon=True)
+        t = Thread(target=target, args=args, daemon=True)
         t.start()
 
     def run_in_terminal(self, cmd, wait: bool = True):
@@ -54,6 +58,7 @@ class Runner:
             cmd,
             cwd=self.workdir,
             shell=True,
+            env=self.env,
         )
 
 

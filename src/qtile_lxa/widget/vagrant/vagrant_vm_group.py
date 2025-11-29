@@ -19,6 +19,7 @@ class VagrantVMGroup(WidgetBox):
             skip_vagrantfile_generation=not config.manage_vagrantfile,
         )
         self.vagrant_dir = self.resources.vagrant_dir
+        self.vg_cli = VagrantCLI(self.vagrant_dir, env=config.env)
 
         self.vm_list = cast(list[_Widget], self.get_vagrant_vms())
         super().__init__(
@@ -34,8 +35,7 @@ class VagrantVMGroup(WidgetBox):
         )
 
     def get_vagrant_vms(self) -> list[VagrantVM]:
-        runner = VagrantCLI(self.vagrant_dir)
-        vms = runner.get_vm_list()
+        vms = self.vg_cli.get_vm_list()
         if not vms:
             return []
         return [
@@ -49,6 +49,7 @@ class VagrantVMGroup(WidgetBox):
                     ),
                     manage_vagrantfile=False,
                     vagrant_dir=self.vagrant_dir,
+                    env=self.config.env,
                 ),
                 update_interval=self.update_interval,
             )

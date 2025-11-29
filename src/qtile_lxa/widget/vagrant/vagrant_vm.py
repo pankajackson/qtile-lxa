@@ -16,6 +16,7 @@ class VagrantVM(GenPollText):
             skip_vagrantfile_generation=not config.manage_vagrantfile,
         )
         self.vagrant_dir = self.resources.vagrant_dir
+        self.vg_cli = VagrantCLI(self.vagrant_dir, env=config.env)
 
         # Vagrant → symbol mapping
         self.state_symbols_map = {
@@ -44,8 +45,8 @@ class VagrantVM(GenPollText):
         super().__init__(func=self.check_vm_status, **kwargs)
 
     def check_vm_status(self):
-        vg_cli = VagrantCLI(self.vagrant_dir)
-        vm = vg_cli.get_vm(self.config.name)
+
+        vm = self.vg_cli.get_vm(self.config.name)
         if not vm:
             return self.format.format(
                 symbol=self.state_symbols_map["unknown"],
@@ -58,25 +59,25 @@ class VagrantVM(GenPollText):
         return self.format.format(symbol=symbol, label=self.config.label or vm.name)
 
     def button_press(self, x, y, button):
-        vg_cli = VagrantCLI(self.vagrant_dir)
+
         if button == 1:  # Left-click: Start all machines
-            vg_cli.run_in_thread(self.handle_start_vagrant)
+            self.vg_cli.run_in_thread(self.handle_start_vagrant)
         elif button == 3:  # Right-click: Stop all machines
-            vg_cli.run_in_thread(self.handle_stop_vagrant)
+            self.vg_cli.run_in_thread(self.handle_stop_vagrant)
         elif button == 2:  # Middle-click: Destroy all machines
-            vg_cli.run_in_thread(self.handle_destroy_vagrant)
+            self.vg_cli.run_in_thread(self.handle_destroy_vagrant)
 
     def handle_start_vagrant(self):
-        vg_cli = VagrantCLI(self.vagrant_dir)
+
         if self.vm_state == "running":
-            vg_cli.ssh_vm(self.vm_name)
+            self.vg_cli.ssh_vm(self.vm_name)
         else:
-            vg_cli.start_vm(self.vm_name)
+            self.vg_cli.start_vm(self.vm_name)
 
     def handle_stop_vagrant(self):
-        vg_cli = VagrantCLI(self.vagrant_dir)
-        vg_cli.stop_vm(self.vm_name)
+
+        self.vg_cli.stop_vm(self.vm_name)
 
     def handle_destroy_vagrant(self):
-        vg_cli = VagrantCLI(self.vagrant_dir)
-        vg_cli.destroy_vm(self.vm_name)
+
+        self.vg_cli.destroy_vm(self.vm_name)

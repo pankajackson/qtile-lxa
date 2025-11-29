@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Any
 from .typing_vm import VagrantVMConfig
 
 
@@ -11,6 +11,7 @@ class VagrantVMGroupConfig:
     replicas: int = 1
     vagrant_dir: Path | None = None
     use_short_name: bool = False
+    env: dict[str, Any] = field(default_factory=dict)
     manage_vagrantfile: bool = True
 
     # WidgetBoxConfig
