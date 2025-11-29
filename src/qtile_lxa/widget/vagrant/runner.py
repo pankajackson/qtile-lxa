@@ -42,8 +42,7 @@ class Runner:
             return None
 
     def run_in_thread(self, target, *args):
-        t = Thread(target=target, args=args, daemon=True)
-        t.start()
+        Thread(target=target, args=args, daemon=True).start()
 
     def run_in_terminal(self, cmd, wait: bool = True):
         if wait:
@@ -53,7 +52,8 @@ class Runner:
                 'read -n 1 -s -r"'
             )
         else:
-            cmd = f'{terminal} -e bash -c "{cmd};'
+            cmd = f'{terminal} -e bash -c "{cmd}"'
+
         subprocess.Popen(
             cmd,
             cwd=self.workdir,
