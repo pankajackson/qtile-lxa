@@ -2,9 +2,8 @@ from typing import Any, cast
 from libqtile.widget.base import _Widget
 from qtile_lxa.widget.widgetbox import WidgetBox, WidgetBoxConfig
 from .resources import VagrantVMConfigResources
-from .typing_vm_group import VagrantVMGroupConfig
+from .typing import VagrantVMConfig, VagrantVMGroupConfig
 from .vagrant_vm import VagrantVM
-from .typing_vm import VagrantVMConfig
 from .runner import VagrantCLI
 
 

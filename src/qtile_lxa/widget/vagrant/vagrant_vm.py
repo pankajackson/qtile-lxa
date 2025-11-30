@@ -1,6 +1,6 @@
 from qtile_extras.widget import GenPollText, decorations
 from typing import Any
-from .typing_vm import VagrantVMConfig
+from .typing import VagrantVMConfig
 from .resources import VagrantVMConfigResources
 from .runner import VagrantCLI
 

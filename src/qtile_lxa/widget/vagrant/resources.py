@@ -2,8 +2,8 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined, Undefined
 from pathlib import Path
 import tempfile
 from qtile_lxa import __ASSETS_DIR__
-from .typing_vm import VagrantVMConfig
-from .typing_vm_group import VagrantVMGroupConfig
+from .typing import VagrantVMConfig
+from .typing import VagrantVMGroupConfig
 
 
 class VagrantVMConfigResources:
