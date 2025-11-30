@@ -9,8 +9,7 @@ from libqtile.log_utils import logger
 from libqtile.utils import guess_terminal
 from typing import Any, Literal
 from .typing import (
-    MultipassConfig,
-    MultipassNetwork,
+    MultipassVMConfig,
     MultipassScript,
     MultipassVMOnlyScript,
 )
@@ -20,8 +19,14 @@ terminal = guess_terminal()
 
 
 class MultipassVM(GenPollText):
-    def __init__(self, config: MultipassConfig, **kwargs: Any) -> None:
+    def __init__(
+        self, config: MultipassVMConfig, vm_index: int | None = None, **kwargs: Any
+    ) -> None:
         self.config = config
+        self.vm_index = vm_index
+        if self.vm_index is not None:
+            self.config.instance_name = f"{self.config.instance_name}-{self.vm_index}"
+
         self.decorations = [
             decorations.RectDecoration(
                 colour="#333366",
@@ -206,7 +211,7 @@ class MultipassVM(GenPollText):
         backup_path = f"{netplan_path}.bak"
 
         # Convert network dict to YAML
-        netplan_dict = network.to_netplan_dict()
+        netplan_dict = network.to_netplan_dict(self.vm_index)
         netplan_yaml = yaml.dump(netplan_dict, sort_keys=False)
 
         # Create temporary directory and files locally
