@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Literal
 
 
 @dataclass
@@ -17,11 +18,23 @@ class MultipassNetwork:
     mtu: int | None = 1500  # Optional MTU
     routes: list[dict] = field(default_factory=list)  # Optional static routes
 
-    def to_netplan_dict(self) -> dict:
+    def to_netplan_dict(self, vm_index: int | None = None) -> dict:
         """Convert this network config into netplan YAML dict format."""
-        dhcp_enabled = self.dhcp4 and not (
-            self.addresses or self.routes or self.gateway4
-        )
+        if not self.addresses:
+            ip_addr = None
+        else:
+            if vm_index is None:
+                # Assign ALL IPs to a single VM
+                ip_addr = self.addresses[:]  # copy
+            else:
+                # Assign 1 IP per node when index is given
+                ip_addr = (
+                    [self.addresses[vm_index]]
+                    if vm_index < len(self.addresses)
+                    else None
+                )
+
+        dhcp_enabled = self.dhcp4 and not ip_addr
 
         net = {
             "network": {
@@ -36,8 +49,8 @@ class MultipassNetwork:
 
         eth = net["network"]["ethernets"][self.adapter]
 
-        if self.addresses:
-            eth["addresses"] = self.addresses
+        if ip_addr:
+            eth["addresses"] = ip_addr
 
         if self.nameservers:
             eth["nameservers"] = {"addresses": self.nameservers}
@@ -92,8 +105,8 @@ class MultipassVMOnlyScript(MultipassScript):
         )
 
 
-@dataclass(frozen=True)
-class MultipassConfig:
+@dataclass
+class MultipassVMConfig:
     instance_name: str
     cloud_init_path: Path | None = None
     image: str | None = None
@@ -124,3 +137,16 @@ class MultipassConfig:
     unknown_symbol: str = "❓"
     error_symbol: str = "❌"
     enable_logger: bool = False
+
+
+@dataclass
+class MultipassVMGroupConfig:
+    name: str
+    instance_config: MultipassVMConfig
+    replicas: int = 1
+
+    # WidgetBoxConfig
+    widgetbox_close_button_location: Literal["left", "right"] = "left"
+    widgetbox_text_closed: str = "  "
+    widgetbox_text_open: str = "  "
+    widgetbox_timeout: int = 5
