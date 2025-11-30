@@ -1,7 +1,6 @@
-from .vagrant import Vagrant
-from .typing import VagrantConfig
 from .vagrant_vm import VagrantVM
-from .typing_vm import (
+from .vagrant_vm_group import VagrantVMGroup
+from .typing import (
     VagrantVMConfig,
     VagrantProvider,
     VagrantNetworkType,
@@ -28,14 +27,11 @@ from .typing_vm import (
     VagrantOnError,
     VagrantTriggerRunConfig,
     VagrantTrigger,
+    VagrantVMGroupConfig,
 )
-from .vagrant_vm_group import VagrantVMGroup
-from .typing_vm_group import VagrantVMGroupConfig
 
 
 __all__ = [
-    "Vagrant",
-    "VagrantConfig",
     "VagrantVM",
     "VagrantVMConfig",
     "VagrantProvider",
