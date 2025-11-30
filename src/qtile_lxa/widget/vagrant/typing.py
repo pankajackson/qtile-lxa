@@ -726,3 +726,12 @@ class VagrantVMGroupConfig:
                 raise TypeError(
                     f"Vagrant directory {self.vagrant_dir} is not a directory."
                 )
+
+
+@dataclass
+class VagrantVMStatus:
+    name: str
+    provider: str
+    state: str
+    state_short: str
+    state_long: str
