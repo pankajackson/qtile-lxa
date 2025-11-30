@@ -2,11 +2,25 @@ from pathlib import Path
 from libqtile.widget.base import _Widget
 from qtile_lxa.widget.multipass import (
     MultipassVM,
-    MultipassConfig,
+    MultipassVMConfig,
     MultipassNetwork,
     MultipassSharedVolume,
     MultipassScript,
     MultipassVMOnlyScript,
+)
+from qtile_lxa.widget.vagrant import (
+    VagrantProvider,
+    VagrantVM,
+    VagrantVMConfig,
+    VagrantNetwork,
+    VagrantSyncedFolders,
+    VagrantSyncType,
+    VagrantCloudInit,
+    VagrantCloudInitType,
+    VagrantCloudInitContentType,
+    VagrantProvisioner,
+    VagrantProvisionerType,
+    VagrantShellProvisioner,
 )
 from qtile_lxa.widget.widgetbox import WidgetBox, WidgetBoxConfig
 from typing import Any, cast
@@ -37,56 +51,118 @@ class K8s(WidgetBox):
             )
         )
 
-    def get_master_network(self) -> MultipassNetwork | None:
-        if not self.config.network:
-            return
-
-        config = {
-            "adapter": self.config.network.adapter,
-            "multipass_network": self.config.network.network,  # make sure key matches dataclass
-            "addresses": [self.config.network.master_ip()],  # wrap in list
-        }
-        return MultipassNetwork(**config)
-
-    def get_agent_network(self, count: int) -> MultipassNetwork | None:
-        if not self.config.network:
-            return
-        agent_ips = self.config.network.agent_ips(count=self.config.agent_count)
-
-        config = {
-            "adapter": self.config.network.adapter,
-            "multipass_network": self.config.network.network,  # make sure key matches dataclass
-            "addresses": [agent_ips[count]],  # wrap in list
-        }
-        return MultipassNetwork(**config)
-
-    def get_node_list(self) -> list[MultipassVM]:
-        nodes: list[MultipassVM] = []
+    def get_node_list(self) -> list[MultipassVM | VagrantVM]:
+        nodes: list[MultipassVM | VagrantVM] = []
 
         # ---- Master Node ----
+        master_node = None
         if not self.config.worker_only:
-            master_node = MultipassVM(
-                config=MultipassConfig(
-                    instance_name=f"lxa-{self.config.cluster_name}-master",
-                    label="M",
-                    cpus=self.config.master_cpus,
-                    memory=self.config.master_memory,
-                    disk=self.config.master_disk,
-                    network=self.get_master_network(),
-                    shared_volumes=[self.config_vol],
-                    cloud_init_path=self.resources.cloud_init_path,
-                    userdata_script=MultipassVMOnlyScript(
-                        self.resources.master_userdata_path
+            if self.config.plateform == "multipass":
+                master_node = MultipassVM(
+                    config=MultipassVMConfig(
+                        instance_name=f"lxa-{self.config.cluster_name}-master",
+                        label="M",
+                        cpus=self.config.master_cpus,
+                        memory=self.config.master_memory,
+                        disk=self.config.master_disk,
+                        network=(
+                            self.config.master_network
+                            if isinstance(self.config.master_network, MultipassNetwork)
+                            else None
+                        ),
+                        shared_volumes=[
+                            MultipassSharedVolume(self.config_dir, Path("/lxa_k8s"))
+                        ],
+                        cloud_init_path=self.resources.cloud_init_path,
+                        userdata_script=MultipassVMOnlyScript(
+                            self.resources.master_userdata_path
+                        ),
                     ),
-                ),
-                update_interval=10,
-            )
-            nodes.append(master_node)
+                    update_interval=10,
+                )
+            elif self.config.plateform == "virtualbox":
+                master_node = VagrantVM(
+                    config=VagrantVMConfig(
+                        name=f"lxa-{self.config.cluster_name}-master",
+                        provider=VagrantProvider.VIRTUALBOX,
+                        label="M",
+                        cpus=self.config.master_cpus,
+                        memory=self.config.master_memory_mb,
+                        disk=self.config.master_disk,
+                        networks=(
+                            [self.config.master_network]
+                            if isinstance(self.config.master_network, VagrantNetwork)
+                            else []
+                        ),
+                        synced_folders=[
+                            VagrantSyncedFolders(self.config_dir, Path("/lxa_k8s"))
+                        ],
+                        cloud_init=[
+                            VagrantCloudInit(
+                                type=VagrantCloudInitType.UserData,
+                                content_type=VagrantCloudInitContentType.CloudConfig,
+                                path=self.resources.cloud_init_path,
+                            )
+                        ],
+                        provisioners=[
+                            VagrantProvisioner(
+                                type=VagrantProvisionerType.SHELL,
+                                config=VagrantShellProvisioner(
+                                    script=self.resources.master_userdata_path,
+                                ),
+                            )
+                        ],
+                    ),
+                    update_interval=10,
+                )
+            elif self.config.plateform == "libvirt":
+                master_node = VagrantVM(
+                    config=VagrantVMConfig(
+                        name=f"lxa-{self.config.cluster_name}-master",
+                        provider=VagrantProvider.LIBVIRT,
+                        label="M",
+                        cpus=self.config.master_cpus,
+                        memory=self.config.master_memory_mb,
+                        disk=self.config.master_disk,
+                        networks=(
+                            [self.config.master_network]
+                            if isinstance(self.config.master_network, VagrantNetwork)
+                            else []
+                        ),
+                        synced_folders=[
+                            VagrantSyncedFolders(
+                                self.config_dir,
+                                Path("/lxa_k8s"),
+                                type=VagrantSyncType.NFS,
+                                nfs_version=4,
+                            )
+                        ],
+                        cloud_init=[
+                            VagrantCloudInit(
+                                type=VagrantCloudInitType.UserData,
+                                content_type=VagrantCloudInitContentType.CloudConfig,
+                                path=self.resources.cloud_init_path,
+                            )
+                        ],
+                        provisioners=[
+                            VagrantProvisioner(
+                                type=VagrantProvisionerType.SHELL,
+                                config=VagrantShellProvisioner(
+                                    script=self.resources.master_userdata_path
+                                ),
+                            )
+                        ],
+                    ),
+                    update_interval=10,
+                )
+
+            if master_node:
+                nodes.append(master_node)
 
         # ---- Agent Nodes ----
         agent_nodes = [
             MultipassVM(
-                config=MultipassConfig(
+                config=MultipassVMConfig(
                     instance_name=f"lxa-{self.config.cluster_name}-agent-{i}",
                     label=f"W{i}",
                     cpus=self.config.agent_cpus,

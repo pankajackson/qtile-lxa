@@ -4,6 +4,8 @@ from pathlib import Path
 import secrets
 from typing import Literal
 from libqtile.log_utils import logger
+from qtile_lxa.widget.multipass import MultipassNetwork
+from qtile_lxa.widget.vagrant import VagrantNetwork
 
 
 @dataclass
@@ -51,6 +53,7 @@ class K8sNetwork:
 @dataclass
 class K8SConfig:
     cluster_name: str
+    plateform: Literal["multipass", "virtualbox", "libvirt"]
     master_cpus: int | None = None  # default 1
     master_memory: str | None = None  # default "1G"
     master_disk: str | None = None  # default "5G"
@@ -59,7 +62,8 @@ class K8SConfig:
     agent_disk: str | None = None  # default "5G"
     agent_count: int = 1  # Number of agent nodes
     data_dir: Path | None = None
-    network: K8sNetwork | None = None
+    master_network: MultipassNetwork | VagrantNetwork | None = None
+    agent_network: MultipassNetwork | VagrantNetwork | None = None
     extra_packages: list[str] = field(default_factory=list)
     tls_san: list[str] = field(
         default_factory=list
@@ -111,3 +115,55 @@ class K8SConfig:
                 )
         if not self.k3s_token:
             self.k3s_token = secrets.token_hex(16)
+
+        if self.master_network:
+            if self.plateform == "multipass" and not isinstance(
+                self.master_network, MultipassNetwork
+            ):
+                raise ValueError("master_network must be a MultipassNetwork instance")
+            elif self.plateform == "libvirt" and not isinstance(
+                self.master_network, VagrantNetwork
+            ):
+                raise ValueError("master_network must be a VagrantNetwork instance")
+            elif self.plateform == "virtualbox" and not isinstance(
+                self.master_network, VagrantNetwork
+            ):
+                raise ValueError("master_network must be a VagrantNetwork instance")
+
+        if self.agent_network:
+            if self.plateform == "multipass" and not isinstance(
+                self.agent_network, MultipassNetwork
+            ):
+                raise ValueError("agent_network must be a MultipassNetwork instance")
+            elif self.plateform == "libvirt" and not isinstance(
+                self.agent_network, VagrantNetwork
+            ):
+                raise ValueError("agent_network must be a VagrantNetwork instance")
+            elif self.plateform == "virtualbox" and not isinstance(
+                self.agent_network, VagrantNetwork
+            ):
+                raise ValueError("agent_network must be a VagrantNetwork instance")
+
+        # Validate size
+        def validate_size_mb(size: str):
+            s = size.lower().strip()
+            if s.endswith(("gb", "g")):
+                size_mb = int(s[:-2]) * 1024
+            elif s.endswith(("mb", "m")):
+                size_mb = int(s[:-2])
+            elif s.endswith(("tb", "t")):
+                size_mb = int(s[:-2]) * 1024 * 1024
+            else:
+                raise ValueError(
+                    "Disk size must be like '10GB', '10G', '500MB','500M', '1TB', '1T'."
+                )
+            return size_mb
+
+        if self.master_disk:
+            self.master_disk_size_mb = validate_size_mb(self.master_disk)
+        if self.agent_disk:
+            self.agent_disk_size_mb = validate_size_mb(self.agent_disk)
+        if self.master_memory:
+            self.master_memory_mb = validate_size_mb(self.master_memory)
+        if self.agent_memory:
+            self.agent_memory_mb = validate_size_mb(self.agent_memory)
