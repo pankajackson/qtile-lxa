@@ -36,7 +36,7 @@ def get_master_vm(
     vm = VagrantVM(
         config=VagrantVMConfig(
             name=f"lxa-{k8s_config.cluster_name}-master",
-            box="generic/ubuntu2004",
+            box=k8s_config.master_image or "ubuntu/focal64",
             provider=VagrantProvider.VIRTUALBOX,
             label="M",
             cpus=k8s_config.master_cpus,
@@ -93,7 +93,7 @@ def get_worker_vms(
             name=f"lxa-{k8s_config.cluster_name}-agent",
             vm_config=VagrantVMConfig(
                 name=f"lxa-{k8s_config.cluster_name}-agent",
-                box="generic/ubuntu2004",
+                box=k8s_config.agent_image or "ubuntu/focal64",
                 provider=VagrantProvider.VIRTUALBOX,
                 cpus=k8s_config.agent_cpus,
                 memory=(
@@ -134,8 +134,8 @@ def get_worker_vms(
                 triggers=[
                     VagrantTrigger(
                         timing=VagrantTriggerTiming.BEFORE,
-                        on_actions=[VagrantTriggerAction.UP],
-                        trigger_type=VagrantTriggerType.HOOK,
+                        on_actions=[VagrantTriggerAction.PROVISION],
+                        trigger_type=VagrantTriggerType.ACTION,
                         run=VagrantTriggerRunConfig(
                             inline=(
                                 f"echo launching agent... && cp -v {k8s_config.kubeconfig_path} {config_dir/'kubeconfig'}"
@@ -143,8 +143,33 @@ def get_worker_vms(
                                 else f"echo launching agent..."
                             ),
                         ),
-                        on_error=VagrantTriggerOnError.HALT,
-                    )
+                        on_error=VagrantTriggerOnError.CONTINUE,
+                    ),
+                    VagrantTrigger(
+                        timing=VagrantTriggerTiming.BEFORE,
+                        on_actions=[
+                            VagrantTriggerAction.HALT,
+                            VagrantTriggerAction.DESTROY,
+                            VagrantTriggerAction.SUSPEND,
+                        ],
+                        trigger_type=VagrantTriggerType.ACTION,
+                        run_remote=VagrantTriggerRunConfig(
+                            path=k8s_resources.agent_pre_remove_script_path,
+                        ),
+                        on_error=VagrantTriggerOnError.CONTINUE,
+                    ),
+                    VagrantTrigger(
+                        timing=VagrantTriggerTiming.AFTER,
+                        on_actions=[
+                            VagrantTriggerAction.UP,
+                            VagrantTriggerAction.RESUME,
+                        ],
+                        trigger_type=VagrantTriggerType.ACTION,
+                        run_remote=VagrantTriggerRunConfig(
+                            path=k8s_resources.agent_post_start_script_path,
+                        ),
+                        on_error=VagrantTriggerOnError.CONTINUE,
+                    ),
                 ],
             ),
             replicas=replicas,

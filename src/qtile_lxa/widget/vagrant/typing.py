@@ -413,7 +413,7 @@ class VagrantTriggerRunConfig:
     """Configuration for code to run on the host (run) or inside guest (run_remote)."""
 
     inline: str | None = None
-    path: str | None = None
+    path: Path | None = None
     args: list[str] = field(default_factory=list)
 
     def __post_init__(self):

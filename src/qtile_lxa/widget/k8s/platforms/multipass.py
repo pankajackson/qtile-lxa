@@ -21,6 +21,7 @@ def get_master_vm(
     vm = MultipassVM(
         config=MultipassVMConfig(
             instance_name=f"lxa-{k8s_config.cluster_name}-master",
+            image=k8s_config.master_image,
             label="M",
             cpus=k8s_config.master_cpus,
             memory=k8s_config.master_memory,
@@ -51,6 +52,7 @@ def get_worker_vms(
             name=f"lxa-{k8s_config.cluster_name}-agent",
             instance_config=MultipassVMConfig(
                 instance_name=f"lxa-{k8s_config.cluster_name}-agent",
+                image=k8s_config.agent_image,
                 cpus=k8s_config.agent_cpus,
                 memory=k8s_config.agent_memory,
                 disk=k8s_config.agent_disk,

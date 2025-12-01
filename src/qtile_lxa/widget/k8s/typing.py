@@ -57,13 +57,15 @@ class K8SConfig:
     master_cpus: int | None = None  # default 1
     master_memory: str | None = None  # default "1G"
     master_disk: str | None = None  # default "5G"
+    master_image: str | None = None  # virtualbox: bento/ubuntu-22.04, multipass: 22.04
+    master_network: MultipassNetwork | VagrantNetwork | None = None
     agent_cpus: int | None = None  # default 1
     agent_memory: str | None = None  # default "1G"
     agent_disk: str | None = None  # default "5G"
     agent_count: int = 1  # Number of agent nodes
-    data_dir: Path | None = None
-    master_network: MultipassNetwork | VagrantNetwork | None = None
+    agent_image: str | None = None  # virtualbox: bento/ubuntu-22.04, multipass: 22.04
     agent_network: MultipassNetwork | VagrantNetwork | None = None
+    data_dir: Path | None = None
     extra_packages: list[str] = field(default_factory=list)
     tls_san: list[str] = field(
         default_factory=list

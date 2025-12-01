@@ -10,7 +10,7 @@ KUBECONFIG_DEST="$HOME/.kube/config" # Destination kubeconfig
 LABEL_KEY="node-role.kubernetes.io/worker" # Node label key
 LABEL_VALUE="" # Label value (empty string means key-only)
 MAX_ATTEMPTS=5
-RETRY_DELAY=2
+RETRY_DELAY=5
 
 # ========================
 # Setup kubeconfig
@@ -26,7 +26,7 @@ for i in $(seq 1 "$MAX_ATTEMPTS"); do
         echo "✅ Node labeled successfully"
         break
     else
-        echo "❌ Labeling failed (attempt $i), retrying in $RETRY_DELAY seconds..."
+        echo "❌ Labeling failed (attempt $i / $MAX_ATTEMPTS), retrying in $RETRY_DELAY seconds..."
         sleep "$RETRY_DELAY"
     fi
 done

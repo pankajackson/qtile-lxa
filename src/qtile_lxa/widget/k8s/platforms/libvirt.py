@@ -35,7 +35,7 @@ def get_master_vm(
     vm = VagrantVM(
         config=VagrantVMConfig(
             name=f"lxa-{k8s_config.cluster_name}-master",
-            box="generic/ubuntu2004",
+            box=k8s_config.master_image or "generic/ubuntu2004",
             provider=VagrantProvider.LIBVIRT,
             label="M",
             cpus=k8s_config.master_cpus,
@@ -99,7 +99,7 @@ def get_worker_vms(
             name=f"lxa-{k8s_config.cluster_name}-agent",
             vm_config=VagrantVMConfig(
                 name=f"lxa-{k8s_config.cluster_name}-agent",
-                box="generic/ubuntu2004",
+                box=k8s_config.agent_image or "generic/ubuntu2004",
                 provider=VagrantProvider.LIBVIRT,
                 cpus=k8s_config.agent_cpus,
                 memory=(
