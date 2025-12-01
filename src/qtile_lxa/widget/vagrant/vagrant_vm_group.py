@@ -33,6 +33,19 @@ class VagrantVMGroup(WidgetBox):
             )
         )
 
+    def short_name(self, vm_name: str, sep: str = "-") -> str:
+        parts = vm_name.split(sep)
+        if len(parts) == 1:
+            return vm_name[0]  # fallback
+
+        # all parts except last → take first letter
+        initials = "".join(p[0] for p in parts[:-1] if p)
+
+        # last part → use entire last part (usually "0", "1", etc)
+        last = parts[-1]
+
+        return initials + last
+
     def get_vagrant_vms(self) -> list[VagrantVM]:
         vms = self.vg_cli.get_vm_list()
         if not vms:
@@ -42,7 +55,7 @@ class VagrantVMGroup(WidgetBox):
                 config=VagrantVMConfig(
                     name=vm.name,
                     label=(
-                        f"{vm.name[0]}{vm.name[-1]}"
+                        f"{self.short_name(vm.name)}"
                         if self.config.use_short_name
                         else None
                     ),
