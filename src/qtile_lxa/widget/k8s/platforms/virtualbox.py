@@ -88,6 +88,32 @@ def get_worker_vms(
     replicas: int,
 ) -> list[VagrantVM]:
 
+    # Prepare provisioners based on the k8s config
+    kubeconfig_file_provisioner: VagrantProvisioner | None = None
+
+    if k8s_config.worker_only and k8s_config.kubeconfig_path:
+        kubeconfig_file_provisioner = VagrantProvisioner(
+            type=VagrantProvisionerType.FILE,
+            config=VagrantFileProvisioner(
+                source=k8s_config.kubeconfig_path,
+                destination=Path("/lxa_k8s/kubeconfig"),
+            ),
+        )
+
+    userdata_shell_provisioner = VagrantProvisioner(
+        type=VagrantProvisionerType.SHELL,
+        config=VagrantShellProvisioner(
+            script=k8s_resources.agent_userdata_path,
+        ),
+    )
+
+    raw_provisioners = [
+        kubeconfig_file_provisioner,
+        userdata_shell_provisioner,
+    ]
+
+    provisioners = [p for p in raw_provisioners if p]
+
     vm_group = VagrantVMGroup(
         config=VagrantVMGroupConfig(
             name=f"lxa-{k8s_config.cluster_name}-agent",
@@ -124,28 +150,8 @@ def get_worker_vms(
                     content_type=VagrantCloudInitContentType.CloudConfig,
                     path=k8s_resources.cloud_init_path,
                 ),
-                provisioners=[
-                    VagrantProvisioner(
-                        type=VagrantProvisionerType.SHELL,
-                        config=VagrantShellProvisioner(
-                            script=k8s_resources.agent_userdata_path,
-                        ),
-                    )
-                ],
+                provisioners=provisioners,
                 triggers=[
-                    VagrantTrigger(
-                        timing=VagrantTriggerTiming.BEFORE,
-                        on_actions=[VagrantTriggerAction.PROVISION],
-                        trigger_type=VagrantTriggerType.ACTION,
-                        run=VagrantTriggerRunConfig(
-                            inline=(
-                                f"echo launching agent... && cp -v {k8s_config.kubeconfig_path} {config_dir/'kubeconfig'}"
-                                if k8s_config.worker_only and k8s_config.kubeconfig_path
-                                else f"echo launching agent..."
-                            ),
-                        ),
-                        on_error=VagrantTriggerOnError.CONTINUE,
-                    ),
                     VagrantTrigger(
                         timing=VagrantTriggerTiming.BEFORE,
                         on_actions=[
