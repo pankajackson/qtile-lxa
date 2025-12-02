@@ -1,18 +1,16 @@
-import fcntl, re
+import fcntl, re, hashlib
 from pathlib import Path
 from functools import wraps
 from libqtile.log_utils import logger
 
 
-def safe_filename(name: str) -> str:
-    if "/" in name or "\\" in name:
-        raise ValueError(f"Invalid lock name '{name}': path separators not allowed.")
-    return re.sub(r"[^A-Za-z0-9_\-]", "_", name)
+def safe_filename_hash(name: str) -> str:
+    return hashlib.sha256(name.encode()).hexdigest()[:12]
 
 
 class ProcessLocker:
     def __init__(self, app_name: str, lock_dir: Path = Path("/tmp")):
-        self.app_name = safe_filename(app_name)
+        self.app_name = safe_filename_hash(app_name)
         self.lock_dir = lock_dir
         self.lock_dir.mkdir(parents=True, exist_ok=True)
 
@@ -36,24 +34,15 @@ class ProcessLocker:
             fcntl.flock(lock_fd, fcntl.LOCK_UN)
             lock_fd.close()
 
-
-def process_locker(app_name: str):
-    """Decorator factory for locking functions."""
-
-    def decorator(func):
+    def __call__(self, func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            locker = ProcessLocker(app_name)
-            lock_fd = locker.acquire_lock()
-
+            lock_fd = self.acquire_lock()
             if not lock_fd:
-                return  # locked → skip execution
-
+                return
             try:
                 return func(*args, **kwargs)
             finally:
-                locker.release_lock(lock_fd)
+                self.release_lock(lock_fd)
 
         return wrapper
-
-    return decorator
