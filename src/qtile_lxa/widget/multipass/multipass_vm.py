@@ -26,6 +26,8 @@ class MultipassVM(GenPollText):
         self.vm_index = vm_index
         if self.vm_index is not None:
             self.config.instance_name = f"{self.config.instance_name}-{self.vm_index}"
+            if self.config.label:
+                self.config.label = f"{self.config.label}-{self.vm_index}"
 
         self.decorations = [
             decorations.RectDecoration(

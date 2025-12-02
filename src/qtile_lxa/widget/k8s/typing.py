@@ -96,6 +96,8 @@ class K8SConfig:
     master_address: str | None = None  # eg "192.168.1.10"
     kubeconfig_path: Path | None = None
 
+    update_interval: int = 10
+
     # WidgetBoxConfig
     widgetbox_close_button_location: Literal["left", "right"] = "left"
     widgetbox_text_closed: str = " 󱃾 "

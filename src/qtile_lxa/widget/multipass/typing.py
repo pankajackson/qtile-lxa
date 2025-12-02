@@ -144,6 +144,7 @@ class MultipassVMGroupConfig:
     name: str
     instance_config: MultipassVMConfig
     replicas: int = 1
+    use_short_name: bool = False
 
     # WidgetBoxConfig
     widgetbox_close_button_location: Literal["left", "right"] = "left"

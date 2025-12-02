@@ -53,6 +53,7 @@ def get_worker_vms(
             instance_config=MultipassVMConfig(
                 instance_name=f"lxa-{k8s_config.cluster_name}-agent",
                 image=k8s_config.agent_image,
+                label="Worker",
                 cpus=k8s_config.agent_cpus,
                 memory=k8s_config.agent_memory,
                 disk=k8s_config.agent_disk,
@@ -91,8 +92,9 @@ def get_worker_vms(
                 ),
             ),
             replicas=replicas,
+            use_short_name=True,
         ),
-        update_interval=10,
+        update_interval=k8s_config.update_interval,
     )
 
     return vm_group.get_multipass_vms()

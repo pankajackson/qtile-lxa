@@ -26,12 +26,38 @@ class MultipassVMGroup(WidgetBox):
             )
         )
 
+    def get_short_name(self, name: str, sep: str = "-") -> str:
+        parts = name.split(sep)
+        short_name = "".join(p[0] for p in parts if p)
+        return short_name
+
+    def get_label(
+        self, vm_name: str, label: str | None, short_name: bool = False
+    ) -> str | None:
+        if not short_name and label is None:
+            return None
+        name = label if label else vm_name
+        if short_name:
+            name = self.get_short_name(name=name)
+        return name
+
     def get_multipass_vms(self) -> list[MultipassVM]:
-        return [
-            MultipassVM(
-                config=copy.deepcopy(self.config.instance_config),
-                vm_index=i,
-                update_interval=self.update_interval,
+        vms: list[MultipassVM] = []
+        for i in range(self.config.replicas):
+            cfg = copy.deepcopy(self.config.instance_config)
+
+            cfg.label = self.get_label(
+                vm_name=cfg.instance_name,
+                label=cfg.label,
+                short_name=self.config.use_short_name,
             )
-            for i in range(self.config.replicas)
-        ]
+
+            vms.append(
+                MultipassVM(
+                    config=cfg,
+                    vm_index=i,
+                    update_interval=self.update_interval,
+                )
+            )
+
+        return vms

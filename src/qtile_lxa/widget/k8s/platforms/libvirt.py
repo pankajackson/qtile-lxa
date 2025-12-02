@@ -164,7 +164,7 @@ def get_worker_vms(
             replicas=replicas,
             use_short_name=True,
         ),
-        update_interval=10,
+        update_interval=k8s_config.update_interval,
     )
 
     return vm_group.get_vagrant_vms()
