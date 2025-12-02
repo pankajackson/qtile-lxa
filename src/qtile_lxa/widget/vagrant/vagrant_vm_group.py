@@ -73,7 +73,7 @@ class VagrantVMGroup(WidgetBox):
 
     def get_vagrant_vms(self) -> list[VagrantVM]:
         vms = self.vg_cli.get_vm_list()
-        if not vms:
+        if not vms or self.config.replicas <= 0:
             return []
         return [
             VagrantVM(
