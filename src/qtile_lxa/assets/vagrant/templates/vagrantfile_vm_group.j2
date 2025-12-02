@@ -114,6 +114,20 @@ Vagrant.configure("2") do |config|
 
     {% endfor %}
 
+    # --- CLOUD INIT ---
+    {% if vm.cloud_init  %}
+    vm.vm.cloud_init {{ vm.cloud_init.type.value  }} do |ci|
+        ci.content_type = "{{ vm.cloud_init.content_type.value }}"
+        {% if vm.cloud_init.path  %}
+        ci.path = "{{ vm.cloud_init.path  }}"
+        {% else  %}
+        ci.inline = <<-EOF
+        {{ vm.cloud_init.inline | indent(10) }}
+        EOF
+        {% endif   %}
+    end
+    {% endif  %}
+
     # --- PROVISIONERS ---
     {% for prov in vm.provisioners %}
 

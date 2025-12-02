@@ -4,6 +4,7 @@ from enum import Enum
 import re, string, random
 from typing import Any, Literal
 from libqtile.log_utils import logger
+from qtile_lxa.utils.network import get_default_interface
 
 
 class VagrantProvider(Enum):
@@ -42,7 +43,7 @@ class VagrantNetwork:
     addresses: list[str] = field(default_factory=list)
 
     # unified interface for both “bridge” and “dev”
-    interface: str | None = None
+    interface: str | None = get_default_interface()
 
     # forward struct (safe default)
     forward: VagrantNetworkForward = field(default_factory=VagrantNetworkForward)
@@ -403,7 +404,7 @@ class VagrantTriggerType(Enum):
     HOOK = "hook"
 
 
-class VagrantOnError(Enum):
+class VagrantTriggerOnError(Enum):
     HALT = ":halt"
     CONTINUE = ":continue"
 
@@ -413,7 +414,7 @@ class VagrantTriggerRunConfig:
     """Configuration for code to run on the host (run) or inside guest (run_remote)."""
 
     inline: str | None = None
-    path: str | None = None
+    path: Path | None = None
     args: list[str] = field(default_factory=list)
 
     def __post_init__(self):
@@ -435,7 +436,7 @@ class VagrantTrigger:
     name: str | None = None
     info: str | None = None  # print message  at the beginning of a trigger
     warn: str | None = None  # print warning message  at the beginning of a trigger
-    on_error: VagrantOnError = VagrantOnError.CONTINUE
+    on_error: VagrantTriggerOnError = VagrantTriggerOnError.CONTINUE
     only_on: list[str] | None = None  # limit only these machines
 
     # Code to run
@@ -453,7 +454,7 @@ class VagrantTrigger:
                 "At least one action must be specified for trigger actions."
             )
         # Validate on_error
-        if not isinstance(self.on_error, VagrantOnError):
+        if not isinstance(self.on_error, VagrantTriggerOnError):
             raise TypeError("on_error must be VagrantOnError enum")
 
         # Validate run vs run_remote
@@ -493,9 +494,6 @@ class VagrantVMConfig:
     # Compute resources
     cpus: int | None = None
     memory: int | None = None  # in MB (eg. "2048", "1024")
-    disk: str | None = (
-        None  # Primary disk size ("20G") — optional, not the same as VagrantDisk
-    )
 
     # Networking
     networks: list[VagrantNetwork] = field(default_factory=list)
@@ -507,7 +505,7 @@ class VagrantVMConfig:
     provisioners: list[VagrantProvisioner] = field(default_factory=list)
 
     # Cloud-init
-    cloud_init: list[VagrantCloudInit] = field(default_factory=list)
+    cloud_init: VagrantCloudInit | None = None
 
     # Additional disks
     disks: list[VagrantDisk] = field(default_factory=list)
@@ -624,13 +622,6 @@ class VagrantVMConfig:
         if self.memory is not None and self.memory <= 0:
             raise ValueError("memory must be > 0")
 
-        # Disk size format
-        if self.disk is not None:
-            if not any(
-                self.disk.lower().endswith(suffix) for suffix in ("mb", "gb", "tb")
-            ):
-                raise ValueError("disk must be like '10GB', '500MB'")
-
         # List type validations...
         for net in self.networks:
             if not isinstance(net, VagrantNetwork):
@@ -647,9 +638,8 @@ class VagrantVMConfig:
                 raise TypeError("All provisioners must be VagrantProvisioner.")
 
         # Cloud init
-        for ci in self.cloud_init:
-            if not isinstance(ci, VagrantCloudInit):
-                raise TypeError("All cloud_init must be VagrantCloudInit.")
+        if self.cloud_init and not isinstance(self.cloud_init, VagrantCloudInit):
+            raise TypeError("All cloud_init must be VagrantCloudInit.")
 
         # Disks
         for d in self.disks:

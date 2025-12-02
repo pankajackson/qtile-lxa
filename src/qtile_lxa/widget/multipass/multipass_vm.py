@@ -26,6 +26,8 @@ class MultipassVM(GenPollText):
         self.vm_index = vm_index
         if self.vm_index is not None:
             self.config.instance_name = f"{self.config.instance_name}-{self.vm_index}"
+            if self.config.label:
+                self.config.label = f"{self.config.label}-{self.vm_index}"
 
         self.decorations = [
             decorations.RectDecoration(
@@ -369,9 +371,6 @@ class MultipassVM(GenPollText):
             + "; echo Press any key to close..."
             + "; stty -echo -icanon time 0 min 1; dd bs=1 count=1 >/dev/null 2>&1; stty sane"
         )
-
-        # Debug TODO: Remove this
-        self.log(f"Running: {full_shell_command}")
 
         return full_shell_command
 

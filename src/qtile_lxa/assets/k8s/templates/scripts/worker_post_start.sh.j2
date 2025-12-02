@@ -5,18 +5,10 @@ set -e
 # ========================
 # Variables
 # ========================
-KUBECONFIG_SRC="/lxa_k8s/kubeconfig"  # Source kubeconfig location
-KUBECONFIG_DEST="$HOME/.kube/config" # Destination kubeconfig
 LABEL_KEY="node-role.kubernetes.io/worker" # Node label key
 LABEL_VALUE="" # Label value (empty string means key-only)
 MAX_ATTEMPTS=5
-RETRY_DELAY=2
-
-# ========================
-# Setup kubeconfig
-# ========================
-mkdir -p "$(dirname "$KUBECONFIG_DEST")"
-cp "$KUBECONFIG_SRC" "$KUBECONFIG_DEST"
+RETRY_DELAY=5
 
 # ========================
 # Label the node
@@ -26,7 +18,7 @@ for i in $(seq 1 "$MAX_ATTEMPTS"); do
         echo "✅ Node labeled successfully"
         break
     else
-        echo "❌ Labeling failed (attempt $i), retrying in $RETRY_DELAY seconds..."
+        echo "❌ Labeling failed (attempt $i / $MAX_ATTEMPTS), retrying in $RETRY_DELAY seconds..."
         sleep "$RETRY_DELAY"
     fi
 done
