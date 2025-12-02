@@ -33,10 +33,10 @@ class VagrantVMGroup(WidgetBox):
             )
         )
 
-    def short_name(self, vm_name: str, sep: str = "-") -> str:
-        parts = vm_name.split(sep)
+    def get_short_name(self, name: str, sep: str = "-") -> str:
+        parts = name.split(sep)
         if len(parts) == 1:
-            return vm_name[0]  # fallback
+            return name[0]
 
         # all parts except last → take first letter
         initials = "".join(p[0] for p in parts[:-1] if p)
@@ -44,7 +44,32 @@ class VagrantVMGroup(WidgetBox):
         # last part → use entire last part (usually "0", "1", etc)
         last = parts[-1]
 
-        return initials + last
+        return f"{initials}{last}"
+
+    def get_node_label(
+        self,
+        vm_name: str,
+        label: str,
+        sep: str = "-",
+    ) -> str:
+        parts = vm_name.split(sep)
+        if len(parts) == 1:
+            return label
+        return f"{label}{sep}{parts[-1]}"
+
+    def get_label(
+        self, vm_name: str, label: str | None, sep: str = "-", short_name: bool = False
+    ) -> str | None:
+        if not short_name and label is None:
+            return None
+        name = (
+            self.get_node_label(vm_name=vm_name, label=label, sep=sep)
+            if label
+            else vm_name
+        )
+        if short_name:
+            name = self.get_short_name(name=name)
+        return name
 
     def get_vagrant_vms(self) -> list[VagrantVM]:
         vms = self.vg_cli.get_vm_list()
@@ -54,10 +79,15 @@ class VagrantVMGroup(WidgetBox):
             VagrantVM(
                 config=VagrantVMConfig(
                     name=vm.name,
-                    label=(
-                        f"{self.short_name(vm.name)}"
-                        if self.config.use_short_name
-                        else None
+                    label=self.get_label(
+                        vm_name=vm.name,
+                        label=(
+                            self.config.vm_config.label
+                            if self.config.vm_config
+                            else None
+                        ),
+                        sep="-",
+                        short_name=self.config.use_short_name,
                     ),
                     manage_vagrantfile=False,
                     vagrant_dir=self.vagrant_dir,

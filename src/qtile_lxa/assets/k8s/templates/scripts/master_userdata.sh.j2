@@ -5,6 +5,11 @@ set -e
 echo "=== Fetching master ip ==="
 MASTER_IP={% if master_address %}{{ master_address }}{% else %}{% raw %}$(hostname -I | awk '{print $1}'){% endraw %}{% endif %}
 
+echo "=== Setting up k3s config ==="
+sudo mkdir -p /etc/rancher/k3s
+sudo tee /etc/rancher/k3s/config.yaml > /dev/null <<EOF
+node-name: $HOSTNAME
+EOF
 
 echo "=== Installing K3s master ==="
 curl -sfL https://get.k3s.io | {% if k3s_version %}INSTALL_K3S_VERSION={{ k3s_version }}{% endif %} sh -s - server {% if k3s_token %}--token={{ k3s_token }}{% endif %} --tls-san ${MASTER_IP} --cluster-init {{ install_flags }} {{ other_flags }}

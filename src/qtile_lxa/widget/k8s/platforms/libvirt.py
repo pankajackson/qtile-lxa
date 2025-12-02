@@ -100,6 +100,7 @@ def get_worker_vms(
             vm_config=VagrantVMConfig(
                 name=f"lxa-{k8s_config.cluster_name}-agent",
                 box=k8s_config.agent_image or "generic/ubuntu2004",
+                label="Worker",
                 provider=VagrantProvider.LIBVIRT,
                 cpus=k8s_config.agent_cpus,
                 memory=(

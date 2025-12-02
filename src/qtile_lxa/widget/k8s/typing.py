@@ -8,6 +8,7 @@ from qtile_lxa.widget.multipass import MultipassNetwork
 from qtile_lxa.widget.vagrant import VagrantNetwork
 
 
+# TODO: Deprecated: Please remove K8sNetwork class. Use Platform specific Network instead.
 @dataclass
 class K8sNetwork:
     """
