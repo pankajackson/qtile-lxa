@@ -4,6 +4,7 @@ from enum import Enum
 import re, string, random
 from typing import Any, Literal
 from libqtile.log_utils import logger
+from qtile_lxa.utils.network import get_default_interface
 
 
 class VagrantProvider(Enum):
@@ -42,7 +43,7 @@ class VagrantNetwork:
     addresses: list[str] = field(default_factory=list)
 
     # unified interface for both “bridge” and “dev”
-    interface: str | None = None
+    interface: str | None = get_default_interface()
 
     # forward struct (safe default)
     forward: VagrantNetworkForward = field(default_factory=VagrantNetworkForward)
