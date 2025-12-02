@@ -71,7 +71,8 @@ class K8s(WidgetBox):
                     k8s_resources=self.resources,
                     replicas=self.config.agent_count,
                 )
-        nodes.append(master_node)
+        if not self.config.worker_only:
+            nodes.append(master_node)
         nodes.extend(agent_nodes)
 
         return nodes
