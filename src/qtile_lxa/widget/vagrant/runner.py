@@ -1,5 +1,6 @@
 from io import StringIO
 import csv
+import json
 from pathlib import Path
 from typing import Any
 
@@ -104,17 +105,57 @@ class Runner:
 class VagrantCLI(Runner):
     def __init__(self, workdir: Path, **kwargs: Any):
         super().__init__(workdir, **kwargs)
+        self.status_path = self.workdir / ".vm_status.json"
+
+    def _save_status(self, data: list[dict]) -> None:
+        try:
+            self.status_path.write_text(json.dumps(data, indent=2))
+        except Exception as e:
+            logger.error(f"Failed writing {self.status_path}: {e}")
+
+    def _load_status(self) -> list[VagrantVMStatus]:
+        if not self.status_path.exists():
+            return []
+
+        try:
+            data = json.loads(self.status_path.read_text())
+        except Exception as e:
+            logger.error(f"Failed reading {self.status_path}: {e}")
+            return []
+
+        result = []
+        for vm in data:
+            result.append(
+                VagrantVMStatus(
+                    name=vm.get("name", ""),
+                    provider=vm.get("provider", ""),
+                    state=vm.get("state", ""),
+                    state_short=vm.get("state_short", ""),
+                    state_long=vm.get("state_long", ""),
+                )
+            )
+        return result
 
     def get_vm_list(self) -> list[VagrantVMStatus]:
+        """
+        1. Try reading live status with lock
+        2. If lock blocks or vagrant fails -> fallback to JSON file
+        3. If live read succeeds, update JSON file
+        """
+
         output = self.run(
             "vagrant status --machine-readable",
             locker_id=f"{str(self.workdir)}-status",
             concurrency=1,
             block=True,
         )
-        if not output:
-            return []
 
+        # If command failed or returned None → fallback to stored file
+        if not output:
+            logger.warning("Falling back to stored VM status (lock busy or error).")
+            return self._load_status()
+
+        # Normal parsing
         vms: dict[str, dict[str, str | None]] = {}
         reader = csv.reader(StringIO(output))
 
@@ -124,11 +165,9 @@ class VagrantCLI(Runner):
 
             _, machine, field, value = row[:4]
 
-            # Skip summary lines
             if not machine:
                 continue
 
-            # Initialize vm entry if not exists
             vm = vms.setdefault(
                 machine,
                 {
@@ -140,7 +179,6 @@ class VagrantCLI(Runner):
                 },
             )
 
-            # Populate fields
             if field == "provider-name":
                 vm["provider"] = value
             elif field == "state":
@@ -150,18 +188,32 @@ class VagrantCLI(Runner):
             elif field == "state-human-long":
                 vm["state_long"] = value.replace("\\n", "\n")
 
-        # Convert dictionary → dataclass objects
+        # Convert to dataclasses
         result: list[VagrantVMStatus] = []
+        json_list: list[dict] = []
+
         for vm in vms.values():
-            result.append(
-                VagrantVMStatus(
-                    name=vm["name"] or "",
-                    provider=vm["provider"] or "",
-                    state=vm["state"] or "",
-                    state_short=vm["state_short"] or "",
-                    state_long=vm["state_long"] or "",
-                )
+            obj = VagrantVMStatus(
+                name=vm["name"] or "",
+                provider=vm["provider"] or "",
+                state=vm["state"] or "",
+                state_short=vm["state_short"] or "",
+                state_long=vm["state_long"] or "",
             )
+            result.append(obj)
+
+            json_list.append(
+                {
+                    "name": obj.name,
+                    "provider": obj.provider,
+                    "state": obj.state,
+                    "state_short": obj.state_short,
+                    "state_long": obj.state_long,
+                }
+            )
+
+        # Save successful status
+        self._save_status(json_list)
 
         return result
 
@@ -170,10 +222,10 @@ class VagrantCLI(Runner):
         if not vms:
             return None
         if vm_name:
-            filtered_list = [vm for vm in vms if vm.name == vm_name]
-            if len(filtered_list) == 0:
-                return None
-            return filtered_list[0]
+            for vm in vms:
+                if vm.name == vm_name:
+                    return vm
+            return None
         return vms[0]
 
     def start_vm(self, vm: str) -> None:

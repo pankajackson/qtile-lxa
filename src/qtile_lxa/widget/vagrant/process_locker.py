@@ -1,22 +1,51 @@
 import fcntl
 from pathlib import Path
 from functools import wraps
-import hashlib
 from libqtile.log_utils import logger
 from .safe_file_name import safe_filename, safe_filename_hash
 
 
 class ConcurrencyLocker:
     """
-    Allows concurrency=1 (exclusive lock) or concurrency=N (parallel up to N).
+    A process-safe concurrency limiter.
+    concurrency=1 → exclusive lock
+    concurrency=N → allow N parallel holders
     """
 
     def __init__(
         self, locker_id: str, concurrency: int = 1, lock_dir: Path = Path("/tmp")
     ):
-        self.lock_file = lock_dir / f"lxa_{safe_filename_hash(locker_id)}_{safe_filename(locker_id)}.lock"
+        self.lock_file = (
+            lock_dir
+            / f"lxa_{safe_filename_hash(locker_id)}_{safe_filename(locker_id)}.lock"
+        )
+        self.lock_file.parent.mkdir(parents=True, exist_ok=True)
         self.lock_file.touch(exist_ok=True)
         self.concurrency = concurrency
+        self._ensure_counter_valid()
+
+    def _ensure_counter_valid(self):
+        """If file content is invalid, reset to 0. Otherwise leave it untouched."""
+        with open(self.lock_file, "r+") as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+
+            content = f.read().strip()
+
+            if content.isdigit():
+                value = int(content)
+                # valid counter: leave it
+                if 0 <= value <= self.concurrency:
+                    fcntl.flock(f, fcntl.LOCK_UN)
+                    return
+
+            # If we reach here → invalid or stale counter
+            f.seek(0)
+            f.write("0")
+            f.truncate()
+
+            fcntl.flock(f, fcntl.LOCK_UN)
+
+            logger.warning(f"[Lock Init] Counter reset (invalid): {self.lock_file}")
 
     def _modify_counter(self, delta: int, block: bool = False):
         """
@@ -47,7 +76,7 @@ class ConcurrencyLocker:
             # Unlock
             fcntl.flock(f, fcntl.LOCK_UN)
 
-            return count, new_count
+        return count, new_count
 
     def acquire(self, block: bool = True):
         """
@@ -63,20 +92,17 @@ class ConcurrencyLocker:
         # Exceeds concurrency limit?
         if new_count > self.concurrency:
             self._modify_counter(-1, True)
-            logger.error(
-                f"Lock rejected: {count}/{self.concurrency} for {self.lock_file}"
+            logger.debug(
+                f"[Lock Reject] {new_count}/{self.concurrency} {self.lock_file}"
             )
             return False
 
-        logger.error(f"Lock acquired: {self.lock_file}")
+        logger.debug(f"[Lock Acquired] {new_count}/{self.concurrency} {self.lock_file}")
         return True
 
     def release(self):
-        """
-        Decrease counter after completion.
-        """
-        self._modify_counter(-1, True)
-        logger.error(f"Lock released: {self.lock_file}")
+        old, new = self._modify_counter(-1, True)
+        logger.debug(f"[Lock Released] {new}/{self.concurrency} {self.lock_file}")
 
     def __call__(self, func):
         @wraps(func)
