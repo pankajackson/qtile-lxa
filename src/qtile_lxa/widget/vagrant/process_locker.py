@@ -7,103 +7,166 @@ from .safe_file_name import safe_filename, safe_filename_hash
 
 class ConcurrencyLocker:
     """
-    A process-safe concurrency limiter.
-    concurrency=1 → exclusive lock
-    concurrency=N → allow N parallel holders
+    Best-of-both-worlds concurrency limiter.
+
+    - concurrency = 1 → mutex
+    - concurrency = N → allow N parallel holders
+    - acquire_fd() → returns FD so caller can release explicitly
+    - acquire() → simple boolean return
+    - crash-safe / drift-safe
     """
 
     def __init__(
         self, locker_id: str, concurrency: int = 1, lock_dir: Path = Path("/tmp")
     ):
+        self.concurrency = concurrency
         self.lock_file = (
             lock_dir
             / f"lxa_{safe_filename_hash(locker_id)}_{safe_filename(locker_id)}.lock"
         )
         self.lock_file.parent.mkdir(parents=True, exist_ok=True)
         self.lock_file.touch(exist_ok=True)
-        self.concurrency = concurrency
+
         self._ensure_counter_valid()
 
     def _ensure_counter_valid(self):
-        """If file content is invalid, reset to 0. Otherwise leave it untouched."""
+        """Ensure stored counter is integer in range."""
         with open(self.lock_file, "r+") as f:
             fcntl.flock(f, fcntl.LOCK_EX)
 
             content = f.read().strip()
-
             if content.isdigit():
                 value = int(content)
-                # valid counter: leave it
                 if 0 <= value <= self.concurrency:
                     fcntl.flock(f, fcntl.LOCK_UN)
                     return
 
-            # If we reach here → invalid or stale counter
             f.seek(0)
             f.write("0")
             f.truncate()
-
             fcntl.flock(f, fcntl.LOCK_UN)
 
-            logger.warning(f"[Lock Init] Counter reset (invalid): {self.lock_file}")
+            logger.warning(f"[Lock Init] Counter reset: {self.lock_file}")
 
-    def _modify_counter(self, delta: int, block: bool = False):
+    # -------------------------------------------------------
+    # Low-level atomic counter modification
+    # -------------------------------------------------------
+    def _modify_counter(self, delta: int, block: bool):
         """
-        Modify counter safely.
-        block=True  → wait until lock free
-        block=False → fail immediately if locked
+        Atomically modify counter.
+
+        Returns:
+            (old_value, new_value, fd)
+            If failure → (None, None, None)
         """
-        with open(self.lock_file, "r+") as f:
+        fd = open(self.lock_file, "r+")
+
+        try:
+            # Lock
             if block:
-                fcntl.flock(f, fcntl.LOCK_EX)
+                fcntl.flock(fd, fcntl.LOCK_EX)
             else:
                 try:
-                    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 except BlockingIOError:
-                    return None, None
+                    fd.close()
+                    return None, None, None
 
-            # Read current count
-            content = f.read().strip()
-            count = int(content) if content.isdigit() else 0
+            # Read counter
+            content = fd.read().strip()
+            old = int(content) if content.isdigit() else 0
+            new = old + delta
 
-            new_count = count + delta
+            # Write back
+            fd.seek(0)
+            fd.write(str(new))
+            fd.truncate()
 
-            # Rewrite file
-            f.seek(0)
-            f.write(str(new_count))
-            f.truncate()
+            # Release lock BEFORE returning FD to caller
+            fcntl.flock(fd, fcntl.LOCK_UN)
 
-            # Unlock
-            fcntl.flock(f, fcntl.LOCK_UN)
+            return old, new, fd
 
-        return count, new_count
+        except Exception:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+            except Exception:
+                pass
+            fd.close()
+            raise
 
-    def acquire(self, block: bool = True):
+    # -------------------------------------------------------
+    # Acquire with FD (best of v2)
+    # -------------------------------------------------------
+    def acquire_fd(self, block: bool = True):
         """
-        block=True  → wait for lock
-        block=False → fail fast
+        Acquire lock → returns FD.
+        FD is UNLOCKED by the time it's returned (safe for caller).
+
+        Caller must pass FD back to release_fd().
         """
-        count, new_count = self._modify_counter(+1, block)
+        while True:
+            old, new, fd = self._modify_counter(+1, block)
 
-        # Failed to lock?
-        if count is None or new_count is None:
+            if fd is None or new is None:
+                return None  # fail-fast
+
+            if new <= self.concurrency:
+                logger.debug(
+                    f"[Lock Acquired] {new}/{self.concurrency} {self.lock_file}"
+                )
+                return fd
+
+            # Exceeded limit → roll back
+            fd.close()
+            self._modify_counter(-1, True)  # always block when cleaning
+            if not block:
+                return None
+
+            # Block=True → loop and retry
+
+    # -------------------------------------------------------
+    # Release FD
+    # -------------------------------------------------------
+    def release_fd(self, fd):
+        try:
+            # Read current value
+            fd.seek(0)
+            content = fd.read().strip()
+            count = int(content) if content.isdigit() else 1
+
+            new = max(0, count - 1)
+
+            # Write new value
+            fd.seek(0)
+            fd.write(str(new))
+            fd.truncate()
+
+            logger.debug(f"[Lock Released] {new}/{self.concurrency} {self.lock_file}")
+
+        finally:
+            fd.close()
+
+    # -------------------------------------------------------
+    # High-level acquire() bool API (best of v1)
+    # -------------------------------------------------------
+    def acquire(self, block: bool = True) -> bool:
+        fd = self.acquire_fd(block)
+        if fd is None:
             return False
-
-        # Exceeds concurrency limit?
-        if new_count > self.concurrency:
-            self._modify_counter(-1, True)
-            logger.debug(
-                f"[Lock Reject] {new_count}/{self.concurrency} {self.lock_file}"
-            )
-            return False
-
-        logger.debug(f"[Lock Acquired] {new_count}/{self.concurrency} {self.lock_file}")
+        fd.close()  # user doesn’t manage FD manually
         return True
 
+    # -------------------------------------------------------
+    # High-level release() for boolean acquire()
+    # -------------------------------------------------------
     def release(self):
-        old, new = self._modify_counter(-1, True)
-        logger.debug(f"[Lock Released] {new}/{self.concurrency} {self.lock_file}")
+        # atomic decrement (no FD needed)
+        self._modify_counter(-1, True)
 
+    # -------------------------------------------------------
+    # Decorator support (best of v1)
+    # -------------------------------------------------------
     def __call__(self, func):
         @wraps(func)
         def wrapper(*args, **kwargs):
