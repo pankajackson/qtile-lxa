@@ -38,10 +38,10 @@ class ConcurrencyLocker:
         val = int(content) if content.isdigit() else 0
         return max(0, min(val, self.concurrency))
 
-    def _modify_counter(self, delta: int, block: bool):
+    def _modify_counter(self, delta: int, wait: bool):
         f = open(self.lock_file, "r+")
         try:
-            if block:
+            if wait:
                 fcntl.flock(f, fcntl.LOCK_EX)
             else:
                 try:
@@ -65,29 +65,29 @@ class ConcurrencyLocker:
             finally:
                 f.close()
 
-    def acquire_fd(self, block=True):
+    def acquire_fd(self, wait=True):
         while True:
             if self._get_current_counter() >= self.concurrency:
-                if not block:
+                if not wait:
                     return None
                 time.sleep(0.02 + random.random() * 0.03)
                 continue
 
-            old, new = self._modify_counter(+1, block)
+            old, new = self._modify_counter(+1, wait)
             if old is None:  # NB fail
-                if not block:
+                if not wait:
                     return None
                 time.sleep(0.02 + random.random() * 0.03)
                 continue
 
-            if new and new <= self.concurrency:
+            if new is not None and new <= self.concurrency:
                 logger.debug(f"[Lock Acquired] {new}/{self.concurrency}")
                 return True
 
-            # rare race → rollback
+            # rare race → rollback: if someone else incremented after our shared-lock check
             self._modify_counter(-1, True)
 
-            if not block:
+            if not wait:
                 return None
             time.sleep(0.02 + random.random() * 0.03)
 
@@ -95,8 +95,8 @@ class ConcurrencyLocker:
         old, new = self._modify_counter(-1, True)
         logger.debug(f"[Lock Released] {new}/{self.concurrency}")
 
-    def acquire(self, block=True) -> bool:
-        return self.acquire_fd(block) is not None
+    def acquire(self, wait=True) -> bool:
+        return self.acquire_fd(wait) is not None
 
     def release(self):
         self.release_fd(True)
@@ -104,7 +104,7 @@ class ConcurrencyLocker:
     def __call__(self, func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            token = self.acquire_fd(block=True)
+            token = self.acquire_fd(wait=True)
             try:
                 return func(*args, **kwargs)
             finally:
