@@ -65,7 +65,7 @@ class ConcurrencyLocker:
             finally:
                 f.close()
 
-    def acquire_fd(self, wait=True):
+    def acquire(self, wait=True):
         while True:
             if self._get_current_counter() >= self.concurrency:
                 if not wait:
@@ -74,13 +74,13 @@ class ConcurrencyLocker:
                 continue
 
             old, new = self._modify_counter(+1, wait)
-            if old is None:  # NB fail
+            if old is None:  # NB-lock failed
                 if not wait:
                     return None
                 time.sleep(0.02 + random.random() * 0.03)
                 continue
 
-            if new is not None and new <= self.concurrency:
+            if old < self.concurrency:
                 logger.debug(f"[Lock Acquired] {new}/{self.concurrency}")
                 return True
 
@@ -91,15 +91,9 @@ class ConcurrencyLocker:
                 return None
             time.sleep(0.02 + random.random() * 0.03)
 
-    def release_fd(self, _token):
+    def release(self):
         old, new = self._modify_counter(-1, True)
         logger.debug(f"[Lock Released] {new}/{self.concurrency}")
-
-    def acquire(self, wait=True) -> bool:
-        return self.acquire_fd(wait) is not None
-
-    def release(self):
-        self.release_fd(True)
 
     def __call__(self, func):
         return self._wrap(func, wait=True)
@@ -110,12 +104,12 @@ class ConcurrencyLocker:
     def _wrap(self, func, wait: bool):
         @wraps(func)
         def wrapper(*a, **kw):
-            token = self.acquire_fd(wait=wait)
-            if token is None:
+            lock = self.acquire(wait=wait)
+            if lock is None:
                 return None
             try:
                 return func(*a, **kw)
             finally:
-                self.release_fd(token)
+                self.release()
 
         return wrapper
