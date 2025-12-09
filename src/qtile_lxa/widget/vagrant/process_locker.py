@@ -102,11 +102,19 @@ class ConcurrencyLocker:
         self.release_fd(True)
 
     def __call__(self, func):
+        return self._wrap(func, wait=True)
+
+    def no_wait(self, func):
+        return self._wrap(func, wait=False)
+
+    def _wrap(self, func, wait: bool):
         @wraps(func)
-        def wrapper(*args, **kwargs):
-            token = self.acquire_fd(wait=True)
+        def wrapper(*a, **kw):
+            token = self.acquire_fd(wait=wait)
+            if token is None:
+                return None
             try:
-                return func(*args, **kwargs)
+                return func(*a, **kw)
             finally:
                 self.release_fd(token)
 
