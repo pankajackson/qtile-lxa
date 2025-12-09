@@ -1,3 +1,4 @@
+import time
 import fcntl
 from pathlib import Path
 from functools import wraps
@@ -47,6 +48,22 @@ class ConcurrencyLocker:
             fcntl.flock(f, fcntl.LOCK_UN)
 
             logger.warning(f"[Lock Init] Counter reset: {self.lock_file}")
+
+    # ---------------------------------------------------------
+    # READ COUNTER (NO MODIFICATION)
+    # ---------------------------------------------------------
+    def _get_current_counter(self) -> int:
+        """
+        Safely read the current concurrency counter using a shared lock.
+        """
+        with open(self.lock_file, "r") as fd:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_SH)
+                content = fd.read().strip()
+                count = int(content) if content.isdigit() else 0
+                return count
+            finally:
+                fcntl.flock(fd, fcntl.LOCK_UN)
 
     # -------------------------------------------------------
     # Low-level atomic counter modification
@@ -106,22 +123,19 @@ class ConcurrencyLocker:
         Caller must pass FD back to release_fd().
         """
         while True:
-            old, new, fd = self._modify_counter(+1, block)
+            current_counter = self._get_current_counter()
+            if current_counter is not None and current_counter < self.concurrency:
+                old, new, fd = self._modify_counter(+1, block)
 
-            if fd is None or new is None:
-                return None  # fail-fast
-
-            if new <= self.concurrency:
                 logger.debug(
                     f"[Lock Acquired] {new}/{self.concurrency} {self.lock_file}"
                 )
                 return fd
-
-            # Exceeded limit → roll back
-            fd.close()
-            self._modify_counter(-1, True)  # always block when cleaning
             if not block:
                 return None
+            else:
+                time.sleep(1)
+                continue
 
             # Block=True → loop and retry
 
