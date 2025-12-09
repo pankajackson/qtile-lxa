@@ -1,4 +1,4 @@
-import fcntl, time
+import fcntl, time, random
 from pathlib import Path
 from functools import wraps
 from libqtile.log_utils import logger
@@ -22,8 +22,8 @@ class ConcurrencyLocker:
         with open(self.lock_file, "r+") as f:
             fcntl.flock(f, fcntl.LOCK_EX)
             content = f.read().strip()
-            value = int(content) if content.isdigit() else -1
-            if not (0 <= value <= self.concurrency):
+            val = int(content) if content.isdigit() else -1
+            if not (0 <= val <= self.concurrency):
                 f.seek(0)
                 f.write("0")
                 f.truncate()
@@ -34,12 +34,13 @@ class ConcurrencyLocker:
             fcntl.flock(f, fcntl.LOCK_SH)
             content = f.read().strip()
             fcntl.flock(f, fcntl.LOCK_UN)
-        return int(content) if content.isdigit() else 0
+
+        val = int(content) if content.isdigit() else 0
+        return max(0, min(val, self.concurrency))
 
     def _modify_counter(self, delta: int, block: bool):
         f = open(self.lock_file, "r+")
         try:
-            # exclusive lock only during modification
             if block:
                 fcntl.flock(f, fcntl.LOCK_EX)
             else:
@@ -51,7 +52,7 @@ class ConcurrencyLocker:
 
             content = f.read().strip()
             old = int(content) if content.isdigit() else 0
-            new = max(0, old + delta)
+            new = max(0, min(old + delta, self.concurrency))
 
             f.seek(0)
             f.write(str(new))
@@ -59,38 +60,38 @@ class ConcurrencyLocker:
 
             return old, new
         finally:
-            fcntl.flock(f, fcntl.LOCK_UN)
-            f.close()
+            try:
+                fcntl.flock(f, fcntl.LOCK_UN)
+            finally:
+                f.close()
 
     def acquire_fd(self, block=True):
         while True:
-            # quick hint-check
             if self._get_current_counter() >= self.concurrency:
                 if not block:
                     return None
-                time.sleep(0.05)
+                time.sleep(0.02 + random.random() * 0.03)
                 continue
 
             old, new = self._modify_counter(+1, block)
-            if old is None or new is None:  # non-blocking fail
+            if old is None:  # NB fail
                 if not block:
                     return None
-                time.sleep(0.05)
+                time.sleep(0.02 + random.random() * 0.03)
                 continue
 
-            if new <= self.concurrency:
+            if new and new <= self.concurrency:
                 logger.debug(f"[Lock Acquired] {new}/{self.concurrency}")
-                # return just a dummy object for release() to use
                 return True
 
-            # rollback (rare race)
+            # rare race → rollback
             self._modify_counter(-1, True)
 
             if not block:
                 return None
-            time.sleep(0.05)
+            time.sleep(0.02 + random.random() * 0.03)
 
-    def release_fd(self, _):
+    def release_fd(self, _token):
         old, new = self._modify_counter(-1, True)
         logger.debug(f"[Lock Released] {new}/{self.concurrency}")
 
@@ -98,7 +99,7 @@ class ConcurrencyLocker:
         return self.acquire_fd(block) is not None
 
     def release(self):
-        self._modify_counter(-1, True)
+        self.release_fd(True)
 
     def __call__(self, func):
         @wraps(func)
