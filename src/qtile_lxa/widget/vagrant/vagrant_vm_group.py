@@ -72,7 +72,7 @@ class VagrantVMGroup(WidgetBox):
         return name
 
     def get_vagrant_vms(self) -> list[VagrantVM]:
-        vms = self.vg_cli.get_vm_list()
+        vms = self.vg_cli.get_sync_status()
         if not vms or self.config.replicas <= 0:
             return []
         return [
