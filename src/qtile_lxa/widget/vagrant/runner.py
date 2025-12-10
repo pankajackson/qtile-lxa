@@ -5,8 +5,8 @@ from typing import Any
 from libqtile.log_utils import logger
 from qtile_lxa.utils.runner import Runner
 from qtile_lxa.utils.process_lock import ProcessLocker
+from qtile_lxa.utils.safe_filename import safe_filename, safe_filename_hash
 from .typing import VagrantVMStatus
-from .safe_file_name import safe_filename, safe_filename_hash
 
 
 class VagrantCLI(Runner):
