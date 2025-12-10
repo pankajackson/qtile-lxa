@@ -6,12 +6,18 @@ from qtile_lxa.utils.safe_filename import safe_filename, safe_filename_hash
 
 
 class ProcessLocker:
-    def __init__(self, app_name: str, lock_dir: Path = Path("/tmp")):
+    def __init__(
+        self,
+        app_name: str,
+        lock_dir: Path = Path("/tmp"),
+        show_logs: bool = False,
+    ):
         self.app_name = app_name
         self.lock_dir = lock_dir
         self.lock_dir.mkdir(parents=True, exist_ok=True)
+        self.show_logs = show_logs
 
-    def acquire_lock(self, hide_log: bool = False):
+    def acquire_lock(self):
         """Acquire a lock using a specific lock file."""
         lock_file = self.lock_dir / f"{self.app_name}.lock"
         lock_file.touch(exist_ok=True)
@@ -19,23 +25,25 @@ class ProcessLocker:
         lock_fd = open(lock_file, "r+")
         try:
             fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            if self.show_logs:
+                logger.info(f"Process Locked: {lock_file}")
             return lock_fd
         except BlockingIOError:
             lock_fd.close()  # prevent FD leak
-            if not hide_log:
+            if self.show_logs:
                 logger.warning(
                     f"Process Locked, another instance is running for {lock_file}."
                 )
             return None
 
-    def release_lock(self, lock_fd, hide_log: bool = False):
+    def release_lock(self, lock_fd):
         """Release the lock."""
         if lock_fd:
             path = lock_fd.name
             fcntl.flock(lock_fd, fcntl.LOCK_UN)
             lock_fd.close()
-            if not hide_log:
-                logger.warning(f"Process Unlocked: {path}")
+            if self.show_logs:
+                logger.info(f"Process Unlocked: {path}")
 
 
 class ConcurrencyLocker:
