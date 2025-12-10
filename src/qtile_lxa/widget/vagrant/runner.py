@@ -1,105 +1,12 @@
 from io import StringIO
-import csv
-import json
+import csv, json
 from pathlib import Path
 from typing import Any
-
-# from qtile_lxa.utils.runner import Runner
-from .typing import VagrantVMStatus
-
-
-from .process_locker import ConcurrencyLocker
-import subprocess, os
-from threading import Thread
-from pathlib import Path
-from libqtile.utils import guess_terminal
 from libqtile.log_utils import logger
-from typing import Any
-
-
-terminal = guess_terminal()
-
-
-class Runner:
-    def __init__(self, workdir: Path, **kwargs: Any):
-        self.workdir = workdir
-        self.env = os.environ.copy()
-        self.env.update(kwargs.pop("env", {}) or {})
-        self.kwargs = kwargs
-
-    def _with_lock(self, locker_id, concurrency, block, func):
-        locker = None
-
-        if locker_id:
-            if concurrency < 1:
-                raise ValueError("concurrency must be >= 1")
-            locker = ConcurrencyLocker(locker_id, concurrency)
-            if not locker.acquire(block=block):
-                return None
-
-        try:
-            return func()
-        finally:
-            if locker:
-                locker.release()
-
-    def run(
-        self,
-        command: str,
-        locker_id: str | None = None,
-        concurrency: int = 1,
-        block=True,
-    ):
-
-        def _execute():
-            result = subprocess.run(
-                command,
-                cwd=self.workdir,
-                shell=True,
-                text=True,
-                capture_output=True,
-                env=self.env,
-                **self.kwargs,
-            )
-            if result.returncode == 0:
-                return result.stdout.strip()
-            logger.error(f"Command failed ({command}):\n{result.stderr.strip()}")
-            return None
-
-        return self._with_lock(locker_id, concurrency, block, _execute)
-
-    def run_in_thread(self, target, *args, locker_id=None, concurrency=1, block=False):
-
-        def _thread_wrapper():
-            def _execute():
-                return target(*args)
-
-            self._with_lock(locker_id, concurrency, block, _execute)
-
-        Thread(target=_thread_wrapper, daemon=True).start()
-
-    def run_in_terminal(
-        self, cmd, wait: bool = True, locker_id=None, concurrency=1, block=False
-    ):
-
-        def _execute():
-            if wait:
-                full = (
-                    f'{terminal} -e bash -c "{cmd}; '
-                    "echo; echo Press any key to close...; "
-                    'read -n 1 -s -r"'
-                )
-            else:
-                full = f'{terminal} -e bash -c "{cmd}"'
-
-            subprocess.Popen(
-                full,
-                cwd=self.workdir,
-                shell=True,
-                env=self.env,
-            )
-
-        return self._with_lock(locker_id, concurrency, block, _execute)
+from qtile_lxa.utils.runner import Runner
+from qtile_lxa.utils.process_lock import ProcessLocker
+from .typing import VagrantVMStatus
+from .safe_file_name import safe_filename, safe_filename_hash
 
 
 class VagrantCLI(Runner):
@@ -107,7 +14,19 @@ class VagrantCLI(Runner):
         super().__init__(workdir, **kwargs)
         self.status_path = self.workdir / ".vm_status.json"
 
-    def _save_status(self, data: list[dict]) -> None:
+    def _save_status(self, vm_status: list[VagrantVMStatus]) -> None:
+        data: list[dict[str, str]] = []
+        for vm in vm_status:
+            data.append(
+                {
+                    "name": vm.name,
+                    "provider": vm.provider,
+                    "state": vm.state,
+                    "state_short": vm.state_short,
+                    "state_long": vm.state_long,
+                }
+            )
+
         try:
             self.status_path.write_text(json.dumps(data, indent=2))
         except Exception as e:
@@ -116,7 +35,6 @@ class VagrantCLI(Runner):
     def _load_status(self) -> list[VagrantVMStatus]:
         if not self.status_path.exists():
             return []
-
         try:
             data = json.loads(self.status_path.read_text())
         except Exception as e:
@@ -136,26 +54,11 @@ class VagrantCLI(Runner):
             )
         return result
 
-    def get_vm_list(self) -> list[VagrantVMStatus]:
-        """
-        1. Try reading live status with lock
-        2. If lock blocks or vagrant fails -> fallback to JSON file
-        3. If live read succeeds, update JSON file
-        """
-
-        output = self.run(
-            "vagrant status --machine-readable",
-            locker_id=f"{str(self.workdir)}-status",
-            concurrency=1,
-            block=True,
-        )
-
-        # If command failed or returned None → fallback to stored file
+    def _fetch_status(self) -> list[VagrantVMStatus]:
+        output = self.run("vagrant status --machine-readable")
         if not output:
-            logger.warning("Falling back to stored VM status (lock busy or error).")
-            return self._load_status()
+            return []
 
-        # Normal parsing
         vms: dict[str, dict[str, str | None]] = {}
         reader = csv.reader(StringIO(output))
 
@@ -187,11 +90,7 @@ class VagrantCLI(Runner):
                 vm["state_short"] = value
             elif field == "state-human-long":
                 vm["state_long"] = value.replace("\\n", "\n")
-
-        # Convert to dataclasses
         result: list[VagrantVMStatus] = []
-        json_list: list[dict] = []
-
         for vm in vms.values():
             obj = VagrantVMStatus(
                 name=vm["name"] or "",
@@ -201,61 +100,57 @@ class VagrantCLI(Runner):
                 state_long=vm["state_long"] or "",
             )
             result.append(obj)
-
-            json_list.append(
-                {
-                    "name": obj.name,
-                    "provider": obj.provider,
-                    "state": obj.state,
-                    "state_short": obj.state_short,
-                    "state_long": obj.state_long,
-                }
-            )
-
-        # Save successful status
-        self._save_status(json_list)
-
+        self.run_in_thread(self._save_status, result)
         return result
 
-    def get_vm(self, vm_name: str | None = None) -> VagrantVMStatus | None:
-        vms = self.get_vm_list()
-        if not vms:
+    def get_async_status(self) -> list[VagrantVMStatus]:
+        lock = ProcessLocker(
+            f"{safe_filename_hash(str(self.workdir))}-{safe_filename(str(self.workdir))}-status"
+        )
+        fd = lock.acquire_lock()
+
+        if fd:
+            # run fetch in background while lock is held
+            def _update():
+                try:
+                    self._fetch_status()
+                finally:
+                    lock.release_lock(fd)
+
+            self.run_in_thread(_update)
+
+        # return cached immediately
+        return self._load_status()
+
+    def get_sync_status(self) -> list[VagrantVMStatus]:
+        vms_status = self._fetch_status()
+        return vms_status
+
+    def get_vm(self, vm_name: str | None = None, sync: bool = False):
+        vms_status = self.get_sync_status() if sync else self.get_async_status()
+
+        if not vms_status:
+            logger.warning("VM list is empty. Maybe Vagrant is down?")
             return None
-        if vm_name:
-            for vm in vms:
-                if vm.name == vm_name:
-                    return vm
-            return None
-        return vms[0]
+
+        if vm_name is None:
+            return vms_status[0]
+
+        vm = next((x for x in vms_status if x.name == vm_name), None)
+
+        if vm is None:
+            logger.warning(f"VM '{vm_name}' not found.")
+
+        return vm
 
     def start_vm(self, vm: str) -> None:
-        self.run_in_terminal(
-            cmd=f"vagrant up {vm}",
-            locker_id=str(self.workdir),
-            concurrency=1,
-            block=False,
-        )
+        self.run_in_terminal(cmd=f"vagrant up {vm}")
 
     def stop_vm(self, vm: str) -> None:
-        self.run_in_terminal(
-            cmd=f"vagrant halt {vm}",
-            locker_id=str(self.workdir),
-            concurrency=1,
-            block=False,
-        )
+        self.run_in_terminal(cmd=f"vagrant halt {vm}")
 
     def destroy_vm(self, vm: str) -> None:
-        self.run_in_terminal(
-            cmd=f"vagrant destroy -f {vm}",
-            locker_id=str(self.workdir),
-            concurrency=1,
-            block=False,
-        )
+        self.run_in_terminal(cmd=f"vagrant destroy -f {vm}")
 
     def ssh_vm(self, vm: str) -> None:
-        self.run_in_terminal(
-            cmd=f"vagrant ssh {vm}",
-            locker_id=str(self.workdir),
-            concurrency=1,
-            block=False,
-        )
+        self.run_in_terminal(cmd=f"vagrant ssh {vm}")
