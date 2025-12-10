@@ -11,29 +11,31 @@ class ProcessLocker:
         self.lock_dir = lock_dir
         self.lock_dir.mkdir(parents=True, exist_ok=True)
 
-    def acquire_lock(self):
+    def acquire_lock(self, hide_log: bool = False):
         """Acquire a lock using a specific lock file."""
         lock_file = self.lock_dir / f"{self.app_name}.lock"
-        if not lock_file.exists():
-            # Ensure the lock file exists
-            open(lock_file, "a").close()
+        lock_file.touch(exist_ok=True)
 
         lock_fd = open(lock_file, "r+")
         try:
-            # Acquire an exclusive lock
             fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
             return lock_fd
         except BlockingIOError:
-            logger.error(
-                f"Process Locked, Another instance is running for {lock_file}."
-            )
+            lock_fd.close()  # prevent FD leak
+            if not hide_log:
+                logger.warning(
+                    f"Process Locked, another instance is running for {lock_file}."
+                )
             return None
 
-    def release_lock(self, lock_fd):
+    def release_lock(self, lock_fd, hide_log: bool = False):
         """Release the lock."""
         if lock_fd:
+            path = lock_fd.name
             fcntl.flock(lock_fd, fcntl.LOCK_UN)
             lock_fd.close()
+            if not hide_log:
+                logger.warning(f"Process Unlocked: {path}")
 
 
 class ConcurrencyLocker:
