@@ -68,7 +68,9 @@ class VagrantVM(GenPollText):
             self.vg_cli.run_in_thread(self.handle_destroy_vagrant)
 
     def handle_start_vagrant(self):
-
+        vm = self.vg_cli.get_vm(self.vm_name, sync=True)
+        if vm:
+            self.vm_state = vm.state
         if self.vm_state == "running":
             self.vg_cli.ssh_vm(self.vm_name)
         else:
