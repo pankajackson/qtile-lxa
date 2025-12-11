@@ -2,8 +2,7 @@ import subprocess
 from pathlib import Path
 import json
 from libqtile.log_utils import logger
-from .colors import color_schemes
-from .decorations import decorations
+from ..bar import Decorations
 from typing import Any
 from qtile_lxa import __DEFAULTS__
 
@@ -47,7 +46,7 @@ class ThemeConfig:
         except Exception as e:
             logger.error("Failed to save config: %s", e)
 
-    def load_config(self):
+    def load_config(self) -> dict:
         try:
             with open(self.config_file, "r") as f:
                 return json.load(f)

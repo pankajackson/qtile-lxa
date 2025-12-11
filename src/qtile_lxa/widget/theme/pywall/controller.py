@@ -1,9 +1,7 @@
 import os
 import subprocess
 import threading
-from pathlib import Path
 from qtile_extras import widget
-from libqtile import qtile
 from libqtile.log_utils import logger
 from qtile_lxa.widget.theme.config import ThemeConfig
 from qtile_lxa.utils.notification import send_notification

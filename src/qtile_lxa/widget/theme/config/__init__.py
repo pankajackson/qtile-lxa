@@ -1,6 +1,13 @@
 from .config import ThemeConfig
-from .colors import color_schemes
-from .decorations import decorations
+from .typings import Theme, WallpaperSource, Wallpaper, VideoWallpaper, Color, Bar
 
 
-__all__ = ["ThemeConfig", "color_schemes", "decorations"]
+__all__ = [
+    "ThemeConfig",
+    "Theme",
+    "WallpaperSource",
+    "Wallpaper",
+    "VideoWallpaper",
+    "Color",
+    "Bar",
+]
