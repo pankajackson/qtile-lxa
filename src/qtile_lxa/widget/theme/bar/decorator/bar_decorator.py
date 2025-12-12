@@ -3,10 +3,9 @@ from libqtile import bar
 from libqtile.log_utils import logger
 from qtile_extras import widget
 
-# from qtile_lxa_test.widget.theme.color.utils import rgba, invert_hex_color_of
-from qtile_lxa_test.theme.color.utils import rgba, invert_hex_color_of
-from qtile_lxa.widget.theme.config import Theme
 from qtile_lxa import __DEFAULTS__
+from ....theme.config import Theme
+from ...color.utils import rgba, invert_hex_color_of
 
 
 class DecoratedBar:
@@ -70,9 +69,13 @@ class DecoratedBar:
                 foreground_color = (
                     self.color_scheme.obj.active
                     if self.color_scheme.obj.active != background_color
-                    else invert_hex_color_of(background_color)
+                    else (
+                        invert_hex_color_of(background_color)
+                        if background_color
+                        else None
+                    )
                 )
-            widget_attr = {
+            widget_attr: dict[str, Any] = {
                 "background": background_color,
                 "foreground": foreground_color,
                 "decorations": self.decoration.obj.left_decoration,
@@ -91,9 +94,13 @@ class DecoratedBar:
                 foreground_color = (
                     self.color_scheme.obj.active
                     if self.color_scheme.obj.active != background_color
-                    else invert_hex_color_of(background_color)
+                    else (
+                        invert_hex_color_of(background_color)
+                        if background_color
+                        else None
+                    )
                 )
-            widget_attr = {
+            widget_attr: dict[str, Any] = {
                 "background": background_color,
                 "foreground": foreground_color,
             }
