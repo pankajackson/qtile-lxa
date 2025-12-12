@@ -2,15 +2,15 @@ import threading
 from qtile_extras import widget
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa import __DEFAULTS__
-from ...config import Theme, Decoration
+from ..config import Theme, ColorScheme
 
 
-class DecorationChanger(widget.TextBox):
+class ColorSchemeChanger(widget.TextBox):
     def __init__(self, display_name=False, **config):
         super().__init__(**config)
-        self.decorations_list = [item for item in Decoration]
-        self.text_template = f"󰟾: {{current_decor}}"  # Icon and index
-        self.current_decoration = self.get_current_decoration()
+        self.color_schemes_list = [item for item in ColorScheme]
+        self.text_template = f"󰸌: {{current_scheme}}"  # Icon and scheme name
+        self.current_scheme = self.get_current_scheme()
         self.display_name = display_name
         self.conf_reload_timer = None
         self.decorations = [
@@ -25,43 +25,40 @@ class DecorationChanger(widget.TextBox):
         ]
         self.add_callbacks(
             {
-                "Button1": self.next_decoration,
-                "Button3": self.prev_decoration,
+                "Button1": self.next_scheme,
+                "Button3": self.prev_scheme,
             }
         )
         self.update_text()
 
-    def get_current_decoration(self):
-        return Theme().load().decoration
+    def get_current_scheme(self):
+        return Theme().load().color.scheme
 
-    def save_current_decoration(self, decoration_name):
+    def save_current_scheme(self, scheme_name: ColorScheme):
         config = Theme().load()
-        config.decoration = decoration_name
+        config.color.scheme = scheme_name
         config.save()
 
     def update_text(self):
-        # Update the widget text to display the current decoration
-        current_decoration = self.current_decoration
+        current_scheme = self.current_scheme
         self.text = (
-            self.text_template.format(current_decor=current_decoration)
+            self.text_template.format(current_scheme=current_scheme)
             if self.display_name
             else self.text_template.format(
-                current_decor=self.decorations_list.index(current_decoration)
+                current_scheme=self.color_schemes_list.index(current_scheme)
             )
         )
         self.draw()
 
-    def next_decoration(self):
-        current_index = self.decorations_list.index(
-            self.current_decoration
-        )  # Get current index
-        self.current_decoration = self.decorations_list[
-            (current_index + 1) % len(self.decorations_list)
+    def next_scheme(self):
+        current_index = self.color_schemes_list.index(self.current_scheme)
+        self.current_scheme = self.color_schemes_list[
+            (current_index + 1) % len(self.color_schemes_list)
         ]
-        self.save_current_decoration(self.current_decoration)  # Save decoration name
+        self.save_current_scheme(self.current_scheme)
         self.update_text()
         send_notification(
-            title=f"Decoration: {self.current_decoration}",
+            title=f"Color Scheme: {self.current_scheme}",
             msg="Theme Manager",
             app_name="ThemeManager",
             app_id=2003,
@@ -73,17 +70,15 @@ class DecorationChanger(widget.TextBox):
         self.conf_reload_timer = threading.Timer(1, Theme().reload_qtile)
         self.conf_reload_timer.start()
 
-    def prev_decoration(self):
-        current_index = self.decorations_list.index(
-            self.current_decoration
-        )  # Get current index
-        self.current_decoration = self.decorations_list[
-            (current_index - 1) % len(self.decorations_list)
+    def prev_scheme(self):
+        current_index = self.color_schemes_list.index(self.current_scheme)
+        self.current_scheme = self.color_schemes_list[
+            (current_index - 1) % len(self.color_schemes_list)
         ]
-        self.save_current_decoration(self.current_decoration)  # Save decoration name
+        self.save_current_scheme(self.current_scheme)
         self.update_text()
         send_notification(
-            title=f"Decoration:  {self.current_decoration}",
+            title=f"Color Scheme: {self.current_scheme}",
             msg="Theme Manager",
             app_name="ThemeManager",
             app_id=2003,

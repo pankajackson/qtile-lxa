@@ -4,8 +4,8 @@ from pathlib import Path
 import json
 from libqtile.log_utils import logger
 
-from ..color import ColorSchemes, ColorScheme
-from ..bar import Decoration
+from .color import ColorScheme
+from .decoration import Decoration
 from qtile_lxa import __DEFAULTS__
 
 
@@ -25,13 +25,8 @@ class Wallpaper:
 
 @dataclass
 class Color:
-    schemes: ColorSchemes = ColorSchemes.PYWAL
+    scheme: ColorScheme = ColorScheme.PYWAL
     rainbow: bool = False
-
-    @property
-    def scheme_obj(self) -> "ColorScheme":
-        """Access real ColorScheme object."""
-        return self.schemes.obj
 
 
 @dataclass
@@ -63,7 +58,7 @@ class Theme:
         """Convert nested dataclasses to a JSON-safe dict."""
         raw = asdict(self)
         raw["decoration"] = self.decoration.name  # Store enum as string
-        raw["color"]["schemes"] = self.color.schemes.name
+        raw["color"]["scheme"] = self.color.scheme.name
         raw.pop("config_file", None)  # Do not save path
         return raw
 
@@ -80,7 +75,7 @@ class Theme:
                 },
             ),
             color=Color(
-                schemes=ColorSchemes[data["color"]["schemes"]],
+                scheme=ColorScheme[data["color"]["scheme"]],
                 rainbow=data["color"]["rainbow"],
             ),
             bar=Bar(**data["bar"]),

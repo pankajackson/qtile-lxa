@@ -1,7 +1,7 @@
-from typing import Literal
-from ..color import ColorSchemes
-from ..bar import Decorations
-from qtile_lxa.widget.theme.config import ThemeConfig
+# from typing import Literal
+# from ..color import ColorSchemes
+# from ..bar import Decorations
+# from qtile_lxa.widget.theme.config import ThemeConfig
 
 
 # def get_active_config(

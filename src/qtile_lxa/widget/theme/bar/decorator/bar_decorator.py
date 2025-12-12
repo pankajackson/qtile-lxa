@@ -4,8 +4,8 @@ from libqtile.log_utils import logger
 from qtile_extras import widget
 
 from qtile_lxa import __DEFAULTS__
-from ....theme.config import Theme
-from ...color.utils import rgba, invert_hex_color_of
+from ...config import Theme
+from ...utils.colors import rgba, invert_hex_color_of
 
 
 class DecoratedBar:
@@ -38,7 +38,7 @@ class DecoratedBar:
             opacity=self.opacity,
             margin=4,
             background=rgba(
-                self.color_scheme.obj.background, 0 if self.transparent else 1
+                self.color_scheme.value.background, 0 if self.transparent else 1
             ),
         )
 
@@ -58,15 +58,15 @@ class DecoratedBar:
 
         for i, wid in enumerate(self.left_widget):
             if self.colors_rainbow_mode:
-                background_color = self.color_scheme.obj.color_sequence[
-                    -i % len(self.color_scheme.obj.color_sequence)
+                background_color = self.color_scheme.value.color_sequence[
+                    -i % len(self.color_scheme.value.color_sequence)
                 ]
                 foreground_color = invert_hex_color_of(background_color)
             else:
-                background_color = self.color_scheme.obj.highlight
+                background_color = self.color_scheme.value.highlight
                 foreground_color = (
-                    self.color_scheme.obj.active
-                    if self.color_scheme.obj.active != background_color
+                    self.color_scheme.value.active
+                    if self.color_scheme.value.active != background_color
                     else (
                         invert_hex_color_of(background_color)
                         if background_color
@@ -82,15 +82,15 @@ class DecoratedBar:
 
         for i, wid in enumerate(self.right_widget):
             if self.colors_rainbow_mode:
-                background_color = self.color_scheme.obj.color_sequence[
-                    i % len(self.color_scheme.obj.color_sequence)
+                background_color = self.color_scheme.value.color_sequence[
+                    i % len(self.color_scheme.value.color_sequence)
                 ]
                 foreground_color = invert_hex_color_of(background_color)
             else:
-                background_color = self.color_scheme.obj.inactive
+                background_color = self.color_scheme.value.inactive
                 foreground_color = (
-                    self.color_scheme.obj.active
-                    if self.color_scheme.obj.active != background_color
+                    self.color_scheme.value.active
+                    if self.color_scheme.value.active != background_color
                     else (
                         invert_hex_color_of(background_color)
                         if background_color

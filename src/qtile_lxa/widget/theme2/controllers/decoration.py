@@ -2,7 +2,7 @@ import threading
 from qtile_extras import widget
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa import __DEFAULTS__
-from ...config import Theme, Decoration
+from ..config import Theme, Decoration
 
 
 class DecorationChanger(widget.TextBox):

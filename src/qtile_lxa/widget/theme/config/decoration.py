@@ -1,7 +1,13 @@
+from dataclasses import dataclass
 from qtile_extras.widget.decorations import PowerLineDecoration
 from enum import Enum
 from copy import deepcopy
-from .typings import DecorationConfig
+
+
+@dataclass
+class DecorationConfig:
+    left_decoration: list[PowerLineDecoration]
+    right_decoration: list[PowerLineDecoration]
 
 
 class Decoration(Enum):
