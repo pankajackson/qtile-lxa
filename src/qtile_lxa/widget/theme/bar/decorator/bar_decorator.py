@@ -11,14 +11,14 @@ from ...color.utils import rgba, invert_hex_color_of
 class DecoratedBar:
     def __init__(
         self,
-        left_widgets: list = [],
-        right_widgets: list = [],
+        left_widgets: list | None = None,
+        right_widgets: list | None = None,
         height: int = 30,
         opacity: float = 0.92,
         transparent: bool = True,
     ):
-        self.left_widget = left_widgets
-        self.right_widget = right_widgets
+        self.left_widget = left_widgets or []
+        self.right_widget = right_widgets or []
         self.height = height
         self.opacity = opacity
         self.transparent = transparent
@@ -43,8 +43,6 @@ class DecoratedBar:
         )
 
     def get_decorated_widgets(self):
-        widgets = []
-
         def set_properties(wid, attributes):
             for attr in attributes.keys():
                 if self.bar_transparent_mode:
@@ -78,10 +76,9 @@ class DecoratedBar:
             widget_attr: dict[str, Any] = {
                 "background": background_color,
                 "foreground": foreground_color,
-                "decorations": self.decoration.obj.left_decoration,
+                "decorations": self.decoration.instance.left_decoration,
             }
             set_properties(wid=wid, attributes=widget_attr)
-        widgets.extend(self.left_widget)
 
         for i, wid in enumerate(self.right_widget):
             if self.colors_rainbow_mode:
@@ -105,9 +102,8 @@ class DecoratedBar:
                 "foreground": foreground_color,
             }
             if wid != self.right_widget[-1]:
-                widget_attr["decorations"] = self.decoration.obj.right_decoration
+                widget_attr["decorations"] = self.decoration.instance.right_decoration
 
             set_properties(wid=wid, attributes=widget_attr)
 
-        widgets = self.left_widget + self.right_widget
-        return widgets
+        return self.left_widget + self.right_widget

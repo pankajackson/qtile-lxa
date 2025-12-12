@@ -5,7 +5,7 @@ import json
 from libqtile.log_utils import logger
 
 from ..color import ColorSchemes, ColorScheme
-from ..bar import Decorations
+from ..bar import Decoration
 from qtile_lxa import __DEFAULTS__
 
 
@@ -56,7 +56,7 @@ class Theme:
     wallpaper: Wallpaper = field(default_factory=Wallpaper)
     color: Color = field(default_factory=Color)
     bar: Bar = field(default_factory=Bar)
-    decoration: Decorations = Decorations.SLASH
+    decoration: Decoration = Decoration.SLASH
     video_wallpaper: VideoWallpaper = field(default_factory=VideoWallpaper)
 
     def to_dict(self) -> dict:
@@ -84,7 +84,7 @@ class Theme:
                 rainbow=data["color"]["rainbow"],
             ),
             bar=Bar(**data["bar"]),
-            decoration=Decorations[data["decoration"]],
+            decoration=Decoration[data["decoration"]],
             video_wallpaper=VideoWallpaper(**data["video_wallpaper"]),
         )
 

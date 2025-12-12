@@ -3,6 +3,6 @@ from qtile_extras.widget.decorations import PowerLineDecoration
 
 
 @dataclass
-class Decoration:
+class DecorationConfig:
     left_decoration: list[PowerLineDecoration]
     right_decoration: list[PowerLineDecoration]

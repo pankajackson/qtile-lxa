@@ -3,13 +3,13 @@ from qtile_extras import widget
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa import __DEFAULTS__
 from ...config import Theme
-from .decorators import Decorations
+from .decorators import Decoration
 
 
 class DecorationChanger(widget.TextBox):
     def __init__(self, display_name=False, **config):
         super().__init__(**config)
-        self.decorations_list = [item.obj for item in Decorations]
+        self.decorations_list = [item for item in Decoration]
         self.text_template = f"󰟾: {{current_decor}}"  # Icon and index
         self.current_decoration = self.get_current_decoration()
         self.display_name = display_name
@@ -33,7 +33,7 @@ class DecorationChanger(widget.TextBox):
         self.update_text()
 
     def get_current_decoration(self):
-        return Theme().load().decoration.obj
+        return Theme().load().decoration
 
     def save_current_decoration(self, decoration_name):
         config = Theme().load()
