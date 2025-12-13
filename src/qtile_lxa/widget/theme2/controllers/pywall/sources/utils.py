@@ -128,15 +128,9 @@ def sync_config_for_source(wallpaper_dir: Path, data_dir=None):
                             active_index=0,
                             wallpapers=[],
                         ),
-                        # {
-                        #     "group": group,
-                        #     "collection": collection,
-                        #     "active_index": 0,
-                        #     "wallpapers": [],
-                        # },
                     )
-                    if wallpaper_file_name not in src["wallpapers"]:
-                        src["wallpapers"].append(wallpaper_file_name)
+                    if wallpaper_file_name not in src.wallpapers:
+                        src.wallpapers.append(wallpaper_file_name)
                     sources[id] = src
 
                 elif entry.is_dir():
@@ -144,14 +138,14 @@ def sync_config_for_source(wallpaper_dir: Path, data_dir=None):
 
     scan_directory(data_dir if data_dir else wallpaper_dir)
 
-    config["wallpaper"]["sources"] = sources
-    theme_config.save_config(config)
+    config.wallpaper.sources = sources
+    config.save()
     return sources
 
 
-def switch_next_source(theme_config: ThemeConfig):
-    active_source_id = get_active_source_id(theme_config)
-    sources = get_source_list(theme_config)  # Returns the dictionary of sources
+def switch_next_source():
+    active_source_id = get_active_source_id()
+    sources = get_source_list()  # Returns the dictionary of sources
 
     if not sources:
         return  # Exit if there are no sources available
@@ -169,7 +163,7 @@ def switch_next_source(theme_config: ThemeConfig):
         next_src_id = source_ids[next_index]
 
     # Update the current source
-    set_active_source_id(theme_config, next_src_id)
+    set_active_source_id(next_src_id)
     # self.update_text()
 
     # # If a timer is running, cancel it and start a new one
@@ -180,9 +174,9 @@ def switch_next_source(theme_config: ThemeConfig):
     # self.update_wall_timer.start()
 
 
-def switch_prev_source(theme_config: ThemeConfig):
-    active_source_id = get_active_source_id(theme_config)
-    sources = get_source_list(theme_config)  # Returns the dictionary of sources
+def switch_prev_source():
+    active_source_id = get_active_source_id()
+    sources = get_source_list()  # Returns the dictionary of sources
 
     if not sources:
         return  # Exit if there are no sources available
@@ -200,7 +194,7 @@ def switch_prev_source(theme_config: ThemeConfig):
         next_src_id = source_ids[next_index]
 
     # Update the current source
-    set_active_source_id(theme_config, next_src_id)
+    set_active_source_id(next_src_id)
     # self.update_text()
 
     # # If a timer is running, cancel it and start a new one

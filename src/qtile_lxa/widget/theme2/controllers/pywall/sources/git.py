@@ -1,7 +1,6 @@
 import subprocess
 from pathlib import Path
 from libqtile.log_utils import logger
-from qtile_lxa.widget.theme.config import ThemeConfig
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa.utils.process_lock import ProcessLocker
 from .utils import sync_config_for_source
@@ -11,12 +10,10 @@ class Git:
     def __init__(
         self,
         wallpaper_dir: Path,
-        theme_config: ThemeConfig,
         wallpaper_repos: list[str] = ["https://github.com/pankajackson/wallpapers.git"],
         process_locker: ProcessLocker = ProcessLocker("git"),
     ):
         self.wallpaper_dir = wallpaper_dir
-        self.theme_config = theme_config
         self.wallpaper_repos = wallpaper_repos
         self.process_locker = process_locker
 
@@ -193,7 +190,6 @@ class Git:
                                 check=True,
                             )
                             sync_config_for_source(
-                                theme_config=self.theme_config,
                                 wallpaper_dir=self.wallpaper_dir,
                                 data_dir=git_clone_dir,
                             )
@@ -203,7 +199,6 @@ class Git:
                         subprocess.run(["rm", "-rf", git_clone_dir])
                         if _clone_repo(repo_url, git_clone_dir, progress_message):
                             sync_config_for_source(
-                                theme_config=self.theme_config,
                                 wallpaper_dir=self.wallpaper_dir,
                                 data_dir=git_clone_dir,
                             )
@@ -212,7 +207,6 @@ class Git:
                     # Directory does not exist, clone the repo
                     if _clone_repo(repo_url, git_clone_dir, progress_message):
                         sync_config_for_source(
-                            theme_config=self.theme_config,
                             wallpaper_dir=self.wallpaper_dir,
                             data_dir=git_clone_dir,
                         )

@@ -1,27 +1,19 @@
 import requests
 from pathlib import Path
 from libqtile.log_utils import logger
-from .utils import (
-    get_potd_directories,
-    get_source_list,
-    get_active_source_id,
-    sync_config_for_source,
-)
-from qtile_lxa.widget.theme.config import ThemeConfig
 from qtile_lxa.utils.process_lock import ProcessLocker
 from qtile_lxa.utils.notification import send_notification
+from .utils import get_potd_directories, sync_config_for_source
 
 
 class Nasa:
     def __init__(
         self,
         wallpaper_dir: Path,
-        theme_config: ThemeConfig,
         process_locker: ProcessLocker = ProcessLocker("nasa"),
         nasa_api_key="hETQq0FPsZJnUP9C3sUEFtwmJH3edb4I5bghfWDM",
     ):
         self.wallpaper_dir = wallpaper_dir
-        self.theme_config = theme_config
         self.process_locker = process_locker
         self.nasa_api_key = nasa_api_key
 
@@ -101,12 +93,10 @@ class Nasa:
                 # Save the image and update symlink
                 _save_apod_image(apod_metadata["hdurl"], image_path, potd_path)
                 sync_config_for_source(
-                    theme_config=self.theme_config,
                     wallpaper_dir=self.wallpaper_dir,
                     data_dir=date_dir,
                 )
                 sync_config_for_source(
-                    theme_config=self.theme_config,
                     wallpaper_dir=self.wallpaper_dir,
                     data_dir=potd_dir,
                 )

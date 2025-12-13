@@ -65,9 +65,7 @@ class PyWallChanger(widget.GenPollText):
             }
         )
         self.sync_default_wallpapers()
-        sync_config_for_source(
-            theme_config=theme_config, wallpaper_dir=self.wallpaper_dir
-        )
+        sync_config_for_source(wallpaper_dir=self.wallpaper_dir)
         self.set_wallpaper()
         self.update_text()
 
@@ -103,16 +101,15 @@ class PyWallChanger(widget.GenPollText):
         if not lock_fd:
             return
         try:
-            active_source_id = get_active_source_id(theme_config=theme_config)
+            active_source_id = get_active_source_id()
 
             source_git = Git(
                 wallpaper_dir=self.wallpaper_dir,
-                theme_config=theme_config,
                 wallpaper_repos=self.wallpaper_repos,
             )
             source_git.sync_git()
             self.sync_potd_sources()
-            source_list = get_source_list(theme_config)
+            source_list = get_source_list()
             if source_list and active_source_id is None:
                 self.set_wallpaper(screen_lock_background=True, notify=True)
         finally:
@@ -127,71 +124,67 @@ class PyWallChanger(widget.GenPollText):
 
     def sync_potd_sources(self):
         if self.bing_potd:
-            source_bing = Bing(
-                wallpaper_dir=self.wallpaper_dir, theme_config=theme_config
-            )
+            source_bing = Bing(wallpaper_dir=self.wallpaper_dir)
             is_synced = source_bing.sync_bing()
             if is_synced:
-                source_list = get_source_list(theme_config=theme_config)
-                active_source_id = get_active_source_id(theme_config=theme_config)
+                source_list = get_source_list()
+                active_source_id = get_active_source_id()
                 if active_source_id is not None:
                     source = source_list[active_source_id]
                     if (
-                        source["group"] == "bing"
-                        and source["collection"] == "PictureOfTheDay"
+                        source.group == "bing"
+                        and source.collection == "PictureOfTheDay"
                     ):
                         self.set_wallpaper(screen_lock_background=True, notify=True)
 
         if self.nasa_potd:
-            source_bing = Nasa(
-                wallpaper_dir=self.wallpaper_dir, theme_config=theme_config
-            )
+            source_bing = Nasa(wallpaper_dir=self.wallpaper_dir)
             is_synced = source_bing.sync_nasa()
             if is_synced:
-                source_list = get_source_list(theme_config)
-                active_source_id = get_active_source_id(theme_config)
+                source_list = get_source_list()
+                active_source_id = get_active_source_id()
                 if active_source_id is not None:
                     source = source_list[active_source_id]
                     if (
-                        source["group"] == "nasa"
-                        and source["collection"] == "PictureOfTheDay"
+                        source.group == "nasa"
+                        and source.collection == "PictureOfTheDay"
                     ):
                         self.set_wallpaper(screen_lock_background=True, notify=True)
 
     def get_active_wall_id(self):
         """Get the current wallpaper index."""
-        active_source_id = get_active_source_id(theme_config=theme_config)
+        active_source_id = get_active_source_id()
         if active_source_id is not None:
-            return theme_config.load_config()["wallpaper"]["sources"][active_source_id][
-                "active_index"
-            ]
+            return Theme().load().wallpaper.sources[active_source_id].active_index
         return None
 
     def set_active_wall_id(self, index):
         """Save the current wallpaper index."""
-        active_source_id = get_active_source_id(theme_config=theme_config)
+        active_source_id = get_active_source_id()
         if active_source_id is not None:
-            config = theme_config.load_config()
-            config["wallpaper"]["sources"][active_source_id]["active_index"] = index
-            theme_config.save_config(config)
+            config = Theme().load()
+            config.wallpaper.sources[active_source_id].active_index = index
+            config.save()
 
     def get_wallpaper(self, index=None):
-        sources = get_source_list(theme_config)
+        sources = get_source_list()
         if not sources:
             return
         if index is None:
             index = self.get_active_wall_id()
         if index is not None:
-            active_source_id = get_active_source_id(theme_config=theme_config)
-            source = sources[active_source_id]
-            wallpaper = self.wallpaper_dir
-            if source["group"]:
-                wallpaper = os.path.join(wallpaper, source["group"])
-            if source["collection"]:
-                wallpaper = os.path.join(wallpaper, source["collection"])
-            wallpaper = os.path.join(wallpaper, source["wallpapers"][index])
+            active_source_id = get_active_source_id()
+            if active_source_id is not None:
 
-            return wallpaper
+                source = sources[active_source_id]
+                wallpaper = self.wallpaper_dir
+                if source.group:
+                    wallpaper = os.path.join(wallpaper, source.group)
+                if source.collection:
+                    wallpaper = os.path.join(wallpaper, source.collection)
+                wallpaper = os.path.join(wallpaper, source.wallpapers[index])
+
+                return wallpaper
         return
 
     def set_wallpaper(self, index=None, screen_lock_background=False, notify=False):
@@ -200,9 +193,14 @@ class PyWallChanger(widget.GenPollText):
             index = self.get_active_wall_id()
         if index is not None:
             wallpaper = self.get_wallpaper(index=index)
-            sources = get_source_list(theme_config)
-            active_source_id = get_active_source_id(theme_config=theme_config)
-            file_name = sources[active_source_id]["wallpapers"][index]
+            sources = get_source_list()
+            active_source_id = get_active_source_id()
+            if active_source_id is None:
+                logger.error(
+                    f"Error: Failed to set wallpaper. active_source_id is None."
+                )
+                return
+            file_name = sources[active_source_id].wallpapers[index]
             if wallpaper:
                 try:
                     if not os.path.isfile(wallpaper):
@@ -268,8 +266,8 @@ class PyWallChanger(widget.GenPollText):
 
     def get_text(self):
         """Build the text that displays the current wallpaper index."""
-        sources = get_source_list(theme_config)  # Returns the dictionary of sources
-        active_source_id = get_active_source_id(theme_config=theme_config)
+        sources = get_source_list()  # Returns the dictionary of sources
+        active_source_id = get_active_source_id()
         active_wall_id = self.get_active_wall_id()
         if active_source_id is None or not sources:
             active_source_id = "-"
@@ -286,7 +284,7 @@ class PyWallChanger(widget.GenPollText):
         self.draw()
 
     def next_source(self):
-        switch_next_source(theme_config=theme_config)
+        switch_next_source()
         self.update_text()
 
         # If a timer is running, cancel it and start a new one
@@ -297,7 +295,7 @@ class PyWallChanger(widget.GenPollText):
         self.update_wall_timer.start()
 
     def prev_source(self):
-        switch_prev_source(theme_config=theme_config)
+        switch_prev_source()
         self.update_text()
 
         # If a timer is running, cancel it and start a new one
@@ -309,12 +307,16 @@ class PyWallChanger(widget.GenPollText):
 
     def next_wallpaper(self):
         """Set the next wallpaper."""
-        active_source_id = get_active_source_id(theme_config=theme_config)
+        active_source_id = get_active_source_id()
+        if active_source_id is None:
+            logger.error(f"Error: Failed to set wallpaper. active_source_id is None.")
+
+            return
         active_wall_id = self.get_active_wall_id()
-        sources = get_source_list(theme_config)
+        sources = get_source_list()
         if active_wall_id is not None:
             next_index = (active_wall_id + 1) % len(
-                sources[active_source_id]["wallpapers"]
+                sources[active_source_id].wallpapers
             )
             self.set_active_wall_id(next_index)
             self.update_text()
@@ -327,12 +329,16 @@ class PyWallChanger(widget.GenPollText):
 
     def prev_wallpaper(self):
         """Set the previous wallpaper."""
-        active_source_id = get_active_source_id(theme_config=theme_config)
+        active_source_id = get_active_source_id()
+        if active_source_id is None:
+            logger.error(f"Error: Failed to set wallpaper. active_source_id is None.")
+
+            return
         active_wall_id = self.get_active_wall_id()
-        sources = get_source_list(theme_config)
+        sources = get_source_list()
         if active_wall_id is not None:
             prev_index = (active_wall_id - 1) % len(
-                sources[active_source_id]["wallpapers"]
+                sources[active_source_id].wallpapers
             )
             self.set_active_wall_id(prev_index)
             self.update_text()
@@ -355,10 +361,10 @@ class PyWallChanger(widget.GenPollText):
         wallpaper = self.get_wallpaper()
         if wallpaper:
             subprocess.run(["wal", "-i", wallpaper])
-            # theme_config.reload_qtile()
+            # .reload_qtile()
             if self.conf_reload_timer and self.conf_reload_timer.is_alive():
                 self.conf_reload_timer.cancel()
-            self.conf_reload_timer = threading.Timer(1, theme_config.reload_qtile)
+            self.conf_reload_timer = threading.Timer(1, Theme().reload_qtile)
             self.conf_reload_timer.start()
             send_notification(
                 "Applied Pywal Theme",
