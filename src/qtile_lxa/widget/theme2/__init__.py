@@ -1,8 +1,8 @@
-from . import config, controller, utils
+from . import config, controllers, utils
 
 
 __all__ = [
     "config",
-    "controller",
+    "controllers",
     "utils",
 ]
