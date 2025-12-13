@@ -2,8 +2,8 @@ import os
 from datetime import datetime
 from pathlib import Path
 import hashlib
-from qtile_lxa.widget.theme.config import ThemeConfig
 from qtile_lxa.utils.notification import send_notification
+from ....config import Theme, WallpaperSource
 
 
 def get_potd_directories(wallpaper_dir: Path, provider: str):
@@ -23,24 +23,24 @@ def get_potd_directories(wallpaper_dir: Path, provider: str):
     return image_path, potd_path, date_dir, potd_dir
 
 
-def get_source_list(theme_config: ThemeConfig):
-    config = theme_config.load_config()
-    sources = config.get("wallpaper", {}).get("sources", {})
+def get_source_list():
+    config = Theme().load()
+    sources = config.wallpaper.sources
     return sources
 
 
-def set_active_source_id(theme_config: ThemeConfig, source_id):
+def set_active_source_id(source_id):
     """Save the current source ID."""
     if source_id is not None:
-        config = theme_config.load_config()
-        sources = get_source_list(theme_config)
+        config = Theme().load()
+        sources = get_source_list()
         if not sources:
             return
-        config["wallpaper"]["source_id"] = source_id
-        theme_config.save_config(config)
+        config.wallpaper.source_id = source_id
+        config.save()
         source = sources[source_id]
-        group = source["group"]
-        collection = source["collection"]
+        group = source.group
+        collection = source.collection
         send_notification(
             f"Collection Changed: ",
             f"{collection}\n{group}",
@@ -50,27 +50,25 @@ def set_active_source_id(theme_config: ThemeConfig, source_id):
         )
 
 
-def get_active_source_id(theme_config: ThemeConfig):
+def get_active_source_id():
     """Get the current source ID."""
-    config = theme_config.load_config()
-    sources = get_source_list(theme_config)
+    config = Theme().load()
+    sources = get_source_list()
     if not sources:
         return
-    active_source_id = config.get("wallpaper", {}).get("source_id", None)
+    active_source_id = config.wallpaper.source_id
     if active_source_id is None:
         source_ids = list(sources.keys())  # Get a list of source IDs
         first_src_id = source_ids[0]
-        set_active_source_id(theme_config, first_src_id)
+        set_active_source_id(first_src_id)
         return first_src_id
     return active_source_id
 
 
-def sync_config_for_source(
-    theme_config: ThemeConfig, wallpaper_dir: Path, data_dir=None
-):
+def sync_config_for_source(wallpaper_dir: Path, data_dir=None):
     """Get the list of wallpaper files and parse source information."""
-    config = theme_config.load_config()
-    sources = get_source_list(theme_config)
+    config = Theme().load()
+    sources = get_source_list()
 
     def get_uid(group=None, collection=None, none_marker="NONE"):
         """
@@ -90,14 +88,20 @@ def sync_config_for_source(
         The unique ID is based on the group and collection.
         """
 
+        group: str | None = None
+        collection: str | None = None
+        filename: str | None = None
         # Parse the relative path
         parts = relative_path.split(os.sep)
         if len(parts) == 1:  # Wallpaper directly in wallpaper_dir
-            group, collection, filename = None, None, parts[-1]
+            filename = str(parts[-1])
         elif len(parts) == 2:  # Wallpaper in a group directory
-            group, collection, filename = parts[0], None, parts[-1]
+            group = str(parts[0])
+            filename = str(parts[-1])
         else:  # Wallpaper in deeper directories
-            group, collection, filename = parts[0], "/".join(parts[1:-1]), parts[-1]
+            group = str(parts[0])
+            collection = "/".join(parts[1:-1])
+            filename = str(parts[-1])
 
         # Generate the unique ID
         unique_id = get_uid(group=group, collection=collection)
@@ -118,12 +122,18 @@ def sync_config_for_source(
                     )
                     src = sources.get(
                         id,
-                        {
-                            "group": group,
-                            "collection": collection,
-                            "active_index": 0,
-                            "wallpapers": [],
-                        },
+                        WallpaperSource(
+                            group=group,
+                            collection=collection,
+                            active_index=0,
+                            wallpapers=[],
+                        ),
+                        # {
+                        #     "group": group,
+                        #     "collection": collection,
+                        #     "active_index": 0,
+                        #     "wallpapers": [],
+                        # },
                     )
                     if wallpaper_file_name not in src["wallpapers"]:
                         src["wallpapers"].append(wallpaper_file_name)

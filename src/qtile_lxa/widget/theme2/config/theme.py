@@ -11,10 +11,10 @@ from qtile_lxa import __DEFAULTS__
 
 @dataclass
 class WallpaperSource:
-    group: str
-    collection: str
     active_index: int
     wallpapers: list[str]
+    group: str | None = None
+    collection: str | None = None
 
 
 @dataclass
