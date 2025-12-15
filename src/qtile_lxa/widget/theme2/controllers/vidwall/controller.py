@@ -5,13 +5,15 @@ from typing import Any, Literal
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa.utils import is_gpu_present
 from qtile_lxa import __DEFAULTS__
-from ...config import Theme
+from ...config import Theme, ThemeAware
 from .ui import VidWallUi
 
 
-class VidWallController(widget.GenPollText):
+class VidWallController(ThemeAware, widget.GenPollText):
     def __init__(
         self,
+        config_file: Path = __DEFAULTS__.theme_manager.config_path,
+        theme: Theme | None = None,
         hwdec: Literal["auto", "no"] | None = None,
         playlist_file: Path = __DEFAULTS__.theme_manager.vidwall.playlist_path,
         symbol_playing_video="",
@@ -21,7 +23,8 @@ class VidWallController(widget.GenPollText):
         symbol_unknown="󰋖",
         **kwargs: Any,
     ):
-        super().__init__(update_interval=1, **kwargs)
+        ThemeAware.__init__(self, theme=theme, config_file=config_file)
+        widget.GenPollText.__init__(self, update_interval=1, **kwargs)
 
         # Decorations for the widget
         self.decorations = [
@@ -122,11 +125,11 @@ class VidWallController(widget.GenPollText):
     def get_current_config(self):
         """Get the current configuration for the video wallpaper."""
         # return theme_config.load_config().get("video_wallpaper", {})
-        return Theme().load().video_wallpaper
+        return self.theme.video_wallpaper
 
     def save_current_config(self):
         """Save the current state of the video wallpaper to the theme configuration."""
-        config = Theme().load()
+        config = self.theme
         if self.widget.widget_instance:
             config.video_wallpaper.playlist = self.widget.current_playlist
             config.video_wallpaper.song = self.widget.current_video

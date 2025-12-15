@@ -1,6 +1,7 @@
 import os
 import subprocess
 import threading
+from pathlib import Path
 from qtile_extras import widget
 from libqtile.log_utils import logger
 from qtile_lxa.utils.notification import send_notification
@@ -16,13 +17,15 @@ from .sources.utils import (
     switch_next_source,
     switch_prev_source,
 )
-from ...config import Theme
+from ...config import Theme, ThemeAware
 from qtile_lxa import __DEFAULTS__, __BASE_DIR__, __ASSETS_DIR__
 
 
-class PyWallChanger(widget.GenPollText):
+class PyWallChanger(ThemeAware, widget.GenPollText):
     def __init__(
         self,
+        config_file: Path = __DEFAULTS__.theme_manager.config_path,
+        theme: Theme | None = None,
         wallpaper_dir=__DEFAULTS__.theme_manager.pywall.wallpaper_dir,
         update_screenlock=False,
         screenlock_effect=__DEFAULTS__.theme_manager.pywall.screenlock_effect,
@@ -32,7 +35,9 @@ class PyWallChanger(widget.GenPollText):
         nasa_api_key="hETQq0FPsZJnUP9C3sUEFtwmJH3edb4I5bghfWDM",
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        ThemeAware.__init__(self, theme=theme, config_file=config_file)
+        widget.GenPollText.__init__(self, **kwargs)
+        self.config_file = config_file
         self.wallpaper_dir = wallpaper_dir
         self.update_screenlock = update_screenlock
         self.screenlock_effect = screenlock_effect
@@ -155,14 +160,14 @@ class PyWallChanger(widget.GenPollText):
         """Get the current wallpaper index."""
         active_source_id = get_active_source_id()
         if active_source_id is not None:
-            return Theme().load().wallpaper.sources[active_source_id].active_index
+            return self.theme.wallpaper.sources[active_source_id].active_index
         return None
 
     def set_active_wall_id(self, index):
         """Save the current wallpaper index."""
         active_source_id = get_active_source_id()
         if active_source_id is not None:
-            config = Theme().load()
+            config = self.theme.load()
             config.wallpaper.sources[active_source_id].active_index = index
             config.save()
 
@@ -364,7 +369,7 @@ class PyWallChanger(widget.GenPollText):
             # .reload_qtile()
             if self.conf_reload_timer and self.conf_reload_timer.is_alive():
                 self.conf_reload_timer.cancel()
-            self.conf_reload_timer = threading.Timer(1, Theme().reload_qtile)
+            self.conf_reload_timer = threading.Timer(1, self.theme.reload_qtile)
             self.conf_reload_timer.start()
             send_notification(
                 "Applied Pywal Theme",

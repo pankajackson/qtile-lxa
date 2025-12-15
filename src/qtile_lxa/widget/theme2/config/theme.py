@@ -92,6 +92,9 @@ class Theme:
 
     def load(self):
         try:
+            if not self.config_file.exists():
+                self.save()
+                return self
             with open(self.config_file, "r") as f:
                 data = json.load(f)
 
@@ -113,3 +116,13 @@ class Theme:
 
     def reload_qtile(self):
         subprocess.run(["qtile", "cmd-obj", "-o", "cmd", "-f", "reload_config"])
+
+
+class ThemeAware:
+    def __init__(
+        self,
+        *,
+        theme: Theme | None = None,
+        config_file: Path = __DEFAULTS__.theme_manager.config_path,
+    ):
+        self.theme = theme or Theme(config_file).load()

@@ -1,14 +1,21 @@
 import threading
+from pathlib import Path
 from typing import Any
 from qtile_extras import widget
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa import __DEFAULTS__
-from ..config import Theme
+from ..config import Theme, ThemeAware
 
 
-class ColorRainbowModeChanger(widget.TextBox):
-    def __init__(self, **config):
-        super().__init__(**config)
+class ColorRainbowModeChanger(ThemeAware, widget.TextBox):
+    def __init__(
+        self,
+        config_file: Path = __DEFAULTS__.theme_manager.config_path,
+        theme: Theme | None = None,
+        **config,
+    ):
+        ThemeAware.__init__(self, theme=theme, config_file=config_file)
+        widget.TextBox.__init__(self, **config)
         self.text_template = " : {}"
         self.current_rainbow_mode = self.get_current_rainbow_mode()
         self.conf_reload_timer = None
@@ -30,10 +37,10 @@ class ColorRainbowModeChanger(widget.TextBox):
         self.update_text()
 
     def get_current_rainbow_mode(self):
-        return Theme().load().color.rainbow
+        return self.theme.color.rainbow
 
     def save_rainbow_mode(self, rainbow_mode: bool):
-        config = Theme().load()
+        config = self.theme
         config.color.rainbow = rainbow_mode
         config.save()
 
@@ -56,5 +63,5 @@ class ColorRainbowModeChanger(widget.TextBox):
 
         if self.conf_reload_timer and self.conf_reload_timer.is_alive():
             self.conf_reload_timer.cancel()
-        self.conf_reload_timer = threading.Timer(1, Theme().reload_qtile)
+        self.conf_reload_timer = threading.Timer(1, self.theme.reload_qtile)
         self.conf_reload_timer.start()

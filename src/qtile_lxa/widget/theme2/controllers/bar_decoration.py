@@ -1,13 +1,21 @@
 import threading
+from pathlib import Path
 from qtile_extras import widget
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa import __DEFAULTS__
-from ..config import Theme, Decoration
+from ..config import Theme, ThemeAware, Decoration
 
 
-class DecorationChanger(widget.TextBox):
-    def __init__(self, display_name=False, **config):
-        super().__init__(**config)
+class DecorationChanger(ThemeAware, widget.TextBox):
+    def __init__(
+        self,
+        config_file: Path = __DEFAULTS__.theme_manager.config_path,
+        theme: Theme | None = None,
+        display_name=False,
+        **config,
+    ):
+        ThemeAware.__init__(self, theme=theme, config_file=config_file)
+        widget.TextBox.__init__(self, **config)
         self.decorations_list = [item for item in Decoration]
         self.text_template = f"󰟾: {{current_decor}}"  # Icon and index
         self.current_decoration = self.get_current_decoration()
@@ -32,10 +40,10 @@ class DecorationChanger(widget.TextBox):
         self.update_text()
 
     def get_current_decoration(self):
-        return Theme().load().decoration
+        return self.theme.decoration
 
     def save_current_decoration(self, decoration_name):
-        config = Theme().load()
+        config = self.theme
         config.decoration = decoration_name
         config.save()
 
@@ -70,7 +78,7 @@ class DecorationChanger(widget.TextBox):
 
         if self.conf_reload_timer and self.conf_reload_timer.is_alive():
             self.conf_reload_timer.cancel()
-        self.conf_reload_timer = threading.Timer(1, Theme().reload_qtile)
+        self.conf_reload_timer = threading.Timer(1, self.theme.reload_qtile)
         self.conf_reload_timer.start()
 
     def prev_decoration(self):
@@ -92,5 +100,5 @@ class DecorationChanger(widget.TextBox):
 
         if self.conf_reload_timer and self.conf_reload_timer.is_alive():
             self.conf_reload_timer.cancel()
-        self.conf_reload_timer = threading.Timer(1, Theme().reload_qtile)
+        self.conf_reload_timer = threading.Timer(1, self.theme.reload_qtile)
         self.conf_reload_timer.start()

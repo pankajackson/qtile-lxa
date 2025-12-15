@@ -1,15 +1,16 @@
 import os
 import json
+from pathlib import Path
 from subprocess import Popen
 from typing import Any, Literal
 from qtile_extras.popup.toolkit import PopupRelativeLayout, PopupText, PopupImage
 from qtile_lxa.utils import is_gpu_present
 from qtile_lxa import __DEFAULTS__, __BASE_DIR__, __ASSETS_DIR__
 from ...utils.colors import rgba
-from ...config import Theme
+from ...config import Theme, ThemeAware
 
 
-class VidWallUi:
+class VidWallUi(ThemeAware):
     widget_instance = None
     persistent_state = {
         "is_playing": False,
@@ -24,10 +25,13 @@ class VidWallUi:
     def __init__(
         self,
         qtile,
+        config_file: Path = __DEFAULTS__.theme_manager.config_path,
+        theme: Theme | None = None,
         hwdec: Literal["auto", "no"] | None = None,
         playlist_file=__DEFAULTS__.theme_manager.vidwall.playlist_path,
         **kwargs: Any,
     ):
+        ThemeAware.__init__(self, theme=theme, config_file=config_file)
         self.qtile = qtile
         self.playlist_file = playlist_file
         self.controls = []
@@ -43,9 +47,14 @@ class VidWallUi:
             ]
         else:
             self.active_playlist_page = None
-        self.color_scheme = Theme().load().color.scheme.value
-        self.active_color = rgba(self.color_scheme.active, 0.4)
-        self.inactive_color = rgba(self.color_scheme.inactive, 0.4)
+        self.color_scheme = self.theme.color.scheme
+        scheme_cfg = self.color_scheme.value
+        from libqtile.log_utils import logger
+
+        logger.error(type(self.color_scheme))
+        logger.error(type(scheme_cfg))
+        self.active_color = rgba(scheme_cfg.active, 0.4)
+        self.inactive_color = rgba(scheme_cfg.inactive, 0.4)
         self.create_controls()
 
         # Restore state from persistent_state
@@ -245,7 +254,7 @@ class VidWallUi:
             "pos_y": 0.01,
             "height": 0.05,
             "width": 0.1,
-            "highlight": self.color_scheme.active,
+            "highlight": self.active_color,
             "highlight_radius": 13,
             "highlight_method": "border",
         }
@@ -310,7 +319,7 @@ class VidWallUi:
             pos_y=0.01,
             height=0.05,
             width=0.2,
-            highlight=self.color_scheme.active,
+            highlight=self.active_color,
             highlight_radius=13,
             highlight_method="border",
             h_align="center",
@@ -354,7 +363,7 @@ class VidWallUi:
             "width": 0.1,
             "height": 0.07,
             "h_align": "center",
-            "highlight": self.color_scheme.active,
+            "highlight": self.active_color,
             "highlight_radius": 13,
             "highlight_method": "border",
         }
@@ -415,7 +424,7 @@ class VidWallUi:
                             width=0.6,
                             height=0.05,
                             h_align="center",
-                            highlight=self.color_scheme.active,
+                            highlight=self.active_color,
                             highlight_radius=13,
                             highlight_method="border",
                             mouse_callbacks={
