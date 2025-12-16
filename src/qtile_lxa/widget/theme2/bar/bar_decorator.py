@@ -1,0 +1,110 @@
+from pathlib import Path
+from typing import Any
+from libqtile import bar
+from libqtile.log_utils import logger
+from qtile_extras import widget
+
+from qtile_lxa import __DEFAULTS__
+from ..config import Theme, ThemeAware
+from ..utils.colors import rgba, invert_hex_color_of
+
+
+class DecoratedBar(ThemeAware):
+    def __init__(
+        self,
+        config_file: Path = __DEFAULTS__.theme_manager.config_path,
+        theme: Theme | None = None,
+        left_widgets: list | None = None,
+        right_widgets: list | None = None,
+        height: int = 30,
+        opacity: float = 0.92,
+        transparent: bool = True,
+    ):
+        ThemeAware.__init__(self, theme=theme, config_file=config_file)
+        self.left_widget = left_widgets or []
+        self.right_widget = right_widgets or []
+        self.height = height
+        self.opacity = opacity
+        self.transparent = transparent
+        self.decoration = self.theme.decoration
+        self.color_scheme = self.theme.color.scheme
+        self.colors_rainbow_mode = self.theme.color.rainbow
+        self.bar_split_mode = self.theme.bar.split
+        self.bar_transparent_mode = self.theme.bar.transparent
+
+    def get_bar(self):
+        return bar.Bar(
+            widgets=self.get_decorated_widgets(),
+            size=self.height,
+            opacity=self.opacity,
+            margin=4,
+            background=rgba(
+                self.color_scheme.value.background, 0 if self.transparent else 1
+            ),
+        )
+
+    def get_decorated_widgets(self):
+        def set_properties(wid, attributes):
+            for attr in attributes.keys():
+                if self.bar_transparent_mode:
+                    if attr == "background":
+                        attributes[attr] = rgba(attributes[attr], 0)
+                elif self.bar_split_mode:
+                    if attr == "background" and (
+                        isinstance(wid, widget.WindowName)
+                        or isinstance(wid, widget.TaskList)
+                    ):
+                        attributes[attr] = rgba(attributes[attr], 0)
+                setattr(wid, attr, attributes[attr])
+
+        for i, wid in enumerate(self.left_widget):
+            if self.colors_rainbow_mode:
+                background_color = self.color_scheme.value.color_sequence[
+                    -i % len(self.color_scheme.value.color_sequence)
+                ]
+                foreground_color = invert_hex_color_of(background_color)
+            else:
+                background_color = self.color_scheme.value.highlight
+                foreground_color = (
+                    self.color_scheme.value.active
+                    if self.color_scheme.value.active != background_color
+                    else (
+                        invert_hex_color_of(background_color)
+                        if background_color
+                        else None
+                    )
+                )
+            widget_attr: dict[str, Any] = {
+                "background": background_color,
+                "foreground": foreground_color,
+                "decorations": self.decoration.instance.left_decoration,
+            }
+            set_properties(wid=wid, attributes=widget_attr)
+
+        for i, wid in enumerate(self.right_widget):
+            if self.colors_rainbow_mode:
+                background_color = self.color_scheme.value.color_sequence[
+                    i % len(self.color_scheme.value.color_sequence)
+                ]
+                foreground_color = invert_hex_color_of(background_color)
+            else:
+                background_color = self.color_scheme.value.inactive
+                foreground_color = (
+                    self.color_scheme.value.active
+                    if self.color_scheme.value.active != background_color
+                    else (
+                        invert_hex_color_of(background_color)
+                        if background_color
+                        else None
+                    )
+                )
+            widget_attr: dict[str, Any] = {
+                "background": background_color,
+                "foreground": foreground_color,
+            }
+            if wid != self.right_widget[-1]:
+                widget_attr["decorations"] = self.decoration.instance.right_decoration
+
+            set_properties(wid=wid, attributes=widget_attr)
+
+        return self.left_widget + self.right_widget
