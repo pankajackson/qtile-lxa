@@ -99,7 +99,9 @@ class VidWallController(ThemeAware, widget.GenPollText):
 
     def load_vid_wall_widget(self):
         """Initialize the video wallpaper widget."""
-        return VidWallUi(qtile, hwdec=self.hwdec, playlist_file=self.playlist_file)
+        return VidWallUi(
+            qtile, hwdec=self.hwdec, playlist_file=self.playlist_file, theme=self.theme
+        )
 
     def toggle_show_hide(self):
         """Toggle visibility of the Video Wallpaper Widget."""

@@ -47,14 +47,8 @@ class VidWallUi(ThemeAware):
             ]
         else:
             self.active_playlist_page = None
-        self.color_scheme = self.theme.color.scheme
-        scheme_cfg = self.color_scheme.value
-        from libqtile.log_utils import logger
-
-        logger.error(type(self.color_scheme))
-        logger.error(type(scheme_cfg))
-        self.active_color = rgba(scheme_cfg.active, 0.4)
-        self.inactive_color = rgba(scheme_cfg.inactive, 0.4)
+        self.active_color = rgba(self.theme.color.scheme.value.active, 0.4)
+        self.inactive_color = rgba(self.theme.color.scheme.value.inactive, 0.4)
         self.create_controls()
 
         # Restore state from persistent_state
