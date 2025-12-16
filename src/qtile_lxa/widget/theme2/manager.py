@@ -2,14 +2,14 @@ from pathlib import Path
 from typing import Any
 from qtile_extras import widget
 from qtile_lxa.utils import toggle_and_auto_close_widgetbox
-from .bar_decoration import DecorationChanger
-from .bar_spliter import BarSplitModeChanger
-from .bar_transparency import BarTransparencyModeChanger
-from .color_scheme import ColorSchemeChanger
-from .color_rainbow import ColorRainbowModeChanger
-from .pywall import PyWallChanger
-from .vidwall import VidWallController
-from ..config import Theme
+from .controllers.bar_decoration import DecorationChanger
+from .controllers.bar_spliter import BarSplitModeChanger
+from .controllers.bar_transparency import BarTransparencyModeChanger
+from .controllers.color_scheme import ColorSchemeChanger
+from .controllers.color_rainbow import ColorRainbowModeChanger
+from .controllers.pywall import PyWallChanger
+from .controllers.vidwall import VidWallController
+from .config import Theme
 from qtile_lxa import __DEFAULTS__
 
 

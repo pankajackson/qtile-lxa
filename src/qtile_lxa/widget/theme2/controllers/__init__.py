@@ -5,11 +5,9 @@ from .color_rainbow import ColorRainbowModeChanger
 from .color_scheme import ColorSchemeChanger, ColorScheme
 from .pywall import PyWallChanger
 from .vidwall import VidWallController, VidWallUi
-from .manager import ThemeManager
 
 
 __all__ = [
-    "ThemeManager",
     "Decoration",
     "DecorationChanger",
     "BarSplitModeChanger",
