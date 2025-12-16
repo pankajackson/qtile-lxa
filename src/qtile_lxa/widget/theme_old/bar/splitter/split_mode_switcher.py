@@ -1,17 +1,17 @@
 import threading
 from typing import Any
 from qtile_extras import widget
-from qtile_lxa.widget.theme.config import ThemeConfig
+from qtile_lxa.widget.theme_old.config import ThemeConfig
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa import __DEFAULTS__
 
 theme_config = ThemeConfig()
 
 
-class BarTransparencyModeChanger(widget.TextBox):
+class BarSplitModeChanger(widget.TextBox):
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
-        self.text_template = "󱡓 : {}"
+        self.text_template = "󰤼 : {}"
         self.current_bar_mode = self.get_current_bar_mode()
         self.conf_reload_timer = None
         self.decorations = [
@@ -32,12 +32,12 @@ class BarTransparencyModeChanger(widget.TextBox):
         self.update_text()
 
     def get_current_bar_mode(self):
-        return theme_config.load_config().get("bar", {}).get("transparent", False)
+        return theme_config.load_config().get("bar", {}).get("split", False)
 
     def save_bar_mode(self, bar_mode):
         config = theme_config.load_config()
-        config["bar"]["transparent"] = bar_mode
-        theme_config.save_config(config=config)
+        config["bar"]["split"] = bar_mode
+        theme_config.save_config(config)
 
     def update_text(self):
         current_status = "1" if self.current_bar_mode else "0"
@@ -49,7 +49,7 @@ class BarTransparencyModeChanger(widget.TextBox):
         self.save_bar_mode(self.current_bar_mode)
         self.update_text()
         send_notification(
-            title=f"Bar Transparency: {self.current_bar_mode}",
+            title=f"Bar Split: {self.current_bar_mode}",
             msg="Theme Manager",
             app_name="ThemeManager",
             app_id=2003,

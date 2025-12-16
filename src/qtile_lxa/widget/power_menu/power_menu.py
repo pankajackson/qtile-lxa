@@ -1,22 +1,30 @@
 from typing import Literal, Any
+from pathlib import Path
 from libqtile.lazy import lazy
 from qtile_extras.popup.toolkit import PopupRelativeLayout, PopupImage, PopupText
-from qtile_lxa.widget.theme.utils import colors as color_utils, config as config_utils
 from qtile_lxa import __DEFAULTS__, __ASSETS_DIR__
 from .typing import PowerMenuConfig
+from ..theme.config import Theme, ThemeAware
+from ..theme.utils.colors import rgba
 
 
-class PowerMenu:
+class PowerMenu(ThemeAware):
     menu_instance = None
 
-    def __init__(self, qtile, config: PowerMenuConfig = PowerMenuConfig()):
+    def __init__(
+        self,
+        qtile,
+        theme_config_file: Path = __DEFAULTS__.theme_manager.config_path,
+        theme: Theme | None = None,
+        config: PowerMenuConfig = PowerMenuConfig(),
+    ):
+        ThemeAware.__init__(self, theme=theme, config_file=theme_config_file)
         self.qtile = qtile
         self.config = config
         self.controls = []
         self.layout = None
-        self.color_scheme: Any = config_utils.get_active_config("color_scheme")
-        self.active_color = color_utils.rgba(self.color_scheme["active"], 0.4)
-        self.inactive_color = color_utils.rgba(self.color_scheme["inactive"], 0.4)
+        self.active_color = rgba(self.theme.color.scheme.value.active, 0.4)
+        self.inactive_color = rgba(self.theme.color.scheme.value.inactive, 0.4)
         self.create_controls()
 
     def create_controls(self):
@@ -48,7 +56,7 @@ class PowerMenu:
                     height=0.5,
                     highlight_radius=35,
                     highlight_method="border",
-                    highlight=self.color_scheme["active"],
+                    highlight=self.active_color,
                     mouse_callbacks={"Button1": action},
                 )
             )

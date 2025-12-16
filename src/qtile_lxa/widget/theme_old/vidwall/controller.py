@@ -7,7 +7,7 @@ from typing import Any, Literal
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa.utils import is_gpu_present
 from qtile_lxa import __DEFAULTS__
-from qtile_lxa.widget.theme.config import ThemeConfig
+from qtile_lxa.widget.theme_old.config import ThemeConfig
 from .ui import VidWallUi
 
 

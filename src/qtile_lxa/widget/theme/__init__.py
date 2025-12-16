@@ -1,13 +1,11 @@
-from .theme_manager import theme_manager
-from . import bar, color, config, pywall, utils, vidwall
+from . import config, controllers, utils, bar
+from . import manager
 
 
 __all__ = [
-    "bar",
-    "color",
     "config",
-    "pywall",
+    "controllers",
     "utils",
-    "vidwall",
-    "theme_manager",
+    "bar",
+    "manager",
 ]

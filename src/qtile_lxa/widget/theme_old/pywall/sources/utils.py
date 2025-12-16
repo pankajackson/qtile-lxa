@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 import hashlib
-from qtile_lxa.widget.theme.config import ThemeConfig
+from qtile_lxa.widget.theme_old.config import ThemeConfig
 from qtile_lxa.utils.notification import send_notification
 
 

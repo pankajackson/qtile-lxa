@@ -3,7 +3,7 @@ import subprocess
 import threading
 from qtile_extras import widget
 from libqtile.log_utils import logger
-from qtile_lxa.widget.theme.config import ThemeConfig
+from qtile_lxa.widget.theme_old.config import ThemeConfig
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa.utils.process_lock import ProcessLocker
 from qtile_lxa.utils.data_manager import sync_dirs

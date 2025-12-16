@@ -7,7 +7,7 @@ from .utils import (
     get_active_source_id,
     sync_config_for_source,
 )
-from qtile_lxa.widget.theme.config import ThemeConfig
+from qtile_lxa.widget.theme_old.config import ThemeConfig
 from qtile_lxa.utils.process_lock import ProcessLocker
 from qtile_lxa.utils.notification import send_notification
 

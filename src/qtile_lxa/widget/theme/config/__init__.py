@@ -1,10 +1,18 @@
 from .color import ColorSchemeConfig, ColorScheme
 from .decoration import DecorationConfig, Decoration
-from .theme import Theme, WallpaperSource, Wallpaper, VideoWallpaper, Color, Bar
+from .theme import (
+    Theme,
+    ThemeAware,
+    WallpaperSource,
+    Wallpaper,
+    VideoWallpaper,
+    Color,
+    Bar,
+)
 
 __all__ = [
-    # "ThemeConfig",
     "Theme",
+    "ThemeAware",
     "WallpaperSource",
     "Wallpaper",
     "VideoWallpaper",

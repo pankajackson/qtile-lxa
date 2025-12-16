@@ -11,10 +11,10 @@ from qtile_lxa import __DEFAULTS__
 
 @dataclass
 class WallpaperSource:
-    group: str
-    collection: str
     active_index: int
     wallpapers: list[str]
+    group: str | None = None
+    collection: str | None = None
 
 
 @dataclass
@@ -25,7 +25,7 @@ class Wallpaper:
 
 @dataclass
 class Color:
-    schemes: ColorScheme = ColorScheme.PYWAL
+    scheme: ColorScheme = ColorScheme.PYWAL
     rainbow: bool = False
 
 
@@ -58,7 +58,7 @@ class Theme:
         """Convert nested dataclasses to a JSON-safe dict."""
         raw = asdict(self)
         raw["decoration"] = self.decoration.name  # Store enum as string
-        raw["color"]["schemes"] = self.color.schemes.name
+        raw["color"]["scheme"] = self.color.scheme.name
         raw.pop("config_file", None)  # Do not save path
         return raw
 
@@ -75,7 +75,7 @@ class Theme:
                 },
             ),
             color=Color(
-                schemes=ColorScheme[data["color"]["schemes"]],
+                scheme=ColorScheme[data["color"]["scheme"]],
                 rainbow=data["color"]["rainbow"],
             ),
             bar=Bar(**data["bar"]),
@@ -92,6 +92,9 @@ class Theme:
 
     def load(self):
         try:
+            if not self.config_file.exists():
+                self.save()
+                return self
             with open(self.config_file, "r") as f:
                 data = json.load(f)
 
@@ -113,3 +116,13 @@ class Theme:
 
     def reload_qtile(self):
         subprocess.run(["qtile", "cmd-obj", "-o", "cmd", "-f", "reload_config"])
+
+
+class ThemeAware:
+    def __init__(
+        self,
+        *,
+        theme: Theme | None = None,
+        config_file: Path = __DEFAULTS__.theme_manager.config_path,
+    ):
+        self.theme = theme or Theme(config_file).load()

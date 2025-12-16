@@ -75,7 +75,7 @@ def get_pywal_color_scheme(
             return default_color_scheme
 
 
-class ColorScheme(str, Enum):
+class ColorScheme(Enum):
     DARK = ColorSchemeConfig(
         color_sequence=[
             "#282a36",  # Black

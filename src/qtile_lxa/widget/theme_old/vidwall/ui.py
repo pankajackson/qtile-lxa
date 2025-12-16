@@ -4,8 +4,8 @@ import GPUtil
 from subprocess import Popen
 from typing import Any, Literal
 from qtile_extras.popup.toolkit import PopupRelativeLayout, PopupText, PopupImage
-from qtile_lxa.widget.theme.utils.config import get_active_config
-from qtile_lxa.widget.theme.utils.colors import rgba
+from qtile_lxa.widget.theme_old.utils.config import get_active_config
+from qtile_lxa.widget.theme_old.utils.colors import rgba
 from qtile_lxa.utils import is_gpu_present
 from qtile_lxa import __DEFAULTS__, __BASE_DIR__, __ASSETS_DIR__
 

@@ -1,7 +1,7 @@
 import threading
 from qtile_extras import widget
-from qtile_lxa.widget.theme.config import ThemeConfig
-from qtile_lxa.widget.theme.config import color_schemes
+from qtile_lxa.widget.theme_old.config import ThemeConfig
+from qtile_lxa.widget.theme_old.config import color_schemes
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa import __DEFAULTS__
 

@@ -1,6 +1,6 @@
 from pathlib import Path
 from qtile_lxa import widget as lxa_widgets
-from qtile_lxa.widget.theme.bar import DecoratedBar
+from qtile_lxa.widget.theme_old.bar import DecoratedBar
 from libqtile.config import Screen
 
 
@@ -13,7 +13,7 @@ screens = [
                         compose_file=Path("docker-compose.yml"),
                     )
                 ),
-                lxa_widgets.theme.theme_manager.ThemeManager(),
+                lxa_widgets.theme_old.theme_manager.ThemeManager(),
                 # Add more...
             ],
             height=24,
