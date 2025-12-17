@@ -1,5 +1,6 @@
 import os
 import json
+import signal
 from pathlib import Path
 from subprocess import Popen
 from typing import Any, Literal
@@ -24,13 +25,43 @@ class VidWallUi(ThemeAware):
         "current_video": None,
         "current_playlist": None,
         "active_playlist_page_index": 0,
+        "pid": None,
     }
+
+    @staticmethod
+    def _pid_alive(pid: int | None) -> bool:
+        if not pid:
+            return False
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+
+    @staticmethod
+    def _pid_is_xwinwrap(pid: int | None) -> bool:
+        if not pid:
+            return False
+        try:
+            cmdline = Path(f"/proc/{pid}/cmdline").read_text()
+            return "xwinwrap" in cmdline
+        except Exception:
+            return False
 
     @classmethod
     def load_cache(cls) -> dict:
         if VIDWALL_CACHE.exists():
             try:
-                return json.loads(VIDWALL_CACHE.read_text())
+                data = json.loads(VIDWALL_CACHE.read_text())
+
+                pid = data.get("pid")
+                valid = cls._pid_alive(pid) and cls._pid_is_xwinwrap(pid)
+
+                if not valid:
+                    data["is_playing"] = False
+                    data["pid"] = None
+
+                return {**cls.DEFAULT_STATE, **data}
             except Exception:
                 pass
         return cls.DEFAULT_STATE.copy()
@@ -54,6 +85,7 @@ class VidWallUi(ThemeAware):
         self.playlist_file = playlist_file
 
         self.process = None
+        self.pid = None
         self.controls = []
         self.active_playlist_page_index = 0
         self.layout = None
@@ -171,6 +203,7 @@ class VidWallUi(ThemeAware):
             "--no-input-default-bindings",
         ]
         self.process = Popen(command)
+        self.pid = self.process.pid
         self.is_playing = True
         self.save_state()
 
@@ -180,10 +213,10 @@ class VidWallUi(ThemeAware):
             self.process.terminate()
             self.process.wait()  # Ensure proper cleanup
         else:
-            Popen(
-                "kill $(ps -aux | grep xwinwrap | awk '{print $2}')", shell=True
-            ).wait()
+            if self.pid and self._pid_alive(self.pid):
+                os.kill(self.pid, signal.SIGTERM)
         self.process = None
+        self.pid = None
         self.is_playing = False
         self.current_playlist = None
         self.current_video = None
@@ -230,6 +263,7 @@ class VidWallUi(ThemeAware):
             "--no-input-default-bindings",
         ]
         self.process = Popen(command)
+        self.pid = self.process.pid
         self.is_playing = True
         self.save_state()
 
@@ -245,10 +279,11 @@ class VidWallUi(ThemeAware):
                 self.process.terminate()
                 self.process.wait()  # Ensure proper cleanup
             else:
-                Popen(
-                    "kill $(ps -aux | grep xwinwrap | awk '{print $2}')", shell=True
-                ).wait()
+                if self.pid and self._pid_alive(self.pid):
+                    os.kill(self.pid, signal.SIGTERM)
             self.is_playing = False
+            self.process = None
+            self.pid = None
             self.save_state()
         else:
             if self.current_video:
@@ -535,12 +570,12 @@ class VidWallUi(ThemeAware):
                 "current_video": self.current_video,
                 "current_playlist": self.current_playlist,
                 "active_playlist_page_index": self.active_playlist_page_index,
+                "pid": self.pid,
             }
         )
 
     @classmethod
     def toggle_ui(cls, qtile):
-        state = cls.load_cache()
 
         if cls.widget_instance:
             cls.widget_instance.hide()

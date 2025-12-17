@@ -99,6 +99,7 @@ class VidWallController(ThemeAware, widget.GenPollText):
         if not ui:
             return self.format.format(status=self.symbol_unknown)
 
+        ui.load_cache()
         if ui.is_playing:
             if ui.current_video:
                 return self.format.format(status=self.symbol_playing_video)
