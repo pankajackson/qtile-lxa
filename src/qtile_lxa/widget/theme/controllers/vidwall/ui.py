@@ -5,22 +5,39 @@ from subprocess import Popen
 from typing import Any, Literal
 from qtile_extras.popup.toolkit import PopupRelativeLayout, PopupText, PopupImage
 from qtile_lxa.utils import is_gpu_present
-from qtile_lxa import __DEFAULTS__, __BASE_DIR__, __ASSETS_DIR__
+from qtile_lxa import __DEFAULTS__, __ASSETS_DIR__
 from ...utils.colors import rgba
 from ...config import Theme, ThemeAware
+
+VIDWALL_CACHE = __DEFAULTS__.theme_manager.vidwall.state_cache_path
+VIDWALL_CACHE.parent.mkdir(parents=True, exist_ok=True)
 
 
 class VidWallUi(ThemeAware):
     widget_instance = None
-    persistent_state = {
+
+    DEFAULT_STATE = {
+        "visible": False,
         "is_playing": False,
         "is_muted": True,
         "loop": True,
         "current_video": None,
         "current_playlist": None,
         "active_playlist_page_index": 0,
-        "process": None,
     }
+
+    @classmethod
+    def load_cache(cls) -> dict:
+        if VIDWALL_CACHE.exists():
+            try:
+                return json.loads(VIDWALL_CACHE.read_text())
+            except Exception:
+                pass
+        return cls.DEFAULT_STATE.copy()
+
+    @classmethod
+    def save_cache(cls, data: dict):
+        VIDWALL_CACHE.write_text(json.dumps(data, indent=2))
 
     def __init__(
         self,
@@ -31,29 +48,34 @@ class VidWallUi(ThemeAware):
         playlist_file=__DEFAULTS__.theme_manager.vidwall.playlist_path,
         **kwargs: Any,
     ):
-        ThemeAware.__init__(self, theme=theme, config_file=config_file)
+        super().__init__(theme=theme, config_file=config_file)
+
         self.qtile = qtile
         self.playlist_file = playlist_file
+
+        self.process = None
         self.controls = []
         self.active_playlist_page_index = 0
         self.layout = None
-        self.hwdec = hwdec or "auto" if is_gpu_present else "no"
+        self.hwdec = hwdec or ("auto" if is_gpu_present else "no")
+
+        # Restore cache
+        state = self.load_cache()
+        for k, v in state.items():
+            setattr(self, k, v)
+
         self.playlists = self.load_playlists()
         self.videos_per_page = 12
         self.playlist_pages = self.split_playlist()
-        if self.playlist_pages:
-            self.active_playlist_page = self.playlist_pages[
-                self.active_playlist_page_index
-            ]
-        else:
-            self.active_playlist_page = None
+        self.active_playlist_page = (
+            self.playlist_pages[self.active_playlist_page_index]
+            if self.playlist_pages
+            else None
+        )
+
         self.active_color = rgba(self.theme.color.scheme.value.active, 0.4)
         self.inactive_color = rgba(self.theme.color.scheme.value.inactive, 0.4)
         self.create_controls()
-
-        # Restore state from persistent_state
-        for key, value in self.persistent_state.items():
-            setattr(self, key, value)
 
     def load_playlists(self):
         """Load playlists from the JSON file."""
@@ -120,11 +142,6 @@ class VidWallUi(ThemeAware):
 
         return playlists_batches
 
-    def save_state(self):
-        """Save the state to the persistent_state dictionary."""
-        for key in self.persistent_state.keys():
-            self.persistent_state[key] = getattr(self, key)
-
     def play_video(self, url):
         """Play video using xwinwrap and mpv."""
         if self.is_playing:
@@ -155,6 +172,7 @@ class VidWallUi(ThemeAware):
         ]
         self.process = Popen(command)
         self.is_playing = True
+        self.save_state()
 
     def stop_video(self):
         """Stop the video."""
@@ -169,6 +187,7 @@ class VidWallUi(ThemeAware):
         self.is_playing = False
         self.current_playlist = None
         self.current_video = None
+        self.save_state()
 
     def play_playlist(self, playlist_name):
         """Play all videos in the specified playlist."""
@@ -212,10 +231,12 @@ class VidWallUi(ThemeAware):
         ]
         self.process = Popen(command)
         self.is_playing = True
+        self.save_state()
 
     def toggle_loop(self):
         """Toggle playlist looping."""
         self.loop = not self.loop
+        self.save_state()
 
     def toggle_play_pause(self):
         """Toggle play and pause."""
@@ -228,11 +249,14 @@ class VidWallUi(ThemeAware):
                     "kill $(ps -aux | grep xwinwrap | awk '{print $2}')", shell=True
                 ).wait()
             self.is_playing = False
+            self.save_state()
         else:
             if self.current_video:
                 self.play_video(self.current_video)
             elif self.current_playlist:
                 self.play_playlist(self.current_playlist)
+            self.is_playing = True
+            self.save_state()
 
     def toggle_mute(self):
         """Toggle mute and unmute."""
@@ -242,6 +266,7 @@ class VidWallUi(ThemeAware):
                 self.play_video(self.current_video)
             elif self.current_playlist:
                 self.play_playlist(self.current_playlist)
+        self.save_state()
 
     def header_items(self):
         common_props = {
@@ -487,21 +512,39 @@ class VidWallUi(ThemeAware):
         )
         self.layout.show(centered=True)
         VidWallUi.widget_instance = self
+        self.visible = True
+        self.save_state()
 
     def hide(self):
         """Hide the widget."""
         if self.layout:
-            self.save_state()  # Save the current state
             self.layout.hide()
             self.layout = None
-            VidWallUi.widget_instance = None
 
+        VidWallUi.widget_instance = None
+        self.visible = False
+        self.save_state()
 
-def show_video_wallpaper_widget(qtile):
-    if not VidWallUi.widget_instance:
-        widget = VidWallUi(qtile)
-        widget.show()
-    else:
-        VidWallUi.widget_instance.hide()
-        widget = VidWallUi(qtile)
-        widget.show()
+    def save_state(self):
+        self.save_cache(
+            {
+                "visible": self.visible,
+                "is_playing": self.is_playing,
+                "is_muted": self.is_muted,
+                "loop": self.loop,
+                "current_video": self.current_video,
+                "current_playlist": self.current_playlist,
+                "active_playlist_page_index": self.active_playlist_page_index,
+            }
+        )
+
+    @classmethod
+    def toggle_ui(cls, qtile):
+        state = cls.load_cache()
+
+        if cls.widget_instance:
+            cls.widget_instance.hide()
+            # return
+
+        ui = cls(qtile)
+        ui.show()

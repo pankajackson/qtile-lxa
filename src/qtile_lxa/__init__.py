@@ -28,6 +28,7 @@ class PyWallDefaults:
 @dataclass(frozen=True)
 class VidWallDefaults:
     playlist_path: Path = Path.home() / ".lxa_vidwall_playlists.json"
+    state_cache_path: Path = Path.home() / ".cache/qtile/vidwall.json"
 
 
 @dataclass(frozen=True)

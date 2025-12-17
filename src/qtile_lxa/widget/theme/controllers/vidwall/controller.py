@@ -39,11 +39,10 @@ class VidWallController(ThemeAware, widget.GenPollText):
         ]
 
         # Video wallpaper-specific attributes
-        self.hwdec: Literal["auto", "no"] | None = (
-            hwdec or "auto" if is_gpu_present else "no"
+        self.hwdec: Literal["auto", "no"] | None = hwdec or (
+            "auto" if is_gpu_present else "no"
         )
         self.playlist_file = playlist_file
-        self.widget = self.load_vid_wall_widget()
 
         # Status symbols
         self.symbol_playing_video = symbol_playing_video
@@ -65,92 +64,101 @@ class VidWallController(ThemeAware, widget.GenPollText):
         )
         self.autostart()
 
+    def _new_ui(self) -> VidWallUi:
+        return VidWallUi(
+            qtile,
+            hwdec=self.hwdec,
+            playlist_file=self.playlist_file,
+            theme=self.theme,
+        )
+
+    def _ui(self) -> VidWallUi | None:
+        return VidWallUi.widget_instance
+
     def poll(self):
         """Update the widget display with the current status."""
         return self.check_status()
 
     def autostart(self):
         config = self.get_current_config()
-        if config.enabled:
-            self.widget.is_muted = config.mute
-            self.widget.loop = config.loop
-            if config.playlist is not None:
-                self.widget.play_playlist(config.playlist)
-            elif config.song is not None:
-                self.widget.play_video(config.song)
-            self.widget.save_state()
+        if not config.enabled:
+            return
+
+        ui = self._new_ui()
+        ui.is_muted = config.mute
+        ui.loop = config.loop
+        if config.playlist:
+            ui.play_playlist(config.playlist)
+        elif config.song:
+            ui.play_video(config.song)
+        ui.save_state()
 
     def check_status(self):
         """Fetch the current state of the video wallpaper."""
-        if self.widget and self.widget.widget_instance:
-            if self.widget.is_playing:
-                if self.widget.current_video:
-                    return self.format.format(status=self.symbol_playing_video)
-                elif self.widget.current_playlist:
-                    return self.format.format(status=self.symbol_playing_playlist)
-                else:
-                    return self.format.format(status=self.symbol_unknown)
+        ui = self._ui()
+        if not ui:
+            return self.format.format(status=self.symbol_unknown)
+
+        if ui.is_playing:
+            if ui.current_video:
+                return self.format.format(status=self.symbol_playing_video)
+            elif ui.current_playlist:
+                return self.format.format(status=self.symbol_playing_playlist)
             else:
-                if self.widget.current_video or self.widget.current_playlist:
-                    return self.format.format(status=self.symbol_pause)
-                else:
-                    return self.format.format(status=self.symbol_stop)
-        return self.format.format(status=self.symbol_unknown)
+                return self.format.format(status=self.symbol_unknown)
 
-    def load_vid_wall_widget(self):
-        """Initialize the video wallpaper widget."""
-        return VidWallUi(
-            qtile, hwdec=self.hwdec, playlist_file=self.playlist_file, theme=self.theme
-        )
+        if ui.current_video or ui.current_playlist:
+            return self.format.format(status=self.symbol_pause)
+        return self.format.format(status=self.symbol_stop)
 
-    def toggle_show_hide(self):
+    def toggle_show_hide(self, qtile=qtile):
         """Toggle visibility of the Video Wallpaper Widget."""
-        if not self.widget.widget_instance:
-            self.widget = self.load_vid_wall_widget()
-        else:
-            self.widget.hide()
-        self.widget.show()
+
+        VidWallUi(qtile).toggle_ui(qtile)
 
     def toggle_play_pause(self):
         """Toggle play/pause for the video wallpaper."""
-        if self.widget.widget_instance:
-            self.widget.widget_instance.toggle_play_pause()
-        else:
+        ui = self._ui()
+        if not ui:
             send_notification(
-                title=f"App not Running at this moment",
+                title="App not running",
                 msg="Video Wallpaper",
                 app_name="ThemeManager",
                 app_id=2003,
-                timeout=5000,
+                timeout=3000,
             )
+            return
 
-    def get_current_config(self):
-        """Get the current configuration for the video wallpaper."""
-        # return theme_config.load_config().get("video_wallpaper", {})
-        return self.theme.video_wallpaper
+        ui.toggle_play_pause()
 
     def save_current_config(self):
         """Save the current state of the video wallpaper to the theme configuration."""
-        config = self.theme
-        if self.widget.widget_instance:
-            config.video_wallpaper.playlist = self.widget.current_playlist
-            config.video_wallpaper.song = self.widget.current_video
-            config.video_wallpaper.mute = self.widget.is_muted
-            config.video_wallpaper.loop = self.widget.loop
-            config.video_wallpaper.enabled = self.widget.is_playing
-            config.save()
+        ui = self._ui()
+        if not ui:
             send_notification(
-                title=f"State Saved",
+                title="App not running",
                 msg="Video Wallpaper",
                 app_name="ThemeManager",
                 app_id=2003,
-                timeout=5000,
+                timeout=3000,
             )
-        else:
-            send_notification(
-                title=f"App not Running at this moment",
-                msg="Video Wallpaper",
-                app_name="ThemeManager",
-                app_id=2003,
-                timeout=5000,
-            )
+            return
+
+        config = self.theme.video_wallpaper
+        config.playlist = ui.current_playlist
+        config.song = ui.current_video
+        config.mute = ui.is_muted
+        config.loop = ui.loop
+        config.enabled = ui.is_playing
+        self.theme.save()
+
+        send_notification(
+            title="State Saved",
+            msg="Video Wallpaper",
+            app_name="ThemeManager",
+            app_id=2003,
+            timeout=3000,
+        )
+
+    def get_current_config(self):
+        return self.theme.video_wallpaper
