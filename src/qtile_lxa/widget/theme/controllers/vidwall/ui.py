@@ -10,8 +10,10 @@ from qtile_lxa import __DEFAULTS__, __ASSETS_DIR__
 from ...utils.colors import rgba
 from ...config import Theme, ThemeAware
 
-VIDWALL_CACHE = __DEFAULTS__.theme_manager.vidwall.state_cache_path
-VIDWALL_CACHE.parent.mkdir(parents=True, exist_ok=True)
+VIDWALL_STATE_CACHE = __DEFAULTS__.theme_manager.vidwall.state_cache_path
+VIDWALL_PLAYLIST_CACHE = __DEFAULTS__.theme_manager.vidwall.playlist_cache_path
+VIDWALL_STATE_CACHE.parent.mkdir(parents=True, exist_ok=True)
+VIDWALL_PLAYLIST_CACHE.parent.mkdir(parents=True, exist_ok=True)
 
 
 class VidWallUi(ThemeAware):
@@ -50,9 +52,9 @@ class VidWallUi(ThemeAware):
 
     @classmethod
     def load_cache(cls) -> dict:
-        if VIDWALL_CACHE.exists():
+        if VIDWALL_STATE_CACHE.exists():
             try:
-                data = json.loads(VIDWALL_CACHE.read_text())
+                data = json.loads(VIDWALL_STATE_CACHE.read_text())
 
                 pid = data.get("pid")
                 valid = cls._pid_alive(pid) and cls._pid_is_xwinwrap(pid)
@@ -68,7 +70,7 @@ class VidWallUi(ThemeAware):
 
     @classmethod
     def save_cache(cls, data: dict):
-        VIDWALL_CACHE.write_text(json.dumps(data, indent=2))
+        VIDWALL_STATE_CACHE.write_text(json.dumps(data, indent=2))
 
     def __init__(
         self,
@@ -89,7 +91,9 @@ class VidWallUi(ThemeAware):
         self.controls = []
         self.active_playlist_page_index = 0
         self.layout = None
-        self.hwdec = hwdec or ("auto" if is_gpu_present else "no")
+        self.hwdec = (
+            hwdec if hwdec is not None else ("auto" if is_gpu_present else "no")
+        )
 
         # Restore cache
         state = self.load_cache()
@@ -237,7 +241,7 @@ class VidWallUi(ThemeAware):
         self.current_playlist = playlist_name
         self.current_video = None
 
-        with open(".vidwall_current_playlists.plst", "w", encoding="utf-8") as f:
+        with open(VIDWALL_PLAYLIST_CACHE, "w", encoding="utf-8") as f:
             for video in videos:
                 f.write(f"{video['url']}\n")
 
@@ -253,7 +257,7 @@ class VidWallUi(ThemeAware):
             f"--hwdec={self.hwdec}",
             "-wid",
             "WID",
-            "--playlist=.vidwall_current_playlists.plst",
+            f"--playlist={VIDWALL_PLAYLIST_CACHE}",
             "--no-osc",
             "--no-osd-bar",
             "--loop-playlist" if self.loop else "",
