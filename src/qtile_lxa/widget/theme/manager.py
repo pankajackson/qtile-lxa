@@ -3,7 +3,7 @@ from typing import Any
 from qtile_extras import widget
 from qtile_lxa.utils import toggle_and_auto_close_widgetbox
 from .controllers.bar_decoration import DecorationChanger
-from .controllers.bar_spliter import BarSplitModeChanger
+from .controllers.bar_splitter import BarSplitModeChanger
 from .controllers.bar_transparency import BarTransparencyModeChanger
 from .controllers.color_scheme import ColorSchemeChanger
 from .controllers.color_rainbow import ColorRainbowModeChanger

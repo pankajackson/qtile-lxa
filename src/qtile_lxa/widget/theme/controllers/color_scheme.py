@@ -12,10 +12,10 @@ class ColorSchemeChanger(ThemeAware, widget.TextBox):
         config_file: Path = __DEFAULTS__.theme_manager.config_path,
         theme: Theme | None = None,
         display_name=False,
-        **config,
+        **kwargs,
     ):
         ThemeAware.__init__(self, theme=theme, config_file=config_file)
-        widget.TextBox.__init__(self, **config)
+        widget.TextBox.__init__(self, **kwargs)
         self.color_schemes_list = [item for item in ColorScheme]
         self.text_template = f"󰸌: {{current_scheme}}"  # Icon and scheme name
         self.current_scheme = self.get_current_scheme()
