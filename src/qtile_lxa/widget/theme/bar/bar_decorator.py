@@ -27,7 +27,7 @@ class DecoratedBar(ThemeAware):
         self.opacity = opacity
         self.transparent = transparent
         self.decoration = self.theme.decoration
-        self.color_scheme = self.theme.color.scheme
+        self.color_scheme = self.theme.color.scheme.palette
         self.colors_rainbow_mode = self.theme.color.rainbow
         self.bar_split_mode = self.theme.bar.split
         self.bar_transparent_mode = self.theme.bar.transparent
@@ -38,9 +38,7 @@ class DecoratedBar(ThemeAware):
             size=self.height,
             opacity=self.opacity,
             margin=4,
-            background=rgba(
-                self.color_scheme.value.background, 0 if self.transparent else 1
-            ),
+            background=rgba(self.color_scheme.background, 0 if self.transparent else 1),
         )
 
     def get_decorated_widgets(self):
@@ -59,15 +57,15 @@ class DecoratedBar(ThemeAware):
 
         for i, wid in enumerate(self.left_widget):
             if self.colors_rainbow_mode:
-                background_color = self.color_scheme.value.color_sequence[
-                    -i % len(self.color_scheme.value.color_sequence)
+                background_color = self.color_scheme.color_sequence[
+                    -i % len(self.color_scheme.color_sequence)
                 ]
                 foreground_color = invert_hex_color_of(background_color)
             else:
-                background_color = self.color_scheme.value.highlight
+                background_color = self.color_scheme.highlight
                 foreground_color = (
-                    self.color_scheme.value.active
-                    if self.color_scheme.value.active != background_color
+                    self.color_scheme.active
+                    if self.color_scheme.active != background_color
                     else (
                         invert_hex_color_of(background_color)
                         if background_color
@@ -83,15 +81,15 @@ class DecoratedBar(ThemeAware):
 
         for i, wid in enumerate(self.right_widget):
             if self.colors_rainbow_mode:
-                background_color = self.color_scheme.value.color_sequence[
-                    i % len(self.color_scheme.value.color_sequence)
+                background_color = self.color_scheme.color_sequence[
+                    i % len(self.color_scheme.color_sequence)
                 ]
                 foreground_color = invert_hex_color_of(background_color)
             else:
-                background_color = self.color_scheme.value.inactive
+                background_color = self.color_scheme.inactive
                 foreground_color = (
-                    self.color_scheme.value.active
-                    if self.color_scheme.value.active != background_color
+                    self.color_scheme.active
+                    if self.color_scheme.active != background_color
                     else (
                         invert_hex_color_of(background_color)
                         if background_color

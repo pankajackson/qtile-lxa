@@ -66,7 +66,7 @@ class ColorSchemeChanger(ThemeAware, widget.TextBox):
         self.save_current_scheme(self.current_scheme)
         self.update_text()
         send_notification(
-            title=f"Color Scheme: {self.current_scheme}",
+            title=f"Color Scheme: {self.current_scheme.name}",
             msg="Theme Manager",
             app_name="ThemeManager",
             app_id=2003,
@@ -86,7 +86,7 @@ class ColorSchemeChanger(ThemeAware, widget.TextBox):
         self.save_current_scheme(self.current_scheme)
         self.update_text()
         send_notification(
-            title=f"Color Scheme: {self.current_scheme}",
+            title=f"Color Scheme: {self.current_scheme.name}",
             msg="Theme Manager",
             app_name="ThemeManager",
             app_id=2003,

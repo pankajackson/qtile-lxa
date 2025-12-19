@@ -23,8 +23,8 @@ class PowerMenu(ThemeAware):
         self.config = config
         self.controls = []
         self.layout = None
-        self.active_color = rgba(self.theme.color.scheme.value.active, 0.4)
-        self.inactive_color = rgba(self.theme.color.scheme.value.inactive, 0.4)
+        self.active_color = rgba(self.theme.color.scheme.palette.active, 0.4)
+        self.inactive_color = rgba(self.theme.color.scheme.palette.inactive, 0.4)
         self.create_controls()
 
     def create_controls(self):

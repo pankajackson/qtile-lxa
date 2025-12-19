@@ -109,8 +109,9 @@ class VidWallUi(ThemeAware):
             else None
         )
 
-        self.active_color = rgba(self.theme.color.scheme.value.active, 0.4)
-        self.inactive_color = rgba(self.theme.color.scheme.value.inactive, 0.4)
+        self.color_scheme = self.theme.color.scheme.palette
+        self.active_color = rgba(self.color_scheme.active, 0.4)
+        self.inactive_color = rgba(self.color_scheme.inactive, 0.4)
         self.create_controls()
 
     def load_playlists(self):

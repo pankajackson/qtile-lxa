@@ -57,8 +57,8 @@ def get_pywal_color_scheme(
         background="#080D13",
         foreground="#abd5de",
     )
-    if not Path.exists(pywal_colors_json_path):
-        logger.error(f"pywal colors file {pywal_colors_json_path} not exist!")
+    if not pywal_colors_json_path.exists():
+        logger.warning(f"pywal colors file {pywal_colors_json_path} not exist!")
         return default_color_scheme
     else:
         try:
@@ -66,8 +66,8 @@ def get_pywal_color_scheme(
                 raw_col = json.loads(j.read())
             color_scheme = ColorSchemeConfig(
                 color_sequence=list(dict(raw_col["colors"]).values()),
-                background=raw_col["special"]["background"],
-                foreground=raw_col["special"]["foreground"],
+                background=raw_col.get("special", {}).get("background"),
+                foreground=raw_col.get("special", {}).get("foreground"),
             )
             return color_scheme
         except Exception as e:
@@ -76,7 +76,20 @@ def get_pywal_color_scheme(
 
 
 class ColorScheme(Enum):
-    DARK = ColorSchemeConfig(
+    DARK = "DARK"
+    LIGHT = "LIGHT"
+    BLACK_WHITE = "BLACK_WHITE"
+    PYWAL = "PYWAL"
+
+    @property
+    def palette(self) -> ColorSchemeConfig:
+        if self is ColorScheme.PYWAL:
+            return get_pywal_color_scheme()
+        return _STATIC_SCHEMES[self]
+
+
+_STATIC_SCHEMES = {
+    ColorScheme.DARK: ColorSchemeConfig(
         color_sequence=[
             "#282a36",  # Black
             # "#ff5555",  # Red
@@ -89,8 +102,8 @@ class ColorScheme(Enum):
         ],
         background="#282a36",
         foreground="#ffffff",
-    )
-    LIGHT = ColorSchemeConfig(
+    ),
+    ColorScheme.LIGHT: ColorSchemeConfig(
         color_sequence=[
             "#6272a4",  # Bright Black
             # "#ff6e6e",  # Bright Red
@@ -103,13 +116,13 @@ class ColorScheme(Enum):
         ],
         background="#282a36",
         foreground="#f8f8f2",
-    )
-    BLACK_WHITE = ColorSchemeConfig(
+    ),
+    ColorScheme.BLACK_WHITE: ColorSchemeConfig(
         color_sequence=[
             "#FFFFFF",  # White
             "#000000",  # Black
         ],
         background="#FFFFFF",
         foreground="#000000",
-    )
-    PYWAL = get_pywal_color_scheme()
+    ),
+}
