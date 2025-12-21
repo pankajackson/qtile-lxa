@@ -36,13 +36,11 @@ class DecoratedBar(ThemeAware):
         colors_rainbow_mode = self.theme.color.rainbow
         bar_split_mode = self.theme.bar.split
         bar_transparent_mode = self.theme.bar.transparent
+
         setattr(
             self.bar,
             "background",
-            rgba(
-                self.theme.color.scheme.palette.background,
-                0 if self.transparent else 1,
-            ),
+            rgba(color_scheme.background, 0 if self.transparent else 1),
         )
 
         def set_properties(wid: _Widget, attributes: dict[str, Any]):
@@ -55,58 +53,48 @@ class DecoratedBar(ThemeAware):
                     ):
                         value = rgba(value, 0)
                 setattr(wid, attr, value)
-            if hasattr(wid, "draw"):
-                wid.draw()
 
         for i, wid in enumerate(self.left_widgets):
             if colors_rainbow_mode:
-                background_color = color_scheme.color_sequence[
-                    -i % len(color_scheme.color_sequence)
-                ]
-                foreground_color = invert_hex_color_of(background_color)
+                bg = color_scheme.color_sequence[-i % len(color_scheme.color_sequence)]
+                fg = invert_hex_color_of(bg)
             else:
-                background_color = color_scheme.highlight
-                foreground_color = (
+                bg = color_scheme.highlight
+                fg = (
                     color_scheme.active
-                    if color_scheme.active != background_color
-                    else (
-                        invert_hex_color_of(background_color)
-                        if background_color
-                        else None
-                    )
+                    if color_scheme.active != bg
+                    else invert_hex_color_of(bg) if bg else None
                 )
-            widget_attr: dict[str, Any] = {
-                "background": background_color,
-                "foreground": foreground_color,
+
+            attrs: dict[str, Any] = {
+                "background": bg,
+                "foreground": fg,
                 "decorations": decoration.instance.left_decoration,
             }
-            set_properties(wid=wid, attributes=widget_attr)
+
+            set_properties(wid, attrs)
 
         for i, wid in enumerate(self.right_widgets):
             if colors_rainbow_mode:
-                background_color = color_scheme.color_sequence[
-                    i % len(color_scheme.color_sequence)
-                ]
-                foreground_color = invert_hex_color_of(background_color)
+                bg = color_scheme.color_sequence[i % len(color_scheme.color_sequence)]
+                fg = invert_hex_color_of(bg)
             else:
-                background_color = color_scheme.inactive
-                foreground_color = (
+                bg = color_scheme.inactive
+                fg = (
                     color_scheme.active
-                    if color_scheme.active != background_color
-                    else (
-                        invert_hex_color_of(background_color)
-                        if background_color
-                        else None
-                    )
+                    if color_scheme.active != bg
+                    else invert_hex_color_of(bg) if bg else None
                 )
-            widget_attr: dict[str, Any] = {
-                "background": background_color,
-                "foreground": foreground_color,
-            }
-            if wid != self.right_widgets[-1]:
-                widget_attr["decorations"] = decoration.instance.right_decoration
 
-            set_properties(wid=wid, attributes=widget_attr)
+            attrs: dict[str, Any] = {
+                "background": bg,
+                "foreground": fg,
+            }
+
+            if wid is not self.right_widgets[-1]:
+                attrs["decorations"] = decoration.instance.right_decoration
+
+            set_properties(wid, attrs)
 
         if self.bar.screen:
             self.bar.draw()
