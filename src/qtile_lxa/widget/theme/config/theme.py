@@ -3,6 +3,8 @@ import subprocess
 from pathlib import Path
 import json
 from libqtile.log_utils import logger
+from typing import TypeAlias
+from collections.abc import Callable
 
 from .color import ColorScheme
 from .decoration import Decoration
@@ -118,6 +120,9 @@ class Theme:
         subprocess.run(["qtile", "cmd-obj", "-o", "cmd", "-f", "reload_config"])
 
 
+ThemeCallback: TypeAlias = Callable[["ThemeAware", str | None], None]
+
+
 class ThemeAware:
     def __init__(
         self,
@@ -125,4 +130,37 @@ class ThemeAware:
         theme: Theme | None = None,
         config_file: Path = __DEFAULTS__.theme_manager.config_path,
     ):
-        self.theme = theme or Theme(config_file).load()
+        self.theme: Theme = theme or Theme(config_file=config_file).load()
+        self._theme_callbacks: list[ThemeCallback] = []
+
+    # ───────── theme control ─────────
+
+    def set_theme(
+        self,
+        theme: Theme,
+        *,
+        event: str = "theme_changed",
+        skip_notify: bool = False,
+    ) -> None:
+        if self.theme is theme:
+            return
+        self.theme = theme
+        if not skip_notify:
+            self.notify_theme(event)
+
+    # ───────── observer API ─────────
+
+    def subscribe(self, fn: ThemeCallback) -> None:
+        if fn not in self._theme_callbacks:
+            self._theme_callbacks.append(fn)
+
+    def unsubscribe(self, fn: ThemeCallback) -> None:
+        if fn in self._theme_callbacks:
+            self._theme_callbacks.remove(fn)
+
+    def notify_theme(self, event: str | None = None) -> None:
+        for cb in list(self._theme_callbacks):
+            try:
+                cb(self, event)
+            except Exception as e:
+                logger.error(f"Theme callback failed: {e}")

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from qtile_extras import widget
 from qtile_lxa.utils import toggle_and_auto_close_widgetbox
 from .controllers.bar_decoration import DecorationChanger
@@ -10,6 +10,7 @@ from .controllers.color_rainbow import ColorRainbowModeChanger
 from .controllers.pywall import PyWallChanger
 from .controllers.vidwall import VidWallController
 from .config import Theme
+from .decorated_bar import DecoratedBar
 from qtile_lxa import __DEFAULTS__
 
 
@@ -28,15 +29,21 @@ class ThemeManager(widget.WidgetBox):
         color_rainbow: ColorRainbowModeChanger | None | object = _UNSET,
         bar_split: BarSplitModeChanger | None | object = _UNSET,
         bar_transparency: BarTransparencyModeChanger | None | object = _UNSET,
+        decorated_bars: list[DecoratedBar] | None | object = _UNSET,
         **kwargs: Any,
     ):
         self.name = name
         self.config_file = config_file
-
-        # 1️⃣ Create & load Theme (single source of truth)
         self.theme = Theme(config_file=self.config_file).load()
 
-        # 2️⃣ Resolve controllers
+        if decorated_bars in (_UNSET, None):
+            self.decorated_bars: list[DecoratedBar] = []
+        else:
+            self.decorated_bars = cast(list[DecoratedBar], decorated_bars)
+        for bar in self.decorated_bars:
+            bar.set_theme(self.theme, skip_notify=True)
+            bar.apply_theme()
+
         self.pywall = PyWallChanger(theme=self.theme) if pywall is _UNSET else pywall
 
         self.vidwall = (
@@ -68,6 +75,9 @@ class ThemeManager(widget.WidgetBox):
             if bar_transparency is _UNSET
             else bar_transparency
         )
+        if isinstance(self.bar_transparency, BarTransparencyModeChanger):
+            for bar in self.decorated_bars:
+                self.bar_transparency.subscribe(bar.apply_theme)
 
         self.controller_list = self.get_enabled_controllers()
 

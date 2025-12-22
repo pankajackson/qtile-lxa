@@ -30,7 +30,7 @@ class DecoratedBar(ThemeAware):
             **bar_kwargs,
         )
 
-    def apply_theme(self):
+    def apply_theme(self, *_args):
         decoration = self.theme.decoration
         color_scheme = self.theme.color.scheme.palette
         colors_rainbow_mode = self.theme.color.rainbow
@@ -98,3 +98,4 @@ class DecoratedBar(ThemeAware):
 
         if self.bar.screen:
             self.bar.draw()
+            self.bar.screen.group.layout_all()
