@@ -64,6 +64,7 @@ class ColorSchemeChanger(ThemeAware, widget.TextBox):
             (current_index + 1) % len(self.color_schemes_list)
         ]
         self.save_current_scheme(self.current_scheme)
+        self.notify_theme("cs_change")
         self.update_text()
         send_notification(
             title=f"Color Scheme: {self.current_scheme.name}",
@@ -72,11 +73,6 @@ class ColorSchemeChanger(ThemeAware, widget.TextBox):
             app_id=2003,
             timeout=5000,
         )
-
-        if self.conf_reload_timer and self.conf_reload_timer.is_alive():
-            self.conf_reload_timer.cancel()
-        self.conf_reload_timer = threading.Timer(1, self.theme.reload_qtile)
-        self.conf_reload_timer.start()
 
     def prev_scheme(self):
         current_index = self.color_schemes_list.index(self.current_scheme)
@@ -84,6 +80,7 @@ class ColorSchemeChanger(ThemeAware, widget.TextBox):
             (current_index - 1) % len(self.color_schemes_list)
         ]
         self.save_current_scheme(self.current_scheme)
+        self.notify_theme("cs_change")
         self.update_text()
         send_notification(
             title=f"Color Scheme: {self.current_scheme.name}",
@@ -92,8 +89,3 @@ class ColorSchemeChanger(ThemeAware, widget.TextBox):
             app_id=2003,
             timeout=5000,
         )
-
-        if self.conf_reload_timer and self.conf_reload_timer.is_alive():
-            self.conf_reload_timer.cancel()
-        self.conf_reload_timer = threading.Timer(1, self.theme.reload_qtile)
-        self.conf_reload_timer.start()

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 from qtile_extras import widget
 from qtile_lxa.utils import toggle_and_auto_close_widgetbox
 from .controllers.bar_decoration import DecorationChanger
@@ -9,19 +9,19 @@ from .controllers.color_scheme import ColorSchemeChanger
 from .controllers.color_rainbow import ColorRainbowModeChanger
 from .controllers.pywall import PyWallChanger
 from .controllers.vidwall import VidWallController
-from .config import Theme
-from .decorated_bar import DecoratedBar
+from .config import Theme, ThemeAware
 from qtile_lxa import __DEFAULTS__
 
 
 _UNSET = object()
 
 
-class ThemeManager(widget.WidgetBox):
+class ThemeManager(widget.WidgetBox, ThemeAware):
     def __init__(
         self,
         name: str = "theme_manager_widget_box",
         config_file: Path = __DEFAULTS__.theme_manager.config_path,
+        theme: Theme | None = None,
         pywall: PyWallChanger | None | object = _UNSET,
         vidwall: VidWallController | None | object = _UNSET,
         color_scheme: ColorSchemeChanger | None | object = _UNSET,
@@ -29,20 +29,11 @@ class ThemeManager(widget.WidgetBox):
         color_rainbow: ColorRainbowModeChanger | None | object = _UNSET,
         bar_split: BarSplitModeChanger | None | object = _UNSET,
         bar_transparency: BarTransparencyModeChanger | None | object = _UNSET,
-        decorated_bars: list[DecoratedBar] | None | object = _UNSET,
         **kwargs: Any,
     ):
+        ThemeAware.__init__(self, theme=theme, config_file=config_file)
+        widget.TextBox.__init__(self, **kwargs)
         self.name = name
-        self.config_file = config_file
-        self.theme = Theme(config_file=self.config_file).load()
-
-        if decorated_bars in (_UNSET, None):
-            self.decorated_bars: list[DecoratedBar] = []
-        else:
-            self.decorated_bars = cast(list[DecoratedBar], decorated_bars)
-        for bar in self.decorated_bars:
-            bar.set_theme(self.theme, skip_notify=True)
-            bar.apply_theme()
 
         self.pywall = PyWallChanger(theme=self.theme) if pywall is _UNSET else pywall
 
@@ -75,9 +66,6 @@ class ThemeManager(widget.WidgetBox):
             if bar_transparency is _UNSET
             else bar_transparency
         )
-        if isinstance(self.bar_transparency, BarTransparencyModeChanger):
-            for bar in self.decorated_bars:
-                self.bar_transparency.subscribe(bar.apply_theme)
 
         self.controller_list = self.get_enabled_controllers()
 

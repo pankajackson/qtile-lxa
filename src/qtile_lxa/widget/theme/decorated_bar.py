@@ -6,29 +6,53 @@ from qtile_extras import widget
 from qtile_lxa import __DEFAULTS__
 from .config import Theme, ThemeAware
 from .utils.colors import rgba, invert_hex_color_of
+from .manager import ThemeManager
+from .controllers import (
+    BarTransparencyModeChanger,
+    ColorSchemeChanger,
+    DecorationChanger,
+    BarSplitModeChanger,
+    ColorRainbowModeChanger,
+)
+from qtile_extras.widget.decorations import PowerLineDecoration
 
 
-class DecoratedBar(ThemeAware):
+class DecoratedBar:
     def __init__(
         self,
-        config_file: Path = __DEFAULTS__.theme_manager.config_path,
-        theme: Theme | None = None,
+        manager: ThemeManager,
         left_widgets: list[_Widget] | None = None,
         right_widgets: list[_Widget] | None = None,
-        transparent: bool = True,
+        size: int = 30,
         **bar_kwargs,
     ):
-        super().__init__(theme=theme, config_file=config_file)
+        self.manager = manager
+        self.theme = self.manager.theme
         self.left_widgets = left_widgets or []
         self.right_widgets = right_widgets or []
-        self.transparent = transparent
         self.bar: Bar = Bar(
             widgets=[*self.left_widgets, *self.right_widgets],
             background=rgba(
-                self.theme.color.scheme.palette.background, 0 if self.transparent else 1
+                self.theme.color.scheme.palette.background,
+                0 if self.theme.bar.transparent else 1,
             ),
+            size=size,
             **bar_kwargs,
         )
+        if isinstance(self.manager.bar_transparency, BarTransparencyModeChanger):
+            self.manager.bar_transparency.subscribe(self.apply_theme)
+
+        if isinstance(self.manager.bar_split, BarSplitModeChanger):
+            self.manager.bar_split.subscribe(self.apply_theme)
+
+        if isinstance(self.manager.color_scheme, ColorSchemeChanger):
+            self.manager.color_scheme.subscribe(self.apply_theme)
+
+        if isinstance(self.manager.color_rainbow, ColorRainbowModeChanger):
+            self.manager.color_rainbow.subscribe(self.apply_theme)
+
+        if isinstance(self.manager.decoration, DecorationChanger):
+            self.manager.decoration.subscribe(self.apply_theme)
 
     def apply_theme(self, *_args):
         decoration = self.theme.decoration
@@ -40,7 +64,7 @@ class DecoratedBar(ThemeAware):
         setattr(
             self.bar,
             "background",
-            rgba(color_scheme.background, 0 if self.transparent else 1),
+            rgba(color_scheme.background, 0 if bar_transparent_mode else 1),
         )
 
         def set_properties(wid: _Widget, attributes: dict[str, Any]):
@@ -69,7 +93,7 @@ class DecoratedBar(ThemeAware):
             attrs: dict[str, Any] = {
                 "background": bg,
                 "foreground": fg,
-                "decorations": decoration.instance.left_decoration,
+                # "decorations": decoration.instance.left_decoration,
             }
 
             set_properties(wid, attrs)
@@ -91,8 +115,8 @@ class DecoratedBar(ThemeAware):
                 "foreground": fg,
             }
 
-            if wid is not self.right_widgets[-1]:
-                attrs["decorations"] = decoration.instance.right_decoration
+            # if wid is not self.right_widgets[-1]:
+            #     attrs["decorations"] = decoration.instance.right_decoration
 
             set_properties(wid, attrs)
 

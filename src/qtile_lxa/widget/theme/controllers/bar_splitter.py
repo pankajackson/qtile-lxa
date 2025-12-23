@@ -52,6 +52,7 @@ class BarSplitModeChanger(ThemeAware, widget.TextBox):
     def toggle_bar_mode(self):
         self.current_bar_mode = not self.current_bar_mode
         self.save_bar_mode(self.current_bar_mode)
+        self.notify_theme("bar_split_mode")
         self.update_text()
         send_notification(
             title=f"Bar Split: {self.current_bar_mode}",
@@ -60,8 +61,3 @@ class BarSplitModeChanger(ThemeAware, widget.TextBox):
             app_id=2003,
             timeout=5000,
         )
-
-        if self.conf_reload_timer and self.conf_reload_timer.is_alive():
-            self.conf_reload_timer.cancel()
-        self.conf_reload_timer = threading.Timer(1, self.theme.reload_qtile)
-        self.conf_reload_timer.start()

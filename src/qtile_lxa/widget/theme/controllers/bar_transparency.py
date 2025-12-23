@@ -49,19 +49,19 @@ class BarTransparencyModeChanger(ThemeAware, widget.TextBox):
         self.text = self.text_template.format(current_status)
         self.draw()
 
+    def toggle_bar_mode(self):
+        self.current_bar_mode = not self.current_bar_mode
+        self.save_bar_mode(self.current_bar_mode)
+        self.notify_theme("bar_transparency_mode")
+        self.update_text()
+        send_notification(
+            title=f"Bar Transparency: {self.current_bar_mode}",
+            msg="Theme Manager",
+            app_name="ThemeManager",
+            app_id=2003,
+            timeout=5000,
+        )
 
-def toggle_bar_mode(self):
-    self.current_bar_mode = not self.current_bar_mode
-    self.save_bar_mode(self.current_bar_mode)
-    self.notify_theme("bar_mode")
-    self.update_text()
-    send_notification(
-        title=f"Bar Transparency: {self.current_bar_mode}",
-        msg="Theme Manager",
-        app_name="ThemeManager",
-        app_id=2003,
-        timeout=5000,
-    )
     # if self.conf_reload_timer and self.conf_reload_timer.is_alive():
     #     self.conf_reload_timer.cancel()
     # self.conf_reload_timer = threading.Timer(1, self.theme.reload_qtile)

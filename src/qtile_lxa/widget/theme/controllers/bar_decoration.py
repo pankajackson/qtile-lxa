@@ -67,6 +67,7 @@ class DecorationChanger(ThemeAware, widget.TextBox):
             (current_index + 1) % len(self.decorations_list)
         ]
         self.save_current_decoration(self.current_decoration)  # Save decoration name
+        self.notify_theme("bar_decoration")
         self.update_text()
         send_notification(
             title=f"Decoration: {self.current_decoration}",
@@ -76,11 +77,6 @@ class DecorationChanger(ThemeAware, widget.TextBox):
             timeout=5000,
         )
 
-        if self.conf_reload_timer and self.conf_reload_timer.is_alive():
-            self.conf_reload_timer.cancel()
-        self.conf_reload_timer = threading.Timer(1, self.theme.reload_qtile)
-        self.conf_reload_timer.start()
-
     def prev_decoration(self):
         current_index = self.decorations_list.index(
             self.current_decoration
@@ -89,6 +85,7 @@ class DecorationChanger(ThemeAware, widget.TextBox):
             (current_index - 1) % len(self.decorations_list)
         ]
         self.save_current_decoration(self.current_decoration)  # Save decoration name
+        self.notify_theme("bar_decoration")
         self.update_text()
         send_notification(
             title=f"Decoration:  {self.current_decoration}",
@@ -97,8 +94,3 @@ class DecorationChanger(ThemeAware, widget.TextBox):
             app_id=2003,
             timeout=5000,
         )
-
-        if self.conf_reload_timer and self.conf_reload_timer.is_alive():
-            self.conf_reload_timer.cancel()
-        self.conf_reload_timer = threading.Timer(1, self.theme.reload_qtile)
-        self.conf_reload_timer.start()
