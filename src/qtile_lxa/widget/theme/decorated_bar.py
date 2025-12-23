@@ -1,5 +1,4 @@
 import threading
-from pathlib import Path
 from typing import Any
 from libqtile.bar import Bar
 from libqtile.widget.base import _Widget
@@ -8,14 +7,6 @@ from qtile_lxa import __DEFAULTS__
 from .config import Theme, ThemeAware
 from .utils.colors import rgba, invert_hex_color_of
 from .manager import ThemeManager
-from .controllers import (
-    BarSplitModeChanger,
-    BarTransparencyModeChanger,
-    ColorRainbowModeChanger,
-    ColorSchemeChanger,
-    DecorationChanger,
-    PyWallChanger,
-)
 from libqtile.log_utils import logger
 
 
@@ -32,39 +23,30 @@ class DecoratedBar:
         self.theme = self.manager.theme
         self.left_widgets = left_widgets or []
         self.right_widgets = right_widgets or []
-        self.bar_transparency: bool = True
         self.bar: Bar = Bar(
             widgets=[*self.left_widgets, *self.right_widgets],
-            background=rgba(
-                self.theme.color.scheme.palette.background,
-                0 if self.bar_transparency else 1,
-            ),
+            background=rgba(self.theme.color.scheme.palette.background, 0),
             size=size,
             **bar_kwargs,
         )
+        self._subscribe_controllers()
         self.conf_reload_timer = None
-
-        if isinstance(self.manager.bar_split, BarSplitModeChanger):
-            self.manager.bar_split.subscribe(self.apply_theme)
-        if isinstance(self.manager.bar_transparency, BarTransparencyModeChanger):
-            self.manager.bar_transparency.subscribe(self.apply_theme)
-
-        if isinstance(self.manager.color_rainbow, ColorRainbowModeChanger):
-            self.manager.color_rainbow.subscribe(self.apply_theme)
-
-        if isinstance(self.manager.color_scheme, ColorSchemeChanger):
-            self.manager.color_scheme.subscribe(self.apply_theme)
-
-        if isinstance(self.manager.decoration, DecorationChanger):
-            self.manager.decoration.subscribe(self.apply_theme)
-
-        if isinstance(self.manager.pywall, PyWallChanger):
-            self.manager.pywall.subscribe(self.apply_theme)
-
         if self.conf_reload_timer and self.conf_reload_timer.is_alive():
             self.conf_reload_timer.cancel()
         self.conf_reload_timer = threading.Timer(1, self.apply_theme)
         self.conf_reload_timer.start()
+
+    def _subscribe_controllers(self):
+        for ctrl in (
+            self.manager.bar_split,
+            self.manager.bar_transparency,
+            self.manager.color_rainbow,
+            self.manager.color_scheme,
+            self.manager.decoration,
+            self.manager.pywall,
+        ):
+            if isinstance(ctrl, ThemeAware):
+                ctrl.subscribe(self.apply_theme)
 
     def apply_theme(self, *_args):
         decoration = self.theme.decoration
