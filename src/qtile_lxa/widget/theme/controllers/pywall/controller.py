@@ -372,11 +372,7 @@ class PyWallChanger(ThemeAware, widget.GenPollText):
         wallpaper = self.get_wallpaper()
         if wallpaper:
             subprocess.run(["wal", "-i", wallpaper])
-            # .reload_qtile()
-            if self.conf_reload_timer and self.conf_reload_timer.is_alive():
-                self.conf_reload_timer.cancel()
-            self.conf_reload_timer = threading.Timer(1, self.theme.reload_qtile)
-            self.conf_reload_timer.start()
+            self.notify_theme("pywal_changer")
             send_notification(
                 "Applied Pywal Theme",
                 msg="Theme Manager",

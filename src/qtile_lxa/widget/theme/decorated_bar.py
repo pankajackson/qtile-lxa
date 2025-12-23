@@ -8,11 +8,12 @@ from .config import Theme, ThemeAware
 from .utils.colors import rgba, invert_hex_color_of
 from .manager import ThemeManager
 from .controllers import (
+    BarSplitModeChanger,
     BarTransparencyModeChanger,
+    ColorRainbowModeChanger,
     ColorSchemeChanger,
     DecorationChanger,
-    BarSplitModeChanger,
-    ColorRainbowModeChanger,
+    PyWallChanger,
 )
 from qtile_extras.widget.decorations import PowerLineDecoration
 
@@ -39,20 +40,23 @@ class DecoratedBar:
             size=size,
             **bar_kwargs,
         )
-        if isinstance(self.manager.bar_transparency, BarTransparencyModeChanger):
-            self.manager.bar_transparency.subscribe(self.apply_theme)
 
         if isinstance(self.manager.bar_split, BarSplitModeChanger):
             self.manager.bar_split.subscribe(self.apply_theme)
-
-        if isinstance(self.manager.color_scheme, ColorSchemeChanger):
-            self.manager.color_scheme.subscribe(self.apply_theme)
+        if isinstance(self.manager.bar_transparency, BarTransparencyModeChanger):
+            self.manager.bar_transparency.subscribe(self.apply_theme)
 
         if isinstance(self.manager.color_rainbow, ColorRainbowModeChanger):
             self.manager.color_rainbow.subscribe(self.apply_theme)
 
+        if isinstance(self.manager.color_scheme, ColorSchemeChanger):
+            self.manager.color_scheme.subscribe(self.apply_theme)
+
         if isinstance(self.manager.decoration, DecorationChanger):
             self.manager.decoration.subscribe(self.apply_theme)
+
+        if isinstance(self.manager.pywall, PyWallChanger):
+            self.manager.pywall.subscribe(self.apply_theme)
 
     def apply_theme(self, *_args):
         decoration = self.theme.decoration
