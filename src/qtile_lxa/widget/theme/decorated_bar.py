@@ -33,7 +33,7 @@ class DecoratedBar:
         self._subscribe_controllers()
         self._delayed_apply_theme()
 
-    def _delayed_apply_theme(self, *_args):
+    def _delayed_apply_theme(self):
         if self.conf_reload_timer and self.conf_reload_timer.is_alive():
             self.conf_reload_timer.cancel()
         self.conf_reload_timer = threading.Timer(1, self.apply_theme)
