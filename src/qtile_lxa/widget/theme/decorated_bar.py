@@ -1,3 +1,4 @@
+import threading
 from pathlib import Path
 from typing import Any
 from libqtile.bar import Bar
@@ -15,7 +16,7 @@ from .controllers import (
     DecorationChanger,
     PyWallChanger,
 )
-from qtile_extras.widget.decorations import PowerLineDecoration
+from libqtile.log_utils import logger
 
 
 class DecoratedBar:
@@ -31,15 +32,17 @@ class DecoratedBar:
         self.theme = self.manager.theme
         self.left_widgets = left_widgets or []
         self.right_widgets = right_widgets or []
+        self.bar_transparency: bool = True
         self.bar: Bar = Bar(
             widgets=[*self.left_widgets, *self.right_widgets],
             background=rgba(
                 self.theme.color.scheme.palette.background,
-                0 if self.theme.bar.transparent else 1,
+                0 if self.bar_transparency else 1,
             ),
             size=size,
             **bar_kwargs,
         )
+        self.conf_reload_timer = None
 
         if isinstance(self.manager.bar_split, BarSplitModeChanger):
             self.manager.bar_split.subscribe(self.apply_theme)
@@ -58,6 +61,11 @@ class DecoratedBar:
         if isinstance(self.manager.pywall, PyWallChanger):
             self.manager.pywall.subscribe(self.apply_theme)
 
+        if self.conf_reload_timer and self.conf_reload_timer.is_alive():
+            self.conf_reload_timer.cancel()
+        self.conf_reload_timer = threading.Timer(1, self.apply_theme)
+        self.conf_reload_timer.start()
+
     def apply_theme(self, *_args):
         decoration = self.theme.decoration
         color_scheme = self.theme.color.scheme.palette
@@ -68,8 +76,10 @@ class DecoratedBar:
         setattr(
             self.bar,
             "background",
-            rgba(color_scheme.background, 0 if bar_transparent_mode else 1),
+            rgba(color_scheme.background, int(not bar_transparent_mode)),
         )
+        logger.error(f"bar BACKGROUND: {getattr(self.bar, 'background')}")
+        logger.error(f"bar Transparency Mode: {bar_transparent_mode}")
 
         def set_properties(wid: _Widget, attributes: dict[str, Any]):
             for attr, value in attributes.items():
