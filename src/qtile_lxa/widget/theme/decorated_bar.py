@@ -22,6 +22,7 @@ class DecoratedBar:
     ):
         self.manager = manager
         self.theme = self.manager.theme
+        self._bar_kwargs = bar_kwargs
         self.active_decoration = self.theme.decoration
         self._raw_left_widgets = left_widgets or []
         self._raw_right_widgets = right_widgets or []
@@ -102,10 +103,8 @@ class DecoratedBar:
         new_bar = Bar(
             widgets=[*self.left_widgets, *self.right_widgets],
             size=old_bar.size,
-            background=rgba(
-                self.theme.color.scheme.palette.background,
-                int(not self.theme.bar.transparent),
-            ),
+            background=rgba(self.theme.color.scheme.palette.background, 0),
+            **self._bar_kwargs,
         )
 
         # Replace bar
@@ -117,6 +116,7 @@ class DecoratedBar:
 
         # Ask Qtile to reconfigure screens properly
         qtile.call_soon(qtile.cmd_reconfigure_screens)
+        qtile.call_later(1, self.apply_theme)
 
     def apply_theme(self, *_args):
         color_scheme = self.theme.color.scheme.palette
