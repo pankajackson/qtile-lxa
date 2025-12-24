@@ -38,15 +38,8 @@ class DecoratedBar:
             size=size,
             **bar_kwargs,
         )
-        self.conf_reload_timer = None
         self._subscribe_controllers()
-        self._delayed_apply_theme()
-
-    def _delayed_apply_theme(self):
-        if self.conf_reload_timer and self.conf_reload_timer.is_alive():
-            self.conf_reload_timer.cancel()
-        self.conf_reload_timer = threading.Timer(1, self.apply_theme)
-        self.conf_reload_timer.start()
+        qtile.call_later(1, self.apply_theme)
 
     def _subscribe_controllers(self):
         for ctrl in (
@@ -54,7 +47,6 @@ class DecoratedBar:
             self.manager.bar_transparency,
             self.manager.color_rainbow,
             self.manager.color_scheme,
-            # self.manager.decoration,
             self.manager.pywall,
         ):
             if isinstance(ctrl, ThemeAware):
@@ -62,14 +54,8 @@ class DecoratedBar:
         if isinstance(self.manager.decoration, DecorationChanger):
             self.manager.decoration.subscribe(self.rebuild_bar)
 
-    def _delayed_reload_qtile(self, interval: int = 1):
-        if self.conf_reload_timer and self.conf_reload_timer.is_alive():
-            self.conf_reload_timer.cancel()
-        self.conf_reload_timer = threading.Timer(interval, qtile.cmd_reload_config)
-        self.conf_reload_timer.start()
-
-    def _decorated_widget(self, wid_list: list[_Widget], decorations):
-        decorated_wids = []
+    def _decorated_widget(self, wid_list: list[_Widget], decorations) -> list[_Widget]:
+        decorated_wids: list[_Widget] = []
         for wid in wid_list:
             decorated_wid = wid
             setattr(decorated_wid, "decorations", decorations)
@@ -104,17 +90,17 @@ class DecoratedBar:
 
         old_bar = self.bar
 
+        self.left_widgets = self._decorated_widget(
+            self._raw_left_widgets,
+            self.theme.decoration.value.left_decoration,
+        )
+        self.right_widgets = self._decorated_widget(
+            self._raw_right_widgets,
+            self.theme.decoration.value.right_decoration,
+        )
+
         new_bar = Bar(
-            widgets=[
-                *self._decorated_widget(
-                    self._raw_left_widgets,
-                    self.theme.decoration.value.left_decoration,
-                ),
-                *self._decorated_widget(
-                    self._raw_right_widgets,
-                    self.theme.decoration.value.right_decoration,
-                ),
-            ],
+            widgets=[*self.left_widgets, *self.right_widgets],
             size=old_bar.size,
             background=rgba(
                 self.theme.color.scheme.palette.background,
@@ -133,7 +119,6 @@ class DecoratedBar:
         qtile.call_soon(qtile.cmd_reconfigure_screens)
 
     def apply_theme(self, *_args):
-        decoration = self.theme.decoration
         color_scheme = self.theme.color.scheme.palette
         colors_rainbow_mode = self.theme.color.rainbow
         bar_split_mode = self.theme.bar.split
