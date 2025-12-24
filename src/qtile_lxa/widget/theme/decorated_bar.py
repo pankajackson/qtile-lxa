@@ -1,4 +1,3 @@
-import threading
 from typing import Any
 from libqtile import qtile
 from libqtile.bar import Bar
@@ -140,6 +139,7 @@ class DecoratedBar:
                     ):
                         value = rgba(value, 0)
                 setattr(wid, attr, value)
+                
 
         for i, wid in enumerate(self.left_widgets):
             if colors_rainbow_mode:
