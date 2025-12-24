@@ -70,7 +70,7 @@ class DecorationChanger(ThemeAware, widget.TextBox):
         self.notify_theme("bar_decoration")
         self.update_text()
         send_notification(
-            title=f"Decoration: {self.current_decoration}",
+            title=f"Decoration: {self.current_decoration.name}",
             msg="Theme Manager",
             app_name="ThemeManager",
             app_id=2003,
@@ -88,7 +88,7 @@ class DecorationChanger(ThemeAware, widget.TextBox):
         self.notify_theme("bar_decoration")
         self.update_text()
         send_notification(
-            title=f"Decoration:  {self.current_decoration}",
+            title=f"Decoration:  {self.current_decoration.name}",
             msg="Theme Manager",
             app_name="ThemeManager",
             app_id=2003,

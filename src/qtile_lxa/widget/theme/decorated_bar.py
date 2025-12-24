@@ -1,13 +1,13 @@
 import threading
 from typing import Any
+from libqtile import qtile
 from libqtile.bar import Bar
 from libqtile.widget.base import _Widget
 from qtile_extras import widget
 from qtile_lxa import __DEFAULTS__
-from .config import Theme, ThemeAware
+from .config import ThemeAware
 from .utils.colors import rgba, invert_hex_color_of
 from .manager import ThemeManager
-from libqtile.log_utils import logger
 
 
 class DecoratedBar:
@@ -21,8 +21,14 @@ class DecoratedBar:
     ):
         self.manager = manager
         self.theme = self.manager.theme
-        self.left_widgets = left_widgets or []
-        self.right_widgets = right_widgets or []
+        self.active_decoration = self.theme.decoration
+        self.left_widgets = self._decorated_widget(
+            left_widgets or [], self.active_decoration.value.left_decoration
+        )
+        self.right_widgets = self._decorated_widget(
+            right_widgets or [], self.active_decoration.value.right_decoration
+        )
+
         self.bar: Bar = Bar(
             widgets=[*self.left_widgets, *self.right_widgets],
             background=rgba(self.theme.color.scheme.palette.background, 0),
@@ -51,6 +57,20 @@ class DecoratedBar:
             if isinstance(ctrl, ThemeAware):
                 ctrl.subscribe(self.apply_theme)
 
+    def _delayed_reload_qtile(self, interval: int = 1):
+        if self.conf_reload_timer and self.conf_reload_timer.is_alive():
+            self.conf_reload_timer.cancel()
+        self.conf_reload_timer = threading.Timer(interval, qtile.cmd_reload_config)
+        self.conf_reload_timer.start()
+
+    def _decorated_widget(self, wid_list: list[_Widget], decorations):
+        decorated_wids = []
+        for wid in wid_list:
+            decorated_wid = wid
+            setattr(decorated_wid, "decorations", decorations)
+            decorated_wids.append(decorated_wid)
+        return decorated_wids
+
     def apply_theme(self, *_args):
         decoration = self.theme.decoration
         color_scheme = self.theme.color.scheme.palette
@@ -58,13 +78,15 @@ class DecoratedBar:
         bar_split_mode = self.theme.bar.split
         bar_transparent_mode = self.theme.bar.transparent
 
+        if decoration != self.active_decoration:
+            # reload the config to rebuild widgets with new decorations
+            self._delayed_reload_qtile(interval=1)
+
         setattr(
             self.bar,
             "background",
             rgba(color_scheme.background, int(not bar_transparent_mode)),
         )
-        logger.error(f"bar BACKGROUND: {getattr(self.bar, 'background')}")
-        logger.error(f"bar Transparency Mode: {bar_transparent_mode}")
 
         def set_properties(wid: _Widget, attributes: dict[str, Any]):
             for attr, value in attributes.items():
