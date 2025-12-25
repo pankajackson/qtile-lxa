@@ -139,7 +139,6 @@ class DecoratedBar:
                     ):
                         value = rgba(value, 0)
                 setattr(wid, attr, value)
-                
 
         for i, wid in enumerate(self.left_widgets):
             if colors_rainbow_mode:
@@ -154,8 +153,15 @@ class DecoratedBar:
                 )
 
             attrs: dict[str, Any] = {
+                # All widget colors
                 "background": bg,
                 "foreground": fg,
+                # Group box colors
+                "inactive": color_scheme.inactive,
+                "active": color_scheme.active,
+                "highlight_color": color_scheme.highlight,
+                "this_current_screen_border": color_scheme.inactive,
+                "block_highlight_text_color": color_scheme.highlight,
             }
 
             set_properties(wid, attrs)
@@ -175,6 +181,11 @@ class DecoratedBar:
             attrs: dict[str, Any] = {
                 "background": bg,
                 "foreground": fg,
+                "inactive": color_scheme.inactive,
+                "active": color_scheme.active,
+                "highlight_color": color_scheme.highlight,
+                "this_current_screen_border": color_scheme.inactive,
+                "block_highlight_text_color": color_scheme.highlight,
             }
 
             set_properties(wid, attrs)
