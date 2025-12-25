@@ -1,14 +1,14 @@
-# 9109109535 Hotel WOW Restaurant
 from typing import Any
 from libqtile import qtile
+from libqtile import hook
 from libqtile.bar import Bar
 from libqtile.widget.base import _Widget
+from libqtile.log_utils import logger
 from qtile_extras import widget
 from qtile_lxa import __DEFAULTS__
 from .config import ThemeAware
 from .utils.colors import rgba, invert_hex_color_of
 from .manager import ThemeManager, DecorationChanger
-from libqtile.log_utils import logger
 
 
 class DecoratedBar:
@@ -16,7 +16,7 @@ class DecoratedBar:
         self,
         manager: ThemeManager,
         left_widgets: list[_Widget] | None = None,
-        center_widgets: list[_Widget] = [widget.Spacer()],
+        center_widgets: list[_Widget] | None = None,
         right_widgets: list[_Widget] | None = None,
         size: int = 30,
         **bar_kwargs,
@@ -26,7 +26,11 @@ class DecoratedBar:
         self._bar_kwargs = bar_kwargs
         self.active_decoration = self.theme.decoration
         self._raw_left_widgets = left_widgets or []
-        self._raw_center_widgets = center_widgets
+        self._raw_center_widgets = (
+            [widget.Spacer()]
+            if center_widgets is None or len(center_widgets) == 0
+            else [widget.Spacer(), *center_widgets, widget.Spacer()]
+        )
         self._raw_right_widgets = right_widgets or []
         self.left_widgets = self._decorated_widget(
             self._raw_left_widgets, self.active_decoration.value.left_decoration
@@ -45,7 +49,7 @@ class DecoratedBar:
             **bar_kwargs,
         )
         self._subscribe_controllers()
-        qtile.call_later(1, self.apply_theme)
+        hook.subscribe.screen_change(self.apply_theme)
 
     def _subscribe_controllers(self):
         for ctrl in (
@@ -63,7 +67,7 @@ class DecoratedBar:
     def _decorated_widget(self, wid_list: list[_Widget], decorations) -> list[_Widget]:
         decorated_wids: list[_Widget] = []
         for wid in wid_list:
-            if wid == self._raw_right_widgets[-1]:
+            if self._raw_right_widgets and wid is self._raw_right_widgets[-1]:
                 decorated_wids.append(wid)
             else:
                 decorated_wid = wid
@@ -105,7 +109,7 @@ class DecoratedBar:
         )
         self.center_widgets = self._decorated_widget(
             self._raw_center_widgets,
-            self.theme.decoration.value.left_decoration,
+            self.theme.decoration.value.right_decoration,
         )
         self.right_widgets = self._decorated_widget(
             self._raw_right_widgets,

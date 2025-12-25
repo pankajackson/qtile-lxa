@@ -58,7 +58,7 @@ def get_pywal_color_scheme(
         foreground="#abd5de",
     )
     if not pywal_colors_json_path.exists():
-        logger.warning(f"pywal colors file {pywal_colors_json_path} not exist!")
+        logger.warning("Pywal colors not ready yet, using default scheme")
         return default_color_scheme
     else:
         try:
@@ -85,7 +85,11 @@ class ColorScheme(Enum):
     def palette(self) -> ColorSchemeConfig:
         if self is ColorScheme.PYWAL:
             return get_pywal_color_scheme()
-        return _STATIC_SCHEMES[self]
+        try:
+            return _STATIC_SCHEMES[self]
+        except KeyError:
+            logger.error(f"Unknown ColorScheme: {self}, falling back to DARK")
+            return _STATIC_SCHEMES[ColorScheme.DARK]
 
 
 _STATIC_SCHEMES = {
