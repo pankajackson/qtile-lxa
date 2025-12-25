@@ -1,3 +1,4 @@
+# 9109109535 Hotel WOW Restaurant
 from typing import Any
 from libqtile import qtile
 from libqtile.bar import Bar
@@ -15,6 +16,7 @@ class DecoratedBar:
         self,
         manager: ThemeManager,
         left_widgets: list[_Widget] | None = None,
+        center_widgets: list[_Widget] = [widget.Spacer()],
         right_widgets: list[_Widget] | None = None,
         size: int = 30,
         **bar_kwargs,
@@ -24,16 +26,20 @@ class DecoratedBar:
         self._bar_kwargs = bar_kwargs
         self.active_decoration = self.theme.decoration
         self._raw_left_widgets = left_widgets or []
+        self._raw_center_widgets = center_widgets
         self._raw_right_widgets = right_widgets or []
         self.left_widgets = self._decorated_widget(
             self._raw_left_widgets, self.active_decoration.value.left_decoration
+        )
+        self.center_widgets = self._decorated_widget(
+            self._raw_center_widgets, self.active_decoration.value.right_decoration
         )
         self.right_widgets = self._decorated_widget(
             self._raw_right_widgets, self.active_decoration.value.right_decoration
         )
 
         self.bar: Bar = Bar(
-            widgets=[*self.left_widgets, *self.right_widgets],
+            widgets=[*self.left_widgets, *self.center_widgets, *self.right_widgets],
             background=rgba(self.theme.color.scheme.palette.background, 0),
             size=size,
             **bar_kwargs,
@@ -57,9 +63,12 @@ class DecoratedBar:
     def _decorated_widget(self, wid_list: list[_Widget], decorations) -> list[_Widget]:
         decorated_wids: list[_Widget] = []
         for wid in wid_list:
-            decorated_wid = wid
-            setattr(decorated_wid, "decorations", decorations)
-            decorated_wids.append(decorated_wid)
+            if wid == self._raw_right_widgets[-1]:
+                decorated_wids.append(wid)
+            else:
+                decorated_wid = wid
+                setattr(decorated_wid, "decorations", decorations)
+                decorated_wids.append(decorated_wid)
         return decorated_wids
 
     def rebuild_bar(self, *_args):
@@ -94,13 +103,17 @@ class DecoratedBar:
             self._raw_left_widgets,
             self.theme.decoration.value.left_decoration,
         )
+        self.center_widgets = self._decorated_widget(
+            self._raw_center_widgets,
+            self.theme.decoration.value.left_decoration,
+        )
         self.right_widgets = self._decorated_widget(
             self._raw_right_widgets,
             self.theme.decoration.value.right_decoration,
         )
 
         new_bar = Bar(
-            widgets=[*self.left_widgets, *self.right_widgets],
+            widgets=[*self.left_widgets, *self.center_widgets, *self.right_widgets],
             size=old_bar.size,
             background=rgba(self.theme.color.scheme.palette.background, 0),
             **self._bar_kwargs,
@@ -134,15 +147,39 @@ class DecoratedBar:
                 if attr == "background":
                     if bar_transparent_mode:
                         value = rgba(value, 0)
-                    elif bar_split_mode and isinstance(
-                        wid, (widget.WindowName, widget.TaskList)
-                    ):
+                    elif bar_split_mode and wid in self.center_widgets:
                         value = rgba(value, 0)
                 setattr(wid, attr, value)
 
         for i, wid in enumerate(self.left_widgets):
             if colors_rainbow_mode:
                 bg = color_scheme.color_sequence[-i % len(color_scheme.color_sequence)]
+                fg = invert_hex_color_of(bg)
+            else:
+                bg = color_scheme.highlight
+                fg = (
+                    color_scheme.active
+                    if color_scheme.active != bg
+                    else invert_hex_color_of(bg) if bg else None
+                )
+
+            attrs: dict[str, Any] = {
+                # All widget colors
+                "background": bg,
+                "foreground": fg,
+                # Group box colors
+                "inactive": color_scheme.inactive,
+                "active": color_scheme.active,
+                "highlight_color": color_scheme.highlight,
+                "this_current_screen_border": color_scheme.inactive,
+                "block_highlight_text_color": color_scheme.highlight,
+            }
+
+            set_properties(wid, attrs)
+
+        for i, wid in enumerate(self.center_widgets):
+            if colors_rainbow_mode:
+                bg = color_scheme.background or color_scheme.color_sequence[0]
                 fg = invert_hex_color_of(bg)
             else:
                 bg = color_scheme.highlight
