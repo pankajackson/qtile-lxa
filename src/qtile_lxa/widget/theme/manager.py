@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any
+from libqtile import qtile
 from qtile_extras import widget
 from qtile_lxa.utils import toggle_and_auto_close_widgetbox
 from .controllers.bar_decoration import DecorationChanger
@@ -29,11 +30,13 @@ class ThemeManager(widget.WidgetBox, ThemeAware):
         color_rainbow: ColorRainbowModeChanger | None | object = _UNSET,
         bar_split: BarSplitModeChanger | None | object = _UNSET,
         bar_transparency: BarTransparencyModeChanger | None | object = _UNSET,
+        sync_layout: bool = True,
         **kwargs: Any,
     ):
         ThemeAware.__init__(self, theme=theme, config_file=config_file)
         widget.TextBox.__init__(self, **kwargs)
         self.name = name
+        self.sync_layout = sync_layout
 
         self.pywall = PyWallChanger(theme=self.theme) if pywall is _UNSET else pywall
 
@@ -69,6 +72,13 @@ class ThemeManager(widget.WidgetBox, ThemeAware):
 
         self.controller_list = self.get_enabled_controllers()
 
+        if self.sync_layout:
+            if isinstance(self.color_scheme, ColorSchemeChanger):
+                self.color_scheme.subscribe(self.update_layout_colors)
+
+            if isinstance(self.pywall, PyWallChanger):
+                self.pywall.subscribe(self.update_layout_colors)
+
         super().__init__(
             name=name,
             widgets=self.controller_list,
@@ -100,3 +110,29 @@ class ThemeManager(widget.WidgetBox, ThemeAware):
         if self.bar_transparency:
             controllers.append(self.bar_transparency)
         return controllers
+
+    def update_layout_colors(self, *_):
+        colors = self.theme.color.scheme.palette
+
+        for group in qtile.groups:
+            layout = group.layout
+            if not layout:
+                continue
+
+            for attr, value in {
+                "border_focus": colors.active,
+                "border_normal": colors.inactive,
+                "border_focus_stack": colors.active,
+                "border_normal_stack": colors.inactive,
+            }.items():
+                if hasattr(layout, attr):
+                    setattr(layout, attr, value)
+
+            group.layout_all()
+
+        # Floating layout (important)
+        for screen in qtile.screens:
+            flt = screen.group.floating_layout
+            if flt:
+                flt.border_focus = colors.active
+                flt.border_normal = colors.inactive
