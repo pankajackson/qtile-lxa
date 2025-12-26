@@ -31,17 +31,19 @@ class DecoratedBar:
         self._bar_kwargs = bar_kwargs
         self.active_decoration = self.theme.decoration
         self._raw_left_widgets = left_widgets or []
-        self._raw_center_widgets = (
-            [widget.Spacer()]
-            if center_widgets is None or len(center_widgets) == 0
-            else [widget.Spacer(), *center_widgets, widget.Spacer()]
-        )
+        self._raw_center_widgets = center_widgets or []
         self._raw_right_widgets = right_widgets or []
         self.left_widgets = self._decorated_widgets(
             self._raw_left_widgets, WidgetPos.LEFT
         )
         self.center_widgets = self._decorated_widgets(
-            self._raw_center_widgets, WidgetPos.CENTER
+            (
+                [widget.Spacer()]
+                if self._raw_center_widgets is None
+                or len(self._raw_center_widgets) == 0
+                else [widget.Spacer(), *self._raw_center_widgets, widget.Spacer()]
+            ),
+            WidgetPos.CENTER,
         )
         self.right_widgets = self._decorated_widgets(
             self._raw_right_widgets, WidgetPos.RIGHT
@@ -80,7 +82,10 @@ class DecoratedBar:
     ):
         dec = {
             WidgetPos.LEFT: self.theme.decoration.value.left_decoration,
-            WidgetPos.CENTER: self.theme.decoration.value.right_decoration,
+            WidgetPos.CENTER: [
+                *self.theme.decoration.value.left_decoration,
+                *self.theme.decoration.value.right_decoration,
+            ],
             WidgetPos.RIGHT: self.theme.decoration.value.right_decoration,
         }[pos]
 
@@ -128,7 +133,17 @@ class DecoratedBar:
             self._raw_left_widgets, WidgetPos.LEFT
         )
         self.center_widgets = self._decorated_widgets(
-            self._raw_center_widgets, WidgetPos.CENTER
+            (
+                [widget.Spacer()]
+                if self._raw_center_widgets is None
+                or len(self._raw_center_widgets) == 0
+                else [
+                    widget.Spacer(),
+                    *self._raw_center_widgets,
+                    widget.Spacer(),
+                ]
+            ),
+            WidgetPos.CENTER,
         )
         self.right_widgets = self._decorated_widgets(
             self._raw_right_widgets, WidgetPos.RIGHT
@@ -215,7 +230,11 @@ class DecoratedBar:
                 if attr == "background":
                     if transparent:
                         value = rgba(value, 0)
-                    elif split and pos is WidgetPos.CENTER:
+                    elif (
+                        split
+                        and pos is WidgetPos.CENTER
+                        and wid not in self._raw_center_widgets
+                    ):
                         value = rgba(value, 0)
                 setattr(wid, attr, value)
 
