@@ -1,16 +1,19 @@
-from typing import Any, Literal
-from libqtile import qtile
-from libqtile import hook
+from typing import Any
+from enum import Enum, auto
+from libqtile import qtile, hook, bar
 from libqtile.widget.base import _Widget
 from libqtile.log_utils import logger
-from qtile_extras import widget, bar
+from qtile_extras import widget
 from qtile_lxa import __DEFAULTS__
 from .config import ThemeAware, ColorSchemeConfig
 from .manager import ThemeManager, DecorationChanger
 from .utils.colors import rgba, invert_hex_color_of
 
 
-WidgetPos = Literal["left", "center", "right"]
+class WidgetPos(Enum):
+    LEFT = auto()
+    CENTER = auto()
+    RIGHT = auto()
 
 
 class DecoratedBar:
@@ -144,25 +147,25 @@ class DecoratedBar:
         rainbow: bool,
     ):
         if rainbow:
-            if pos == "left":
+            if pos is WidgetPos.LEFT:
                 bg = color_palette.color_sequence[
                     -index % len(color_palette.color_sequence)
                 ]
-            elif pos == "right":
+            elif pos is WidgetPos.RIGHT:
                 bg = color_palette.color_sequence[
                     index % len(color_palette.color_sequence)
                 ]
-            else:  # center
+            else:  # CENTER
                 bg = color_palette.background or color_palette.color_sequence[0]
-            fg = invert_hex_color_of(bg)
-            return bg, fg
+
+            return bg, invert_hex_color_of(bg)
 
         # non-rainbow
-        if pos == "left":
+        if pos is WidgetPos.LEFT:
             bg = color_palette.highlight
-        elif pos == "center":
+        elif pos is WidgetPos.CENTER:
             bg = color_palette.highlight
-        else:  # right
+        else:  # RIGHT
             bg = color_palette.inactive
 
         fg = (
@@ -199,21 +202,23 @@ class DecoratedBar:
                 if attr == "background":
                     if transparent:
                         value = rgba(value, 0)
-                    elif split and pos == "center":
+                    elif split and pos is WidgetPos.CENTER:
                         value = rgba(value, 0)
                 setattr(wid, attr, value)
 
     def apply_theme(self, *_args):
         color_palette = self.theme.color.scheme.palette
         transparent = self.theme.bar.transparent
+
         setattr(
             self.bar,
             "background",
             rgba(color_palette.background, int(not transparent)),
         )
-        self._apply_widget_group(self.left_widgets, "left")
-        self._apply_widget_group(self.center_widgets, "center")
-        self._apply_widget_group(self.right_widgets, "right")
+
+        self._apply_widget_group(self.left_widgets, WidgetPos.LEFT)
+        self._apply_widget_group(self.center_widgets, WidgetPos.CENTER)
+        self._apply_widget_group(self.right_widgets, WidgetPos.RIGHT)
 
         if self.bar.screen:
             self.bar.draw()
