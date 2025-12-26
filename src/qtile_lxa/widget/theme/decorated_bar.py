@@ -37,14 +37,14 @@ class DecoratedBar:
             else [widget.Spacer(), *center_widgets, widget.Spacer()]
         )
         self._raw_right_widgets = right_widgets or []
-        self.left_widgets = self._decorated_widget(
-            self._raw_left_widgets, self.active_decoration.value.left_decoration
+        self.left_widgets = self._decorated_widgets(
+            self._raw_left_widgets, WidgetPos.LEFT
         )
-        self.center_widgets = self._decorated_widget(
-            self._raw_center_widgets, self.active_decoration.value.right_decoration
+        self.center_widgets = self._decorated_widgets(
+            self._raw_center_widgets, WidgetPos.CENTER
         )
-        self.right_widgets = self._decorated_widget(
-            self._raw_right_widgets, self.active_decoration.value.right_decoration
+        self.right_widgets = self._decorated_widgets(
+            self._raw_right_widgets, WidgetPos.RIGHT
         )
 
         self.bar: bar.Bar = bar.Bar(
@@ -69,16 +69,32 @@ class DecoratedBar:
         if isinstance(self.manager.decoration, DecorationChanger):
             self.manager.decoration.subscribe(self.rebuild_bar)
 
-    def _decorated_widget(self, wid_list: list[_Widget], decorations) -> list[_Widget]:
-        decorated_wids: list[_Widget] = []
+    def _decorate(self, w: _Widget, d):
+        if d:
+            setattr(w, "decorations", d)
+
+    def _decorated_widgets(
+        self,
+        wid_list: list[_Widget],
+        pos: WidgetPos,
+    ):
+        dec = {
+            WidgetPos.LEFT: self.theme.decoration.value.left_decoration,
+            WidgetPos.CENTER: self.theme.decoration.value.right_decoration,
+            WidgetPos.RIGHT: self.theme.decoration.value.right_decoration,
+        }[pos]
+
+        decorated: list[_Widget] = []
         for wid in wid_list:
-            if self._raw_right_widgets and wid is self._raw_right_widgets[-1]:
-                decorated_wids.append(wid)
-            else:
-                decorated_wid = wid
-                setattr(decorated_wid, "decorations", decorations)
-                decorated_wids.append(decorated_wid)
-        return decorated_wids
+            is_last_right = (
+                pos is WidgetPos.RIGHT
+                and self._raw_right_widgets
+                and wid is self._raw_right_widgets[-1]
+            )
+            if not is_last_right:
+                self._decorate(wid, dec)
+            decorated.append(wid)
+        return decorated
 
     def rebuild_bar(self, *_args):
         def _get_bar_position():
@@ -108,17 +124,14 @@ class DecoratedBar:
 
         old_bar = self.bar
 
-        self.left_widgets = self._decorated_widget(
-            self._raw_left_widgets,
-            self.theme.decoration.value.left_decoration,
+        self.left_widgets = self._decorated_widgets(
+            self._raw_left_widgets, WidgetPos.LEFT
         )
-        self.center_widgets = self._decorated_widget(
-            self._raw_center_widgets,
-            self.theme.decoration.value.right_decoration,
+        self.center_widgets = self._decorated_widgets(
+            self._raw_center_widgets, WidgetPos.CENTER
         )
-        self.right_widgets = self._decorated_widget(
-            self._raw_right_widgets,
-            self.theme.decoration.value.right_decoration,
+        self.right_widgets = self._decorated_widgets(
+            self._raw_right_widgets, WidgetPos.RIGHT
         )
 
         new_bar = bar.Bar(
