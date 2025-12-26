@@ -1,13 +1,16 @@
-from typing import Any
+from typing import Any, Literal
 from libqtile import qtile
 from libqtile import hook
 from libqtile.widget.base import _Widget
 from libqtile.log_utils import logger
 from qtile_extras import widget, bar
 from qtile_lxa import __DEFAULTS__
-from .config import ThemeAware
+from .config import ThemeAware, ColorSchemeConfig
 from .manager import ThemeManager, DecorationChanger
 from .utils.colors import rgba, invert_hex_color_of
+
+
+WidgetPos = Literal["left", "center", "right"]
 
 
 class DecoratedBar:
@@ -133,102 +136,84 @@ class DecoratedBar:
         qtile.call_soon(qtile.cmd_reconfigure_screens)
         qtile.call_later(1, self.apply_theme)
 
-    def apply_theme(self, *_args):
-        color_scheme = self.theme.color.scheme.palette
-        colors_rainbow_mode = self.theme.color.rainbow
-        bar_split_mode = self.theme.bar.split
-        bar_transparent_mode = self.theme.bar.transparent
+    def _resolve_colors(
+        self,
+        pos: WidgetPos,
+        index: int,
+        color_palette: ColorSchemeConfig,
+        rainbow: bool,
+    ):
+        if rainbow:
+            if pos == "left":
+                bg = color_palette.color_sequence[
+                    -index % len(color_palette.color_sequence)
+                ]
+            elif pos == "right":
+                bg = color_palette.color_sequence[
+                    index % len(color_palette.color_sequence)
+                ]
+            else:  # center
+                bg = color_palette.background or color_palette.color_sequence[0]
+            fg = invert_hex_color_of(bg)
+            return bg, fg
 
-        setattr(
-            self.bar,
-            "background",
-            rgba(color_scheme.background, int(not bar_transparent_mode)),
+        # non-rainbow
+        if pos == "left":
+            bg = color_palette.highlight
+        elif pos == "center":
+            bg = color_palette.highlight
+        else:  # right
+            bg = color_palette.inactive
+
+        fg = (
+            color_palette.active
+            if color_palette.active != bg
+            else invert_hex_color_of(bg) if bg else None
         )
+        return bg, fg
 
-        def set_properties(wid: _Widget, attributes: dict[str, Any]):
-            for attr, value in attributes.items():
+    def _apply_widget_group(
+        self,
+        widgets: list[_Widget],
+        pos: WidgetPos,
+    ):
+        color_palette = self.theme.color.scheme.palette
+        rainbow = self.theme.color.rainbow
+        split = self.theme.bar.split
+        transparent = self.theme.bar.transparent
+
+        for i, wid in enumerate(widgets):
+            bg, fg = self._resolve_colors(pos, i, color_palette, rainbow)
+
+            attrs: dict[str, Any] = {
+                "background": bg,
+                "foreground": fg,
+                "inactive": color_palette.inactive,
+                "active": color_palette.active,
+                "highlight_color": color_palette.highlight,
+                "this_current_screen_border": color_palette.inactive,
+                "block_highlight_text_color": color_palette.highlight,
+            }
+
+            for attr, value in attrs.items():
                 if attr == "background":
-                    if bar_transparent_mode:
+                    if transparent:
                         value = rgba(value, 0)
-                    elif bar_split_mode and wid in self.center_widgets:
+                    elif split and pos == "center":
                         value = rgba(value, 0)
                 setattr(wid, attr, value)
 
-        for i, wid in enumerate(self.left_widgets):
-            if colors_rainbow_mode:
-                bg = color_scheme.color_sequence[-i % len(color_scheme.color_sequence)]
-                fg = invert_hex_color_of(bg)
-            else:
-                bg = color_scheme.highlight
-                fg = (
-                    color_scheme.active
-                    if color_scheme.active != bg
-                    else invert_hex_color_of(bg) if bg else None
-                )
-
-            attrs: dict[str, Any] = {
-                # All widget colors
-                "background": bg,
-                "foreground": fg,
-                # Group box colors
-                "inactive": color_scheme.inactive,
-                "active": color_scheme.active,
-                "highlight_color": color_scheme.highlight,
-                "this_current_screen_border": color_scheme.inactive,
-                "block_highlight_text_color": color_scheme.highlight,
-            }
-
-            set_properties(wid, attrs)
-
-        for i, wid in enumerate(self.center_widgets):
-            if colors_rainbow_mode:
-                bg = color_scheme.background or color_scheme.color_sequence[0]
-                fg = invert_hex_color_of(bg)
-            else:
-                bg = color_scheme.highlight
-                fg = (
-                    color_scheme.active
-                    if color_scheme.active != bg
-                    else invert_hex_color_of(bg) if bg else None
-                )
-
-            attrs: dict[str, Any] = {
-                # All widget colors
-                "background": bg,
-                "foreground": fg,
-                # Group box colors
-                "inactive": color_scheme.inactive,
-                "active": color_scheme.active,
-                "highlight_color": color_scheme.highlight,
-                "this_current_screen_border": color_scheme.inactive,
-                "block_highlight_text_color": color_scheme.highlight,
-            }
-
-            set_properties(wid, attrs)
-
-        for i, wid in enumerate(self.right_widgets):
-            if colors_rainbow_mode:
-                bg = color_scheme.color_sequence[i % len(color_scheme.color_sequence)]
-                fg = invert_hex_color_of(bg)
-            else:
-                bg = color_scheme.inactive
-                fg = (
-                    color_scheme.active
-                    if color_scheme.active != bg
-                    else invert_hex_color_of(bg) if bg else None
-                )
-
-            attrs: dict[str, Any] = {
-                "background": bg,
-                "foreground": fg,
-                "inactive": color_scheme.inactive,
-                "active": color_scheme.active,
-                "highlight_color": color_scheme.highlight,
-                "this_current_screen_border": color_scheme.inactive,
-                "block_highlight_text_color": color_scheme.highlight,
-            }
-
-            set_properties(wid, attrs)
+    def apply_theme(self, *_args):
+        color_palette = self.theme.color.scheme.palette
+        transparent = self.theme.bar.transparent
+        setattr(
+            self.bar,
+            "background",
+            rgba(color_palette.background, int(not transparent)),
+        )
+        self._apply_widget_group(self.left_widgets, "left")
+        self._apply_widget_group(self.center_widgets, "center")
+        self._apply_widget_group(self.right_widgets, "right")
 
         if self.bar.screen:
             self.bar.draw()
