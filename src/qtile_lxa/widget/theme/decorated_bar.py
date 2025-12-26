@@ -48,7 +48,10 @@ class DecoratedBar:
             **bar_kwargs,
         )
         self._subscribe_controllers()
-        hook.subscribe.screen_change(self.apply_theme)
+        
+        # TODO: Find permanent fix of this
+        # hook.subscribe.screen_change(self.apply_theme)
+        qtile.call_later(3, self.apply_theme)
 
     def _subscribe_controllers(self):
         for ctrl in (
@@ -74,10 +77,7 @@ class DecoratedBar:
     ):
         dec = {
             WidgetPos.LEFT: self.theme.decoration.value.left_decoration,
-            WidgetPos.CENTER: [
-                *self.theme.decoration.value.left_decoration,
-                *self.theme.decoration.value.right_decoration,
-            ],
+            WidgetPos.CENTER: None,
             WidgetPos.RIGHT: self.theme.decoration.value.right_decoration,
         }[pos]
 
@@ -93,16 +93,57 @@ class DecoratedBar:
             decorated.append(wid)
         return decorated
 
-    def _decorate_center_widgets(self, wid_list: list[_Widget]):
-        half_length = len(wid_list) // 2
-        l_part = wid_list[: half_length - 1]
-        r_part = wid_list[half_length - 1 :]
-        decorated_l_part = self._decorated_widgets(l_part, WidgetPos.RIGHT)
-        decorated_r_part = self._decorated_widgets(r_part, WidgetPos.LEFT)
-        l_spacer = self._decorated_widgets([widget.Spacer()], WidgetPos.RIGHT)
-        r_spacer = self._decorated_widgets([widget.Spacer()], WidgetPos.LEFT)
-        result_list = [*l_spacer, *decorated_l_part, *decorated_r_part, *r_spacer]
-        return result_list
+    def _decorate_center_widgets(self, wid_list: list[_Widget]) -> list[_Widget]:
+        # Always visible center container
+        left_spacer = self._decorated_widgets([widget.Spacer()], WidgetPos.RIGHT)
+        right_spacer = self._decorated_widgets([widget.Spacer()], WidgetPos.RIGHT)
+
+        n = len(wid_list)
+
+        # No widgets → just spacers
+        if n == 0:
+            return [*left_spacer, *right_spacer]
+
+        # One widget → centered, no decoration
+        if n == 1:
+            return [
+                *left_spacer,
+                wid_list[0],
+                *right_spacer,
+            ]
+
+        # Two widgets → split decorations
+        if n == 2:
+            return [
+                *left_spacer,
+                *self._decorated_widgets([wid_list[0]], WidgetPos.RIGHT),
+                *self._decorated_widgets([wid_list[1]], WidgetPos.LEFT),
+                *right_spacer,
+            ]
+
+        # Three or more
+        mid = n // 2
+
+        if n % 2 == 1:
+            left = wid_list[:mid]
+            center = wid_list[mid]
+            right = wid_list[mid + 1 :]
+        else:
+            left = wid_list[:mid]
+            center = None
+            right = wid_list[mid:]
+
+        result: list[_Widget] = []
+        result.extend(left_spacer)
+        result.extend(self._decorated_widgets(left, WidgetPos.RIGHT))
+
+        if center:
+            result.append(center)
+
+        result.extend(self._decorated_widgets(right, WidgetPos.LEFT))
+        result.extend(right_spacer)
+
+        return result
 
     def rebuild_bar(self, *_args):
         def _get_bar_position():
