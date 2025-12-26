@@ -1,5 +1,5 @@
-from qtile_extras import widget
 from libqtile import qtile
+from qtile_extras import widget
 from pathlib import Path
 from typing import Any, Literal
 from qtile_lxa.utils.notification import send_notification

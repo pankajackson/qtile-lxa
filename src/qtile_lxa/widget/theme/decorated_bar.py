@@ -1,14 +1,13 @@
 from typing import Any
 from libqtile import qtile
 from libqtile import hook
-from libqtile.bar import Bar
 from libqtile.widget.base import _Widget
 from libqtile.log_utils import logger
-from qtile_extras import widget
+from qtile_extras import widget, bar
 from qtile_lxa import __DEFAULTS__
 from .config import ThemeAware
-from .utils.colors import rgba, invert_hex_color_of
 from .manager import ThemeManager, DecorationChanger
+from .utils.colors import rgba, invert_hex_color_of
 
 
 class DecoratedBar:
@@ -42,7 +41,7 @@ class DecoratedBar:
             self._raw_right_widgets, self.active_decoration.value.right_decoration
         )
 
-        self.bar: Bar = Bar(
+        self.bar: bar.Bar = bar.Bar(
             widgets=[*self.left_widgets, *self.center_widgets, *self.right_widgets],
             background=rgba(self.theme.color.scheme.palette.background, 0),
             size=size,
@@ -116,7 +115,7 @@ class DecoratedBar:
             self.theme.decoration.value.right_decoration,
         )
 
-        new_bar = Bar(
+        new_bar = bar.Bar(
             widgets=[*self.left_widgets, *self.center_widgets, *self.right_widgets],
             size=old_bar.size,
             background=rgba(self.theme.color.scheme.palette.background, 0),

@@ -1,6 +1,4 @@
-import threading
 from pathlib import Path
-from typing import Any
 from qtile_extras import widget
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa import __DEFAULTS__
