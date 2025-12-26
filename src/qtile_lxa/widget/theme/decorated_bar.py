@@ -36,15 +36,7 @@ class DecoratedBar:
         self.left_widgets = self._decorated_widgets(
             self._raw_left_widgets, WidgetPos.LEFT
         )
-        self.center_widgets = self._decorated_widgets(
-            (
-                [widget.Spacer()]
-                if self._raw_center_widgets is None
-                or len(self._raw_center_widgets) == 0
-                else [widget.Spacer(), *self._raw_center_widgets, widget.Spacer()]
-            ),
-            WidgetPos.CENTER,
-        )
+        self.center_widgets = self._decorate_center_widgets(self._raw_center_widgets)
         self.right_widgets = self._decorated_widgets(
             self._raw_right_widgets, WidgetPos.RIGHT
         )
@@ -101,6 +93,17 @@ class DecoratedBar:
             decorated.append(wid)
         return decorated
 
+    def _decorate_center_widgets(self, wid_list: list[_Widget]):
+        half_length = len(wid_list) // 2
+        l_part = wid_list[: half_length - 1]
+        r_part = wid_list[half_length - 1 :]
+        decorated_l_part = self._decorated_widgets(l_part, WidgetPos.RIGHT)
+        decorated_r_part = self._decorated_widgets(r_part, WidgetPos.LEFT)
+        l_spacer = self._decorated_widgets([widget.Spacer()], WidgetPos.RIGHT)
+        r_spacer = self._decorated_widgets([widget.Spacer()], WidgetPos.LEFT)
+        result_list = [*l_spacer, *decorated_l_part, *decorated_r_part, *r_spacer]
+        return result_list
+
     def rebuild_bar(self, *_args):
         def _get_bar_position():
             screen = self.bar.screen
@@ -132,19 +135,7 @@ class DecoratedBar:
         self.left_widgets = self._decorated_widgets(
             self._raw_left_widgets, WidgetPos.LEFT
         )
-        self.center_widgets = self._decorated_widgets(
-            (
-                [widget.Spacer()]
-                if self._raw_center_widgets is None
-                or len(self._raw_center_widgets) == 0
-                else [
-                    widget.Spacer(),
-                    *self._raw_center_widgets,
-                    widget.Spacer(),
-                ]
-            ),
-            WidgetPos.CENTER,
-        )
+        self.center_widgets = self._decorate_center_widgets(self._raw_center_widgets)
         self.right_widgets = self._decorated_widgets(
             self._raw_right_widgets, WidgetPos.RIGHT
         )
