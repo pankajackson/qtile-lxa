@@ -1,5 +1,5 @@
 from . import config, controllers, utils, bar
-from . import manager, decorated_bar
+from . import manager
 
 
 __all__ = [
@@ -8,5 +8,4 @@ __all__ = [
     "utils",
     "bar",
     "manager",
-    "decorated_bar",
 ]

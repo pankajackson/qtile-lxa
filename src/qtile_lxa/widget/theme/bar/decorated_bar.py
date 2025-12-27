@@ -5,9 +5,9 @@ from libqtile.widget.base import _Widget
 from libqtile.log_utils import logger
 from qtile_extras import widget
 from qtile_lxa import __DEFAULTS__
-from .config import ThemeAware, ColorSchemeConfig
-from .manager import ThemeManager, DecorationChanger
-from .utils.colors import rgba, invert_hex_color_of
+from ..config import ThemeAware, ColorSchemeConfig
+from ..manager import ThemeManager, DecorationChanger
+from ..utils.colors import rgba, invert_hex_color_of
 
 
 class WidgetPos(Enum):
