@@ -2,6 +2,7 @@ import os
 import subprocess
 import threading
 from pathlib import Path
+from libqtile import qtile, hook
 from qtile_extras import widget
 from libqtile.log_utils import logger
 from qtile_lxa.utils.notification import send_notification
@@ -72,8 +73,37 @@ class PyWallChanger(ThemeAware, widget.GenPollText):
         sync_config_for_source(
             theme_config=self.theme, wallpaper_dir=self.wallpaper_dir
         )
-        self.set_wallpaper()
         self.update_text()
+        self._wallpaper_timer: threading.Timer | None = None
+
+        # Register hooks ONCE
+        hook.subscribe.startup_complete(self._on_qtile_ready)
+        hook.subscribe.screen_change(self._on_screen_change)
+
+        # Optional: apply immediately if widget is created late
+        qtile.call_later(0.1, self._schedule_wallpaper_apply)
+
+    def _on_qtile_ready(self, *args):
+        logger.info("PyWallChanger: startup_complete")
+        self._schedule_wallpaper_apply()
+
+    def _on_screen_change(self, *args):
+        logger.info("PyWallChanger: screen_change")
+        self._schedule_wallpaper_apply()
+
+    def _schedule_wallpaper_apply(self, delay: float = 0.3):
+        if self._wallpaper_timer and self._wallpaper_timer.is_alive():
+            self._wallpaper_timer.cancel()
+
+        self._wallpaper_timer = threading.Timer(delay, self._apply_wallpaper_safe)
+        self._wallpaper_timer.daemon = True
+        self._wallpaper_timer.start()
+
+    def _apply_wallpaper_safe(self):
+        try:
+            qtile.call_later(0, self.set_wallpaper)
+        except Exception as e:
+            logger.error(f"PyWallChanger wallpaper apply failed: {e}")
 
     def poll(self):
         self.sync_potd_sources()
