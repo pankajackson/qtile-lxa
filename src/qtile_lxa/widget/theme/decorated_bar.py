@@ -48,10 +48,10 @@ class DecoratedBar:
             **bar_kwargs,
         )
         self._subscribe_controllers()
-        
+
         # TODO: Find permanent fix of this
-        # hook.subscribe.screen_change(self.apply_theme)
-        qtile.call_later(3, self.apply_theme)
+        hook.subscribe.screen_change(self.apply_theme)
+        # qtile.call_later(3, self.apply_theme)
 
     def _subscribe_controllers(self):
         for ctrl in (
@@ -138,7 +138,7 @@ class DecoratedBar:
         result.extend(self._decorated_widgets(left, WidgetPos.RIGHT))
 
         if center:
-            result.append(center)
+            result.extend(self._decorated_widgets([center], WidgetPos.RIGHT))
 
         result.extend(self._decorated_widgets(right, WidgetPos.LEFT))
         result.extend(right_spacer)
