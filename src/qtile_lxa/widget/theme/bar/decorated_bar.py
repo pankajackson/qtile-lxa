@@ -196,7 +196,7 @@ class DecoratedBar:
         old_bar.finalize()
 
         # Ask Qtile to reconfigure screens properly
-        qtile.call_soon(qtile.cmd_reconfigure_screens)
+        qtile.call_soon(qtile.reconfigure_screens)
         qtile.call_later(1, self.apply_theme)
 
     def _resolve_colors(
