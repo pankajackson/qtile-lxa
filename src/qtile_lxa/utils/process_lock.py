@@ -17,33 +17,89 @@ class ProcessLocker:
         self.lock_dir.mkdir(parents=True, exist_ok=True)
         self.show_logs = show_logs
 
-    def acquire_lock(self):
-        """Acquire a lock using a specific lock file."""
+    # -------------------------
+    # Lock primitives
+    # -------------------------
+
+    def acquire_lock(
+        self,
+        *,
+        wait: bool = False,
+        timeout: float | None = None,
+    ):
         lock_file = self.lock_dir / f"{self.app_name}.lock"
         lock_file.touch(exist_ok=True)
 
-        lock_fd = open(lock_file, "r+")
+        fd = open(lock_file, "r+")
+        fcntl.fcntl(fd, fcntl.F_SETFD, fcntl.FD_CLOEXEC)
+
+        start = time.monotonic()
+
         try:
-            fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            if not wait:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            else:
+                if timeout is None:
+                    fcntl.flock(fd, fcntl.LOCK_EX)
+                else:
+                    while True:
+                        try:
+                            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                            break
+                        except BlockingIOError:
+                            if time.monotonic() - start >= timeout:
+                                raise TimeoutError("Lock timeout")
+                            time.sleep(0.05)
+
             if self.show_logs:
                 logger.info(f"Process Locked: {lock_file}")
-            return lock_fd
-        except BlockingIOError:
-            lock_fd.close()  # prevent FD leak
+
+            return fd
+
+        except (BlockingIOError, TimeoutError) as e:
+            fd.close()
             if self.show_logs:
-                logger.warning(
-                    f"Process Locked, another instance is running for {lock_file}."
-                )
+                logger.warning(f"Lock acquire failed: {e}")
             return None
 
-    def release_lock(self, lock_fd):
-        """Release the lock."""
-        if lock_fd:
-            path = lock_fd.name
-            fcntl.flock(lock_fd, fcntl.LOCK_UN)
-            lock_fd.close()
+    def release_lock(self, fd):
+        if fd:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+            fd.close()
             if self.show_logs:
-                logger.info(f"Process Unlocked: {path}")
+                logger.info(f"Process Unlocked: {fd.name}")
+
+    # -------------------------
+    # Decorator interface
+    # -------------------------
+
+    def __call__(self, func):
+        return self._wrap(func, wait=True, timeout=None)
+
+    def config(self, *, wait: bool = True, timeout: float | None = None):
+        def decorator(func):
+            return self._wrap(func, wait=wait, timeout=timeout)
+
+        return decorator
+
+    def _wrap(
+        self,
+        func,
+        *,
+        wait: bool,
+        timeout: float | None,
+    ):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            fd = self.acquire_lock(wait=wait, timeout=timeout)
+            if fd is None:
+                return None
+            try:
+                return func(*args, **kwargs)
+            finally:
+                self.release_lock(fd)
+
+        return wrapper
 
 
 class ConcurrencyLocker:
