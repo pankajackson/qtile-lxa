@@ -87,19 +87,27 @@ class Theme:
             video_wallpaper=VideoWallpaper(**data["video_wallpaper"]),
         )
 
-    @_locker
-    def save(self):
+    def _save_unlocked(self):
         try:
             with open(self.config_file, "w") as f:
                 json.dump(self.to_dict(), f, indent=4)
         except Exception as e:
             logger.error(f"Failed to save config: {e}")
 
+    @_locker
+    def save(self):
+        self._save_unlocked()
+
     def load(self):
+        fd = self._locker.acquire_lock(wait=True)
+        if not fd:
+            return self
+
         try:
             if not self.config_file.exists():
-                self.save()
+                self._save_unlocked()
                 return self
+
             with open(self.config_file, "r") as f:
                 data = json.load(f)
 
@@ -116,8 +124,11 @@ class Theme:
 
         except Exception as e:
             logger.error(f"Failed to load theme config: {e}")
-            self.save()  # Save defaults
+            self._save_unlocked()
             return self
+
+        finally:
+            self._locker.release_lock(fd)
 
     def reload_qtile(self):
         subprocess.run(["qtile", "cmd-obj", "-o", "cmd", "-f", "reload_config"])
