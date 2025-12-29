@@ -220,6 +220,9 @@ class VidWallUi(ThemeAware):
         else:
             if self.pid and self._pid_alive(self.pid):
                 os.kill(self.pid, signal.SIGTERM)
+            Popen(
+                "kill $(ps -aux | grep xwinwrap | awk '{print $2}')", shell=True
+            ).wait()
         self.process = None
         self.pid = None
         self.is_playing = False

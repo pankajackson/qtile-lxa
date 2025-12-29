@@ -1,12 +1,22 @@
-from libqtile import qtile
-from qtile_extras import widget
+import threading
+from enum import Enum, auto
 from pathlib import Path
 from typing import Any, Literal
+
+from libqtile import qtile, hook
+from libqtile.log_utils import logger
+from qtile_extras import widget
+
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa.utils import is_gpu_present
 from qtile_lxa import __DEFAULTS__
-from ...config import Theme, ThemeAware
+from ...config import Theme, ThemeAware, VideoWallpaper
 from .ui import VidWallUi
+
+
+class _VidWallAction(Enum):
+    START = auto()
+    RESTART = auto()
 
 
 class VidWallController(ThemeAware, widget.GenPollText):
@@ -38,8 +48,8 @@ class VidWallController(ThemeAware, widget.GenPollText):
             )
         ]
 
-        # Video wallpaper-specific attributes
-        self.hwdec: Literal["auto", "no"] | None = hwdec or (
+        # Video config
+        self.hwdec: Literal["auto", "no"] = hwdec or (
             "auto" if is_gpu_present else "no"
         )
         self.playlist_file = playlist_file
@@ -62,7 +72,65 @@ class VidWallController(ThemeAware, widget.GenPollText):
                 "Button3": self.toggle_show_hide,
             }
         )
-        self.autostart()
+
+        # Debounce timer
+        self._vidwall_timer: threading.Timer | None = None
+
+        # Hooks
+        hook.subscribe.startup_complete(self._on_startup)
+        hook.subscribe.screen_change(self._on_screen_change)
+
+    def _on_startup(self, *args):
+        self._schedule(_VidWallAction.START)
+
+    def _on_screen_change(self, *args):
+        self._schedule(_VidWallAction.RESTART)
+
+    def _schedule(self, action: _VidWallAction, delay: float = 2):
+        if self._vidwall_timer and self._vidwall_timer.is_alive():
+            self._vidwall_timer.cancel()
+
+        self._vidwall_timer = threading.Timer(delay, self._dispatch_action, [action])
+        self._vidwall_timer.daemon = True
+        self._vidwall_timer.start()
+
+    def _dispatch_action(self, action: _VidWallAction):
+        qtile.call_later(0, self._apply_action, action)
+
+    def _apply_action(self, action: _VidWallAction):
+        try:
+            config = self.get_current_config()
+            if action is _VidWallAction.START:
+                if not config.enabled:
+                    return
+                ui = self._ui()
+                if ui and ui.is_playing:
+                    return
+
+                self._start_from_config(config)
+
+            elif action is _VidWallAction.RESTART:
+                # Screen change → force restart for resize
+                ui = self._ui() or self._new_ui()
+                ui.load_cache()
+                if ui.is_playing:
+                    ui.toggle_play_pause()
+                    ui.toggle_play_pause()
+
+        except Exception as e:
+            logger.error(f"VidWall action failed ({action}): {e}")
+
+    def _start_from_config(self, config: VideoWallpaper):
+        ui = self._new_ui()
+        ui.is_muted = config.mute
+        ui.loop = config.loop
+
+        if config.playlist:
+            ui.play_playlist(config.playlist)
+        elif config.song:
+            ui.play_video(config.song)
+
+        ui.save_state()
 
     def _new_ui(self) -> VidWallUi:
         return VidWallUi(
@@ -79,20 +147,6 @@ class VidWallController(ThemeAware, widget.GenPollText):
         """Update the widget display with the current status."""
         return self.check_status()
 
-    def autostart(self):
-        config = self.get_current_config()
-        if not config.enabled:
-            return
-
-        ui = self._new_ui()
-        ui.is_muted = config.mute
-        ui.loop = config.loop
-        if config.playlist:
-            ui.play_playlist(config.playlist)
-        elif config.song:
-            ui.play_video(config.song)
-        ui.save_state()
-
     def check_status(self):
         """Fetch the current state of the video wallpaper."""
         ui = self._ui()
@@ -103,13 +157,13 @@ class VidWallController(ThemeAware, widget.GenPollText):
         if ui.is_playing:
             if ui.current_video:
                 return self.format.format(status=self.symbol_playing_video)
-            elif ui.current_playlist:
+            if ui.current_playlist:
                 return self.format.format(status=self.symbol_playing_playlist)
-            else:
-                return self.format.format(status=self.symbol_unknown)
+            return self.format.format(status=self.symbol_unknown)
 
         if ui.current_video or ui.current_playlist:
             return self.format.format(status=self.symbol_pause)
+
         return self.format.format(status=self.symbol_stop)
 
     def toggle_show_hide(self, qtile=qtile):
@@ -129,7 +183,6 @@ class VidWallController(ThemeAware, widget.GenPollText):
                 timeout=3000,
             )
             return
-
         ui.toggle_play_pause()
 
     def save_current_config(self):
