@@ -157,7 +157,7 @@ class PyWallChanger(ThemeAware, widget.GenPollText):
                 app_id=99980,
                 timeout=5000,
             )
-            process_locker.release_lock(lock_fd=lock_fd)
+            process_locker.release_lock(lock_fd)
 
     def sync_potd_sources(self):
         if self.bing_potd:

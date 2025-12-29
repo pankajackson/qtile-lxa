@@ -27,7 +27,10 @@ class ProcessLocker:
         wait: bool = False,
         timeout: float | None = None,
     ):
-        lock_file = self.lock_dir / f"{self.app_name}.lock"
+        lock_file = (
+            self.lock_dir
+            / f"lxa_{safe_filename_hash(self.app_name)}_{safe_filename(self.app_name)}.lock"
+        )
         lock_file.touch(exist_ok=True)
 
         fd = open(lock_file, "r+")

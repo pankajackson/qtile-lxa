@@ -9,6 +9,7 @@ from collections.abc import Callable
 from .color import ColorScheme
 from .decoration import Decoration
 from qtile_lxa import __DEFAULTS__
+from qtile_lxa.utils.process_lock import ProcessLocker
 
 
 @dataclass
@@ -55,6 +56,7 @@ class Theme:
     bar: Bar = field(default_factory=Bar)
     decoration: Decoration = Decoration.SLASH
     video_wallpaper: VideoWallpaper = field(default_factory=VideoWallpaper)
+    _locker = ProcessLocker(str(config_file))
 
     def to_dict(self) -> dict:
         """Convert nested dataclasses to a JSON-safe dict."""
@@ -85,6 +87,7 @@ class Theme:
             video_wallpaper=VideoWallpaper(**data["video_wallpaper"]),
         )
 
+    @_locker
     def save(self):
         try:
             with open(self.config_file, "w") as f:
