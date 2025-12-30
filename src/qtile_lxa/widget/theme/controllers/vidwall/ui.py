@@ -1,19 +1,101 @@
 import os
 import json
 import signal
+from dataclasses import dataclass, field
+from urllib.parse import ParseResult, urlparse
 from pathlib import Path
 from subprocess import Popen
 from typing import Any, Literal
+from libqtile.log_utils import logger
 from qtile_extras.popup.toolkit import PopupRelativeLayout, PopupText, PopupImage
 from qtile_lxa.utils import is_gpu_present
+from qtile_lxa.utils.atomic_writer import atomic_write_content
 from qtile_lxa import __DEFAULTS__, __ASSETS_DIR__
 from ...utils.colors import rgba
 from ...config import Theme, ThemeAware
+
 
 VIDWALL_STATE_CACHE = __DEFAULTS__.theme_manager.vidwall.state_cache_path
 VIDWALL_PLAYLIST_CACHE = __DEFAULTS__.theme_manager.vidwall.playlist_cache_path
 VIDWALL_STATE_CACHE.parent.mkdir(parents=True, exist_ok=True)
 VIDWALL_PLAYLIST_CACHE.parent.mkdir(parents=True, exist_ok=True)
+
+ParsedURL = Path | ParseResult
+
+
+@dataclass
+class Song:
+    title: str
+    raw_url: str | Path | ParseResult
+
+    _url: ParsedURL = field(init=False, repr=False)
+
+    def __post_init__(self):
+        if isinstance(self.raw_url, ParseResult):
+            self._url = self.raw_url
+        elif isinstance(self.raw_url, Path):
+            self._url = self.raw_url
+        elif isinstance(self.raw_url, str):
+            if self.raw_url.startswith(("http://", "https://")):
+                self._url = urlparse(self.raw_url)
+            else:
+                self._url = Path(self.raw_url)
+        else:
+            raise TypeError(f"Unsupported url type: {type(self.raw_url)!r}")
+
+    @property
+    def parsed_url(self) -> ParsedURL:
+        return self._url
+
+    @property
+    def url_string(self) -> str:
+        if isinstance(self._url, ParseResult):
+            return self._url.geturl()
+        return self._url.as_posix()
+
+
+@dataclass
+class Playlist:
+    name: str
+    songs: list[Song]
+
+
+@dataclass
+class VidWallPlaylists:
+    playlists: list[Playlist]
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "VidWallPlaylists":
+        playlists = []
+        for playlist_name, items in data.items():
+            songs = [Song(title=item["title"], raw_url=item["url"]) for item in items]
+            playlists.append(Playlist(name=playlist_name, songs=songs))
+        return cls(playlists)
+
+    def to_dict(self) -> dict:
+        return {
+            playlist.name: [
+                {"title": song.title, "url": song.url_string} for song in playlist.songs
+            ]
+            for playlist in self.playlists
+        }
+
+
+@dataclass(frozen=True)
+class PlaylistPage:
+    name: str
+    videos: list[Song]
+    page_count: int
+    page_number: int
+    page_size: int
+
+    @property
+    def is_first(self) -> bool:
+        return self.page_number == 1
+
+    @property
+    def is_last(self) -> bool:
+        return self.page_number == self.page_count
 
 
 class VidWallUi(ThemeAware):
@@ -70,7 +152,10 @@ class VidWallUi(ThemeAware):
 
     @classmethod
     def save_cache(cls, data: dict):
-        VIDWALL_STATE_CACHE.write_text(json.dumps(data, indent=2))
+        try:
+            atomic_write_content(VIDWALL_STATE_CACHE, data, indent=2)
+        except Exception as e:
+            logger.error(f"Failed to save vidwall cache: {e}")
 
     def __init__(
         self,
@@ -114,10 +199,10 @@ class VidWallUi(ThemeAware):
         self.inactive_color = rgba(self.color_scheme.inactive, 0.4)
         self.create_controls()
 
-    def load_playlists(self):
-        """Load playlists from the JSON file."""
-        if not os.path.exists(self.playlist_file):
-            playlists = {
+    def load_playlists(self) -> VidWallPlaylists:
+        """Load playlists from the JSON file as typed dataclasses."""
+        if not self.playlist_file.exists():
+            default_data = {
                 "Fav Songs": [
                     {
                         "title": "SKYHARBOR - Blind Side (2016 Version)",
@@ -137,47 +222,56 @@ class VidWallUi(ThemeAware):
                     },
                 ]
             }
-            with open(self.playlist_file, "w") as f:
-                json.dump(playlists, f, indent=4)
-        with open(self.playlist_file, "r") as f:
-            playlists = json.load(f)
-        return playlists
 
-    def split_playlist(self):
-        playlists_batches = []
+            # atomic write if you already have it
+            atomic_write_content(self.playlist_file, default_data)
 
-        for playlist_name, videos in self.playlists.items():
+            data = default_data
+        else:
+            data = json.loads(self.playlist_file.read_text(encoding="utf-8"))
+
+        return VidWallPlaylists.from_dict(data)
+
+    def split_playlist(self) -> list[PlaylistPage]:
+        pages: list[PlaylistPage] = []
+
+        for playlist in self.playlists.playlists:
+            videos = playlist.songs
             video_count = len(videos)
 
             if video_count <= self.videos_per_page:
-                playlists_batches.append(
-                    {
-                        "name": playlist_name,
-                        "videos": videos,
-                        "page_count": 1,
-                        "page_number": 1,
-                    }
-                )
-            else:
-                total_parts = (video_count // self.videos_per_page) + (
-                    1 if video_count % self.videos_per_page != 0 else 0
-                )
-
-                for part in range(1, total_parts + 1):
-                    start_index = (part - 1) * self.videos_per_page
-                    end_index = min(part * self.videos_per_page, video_count)
-
-                    new_playlist_name = f"{playlist_name} {part}/{total_parts}"
-                    playlists_batches.append(
-                        {
-                            "name": playlist_name,
-                            "videos": videos[start_index:end_index],
-                            "page_count": total_parts,
-                            "page_number": part,
-                        }
+                pages.append(
+                    PlaylistPage(
+                        name=playlist.name,
+                        videos=videos,
+                        page_count=1,
+                        page_number=1,
+                        page_size=len(videos),
                     )
+                )
+                continue
 
-        return playlists_batches
+            total_pages = (video_count // self.videos_per_page) + (
+                1 if video_count % self.videos_per_page else 0
+            )
+
+            for page_number in range(1, total_pages + 1):
+                start = (page_number - 1) * self.videos_per_page
+                end = min(start + self.videos_per_page, video_count)
+
+                page_videos = videos[start:end]
+
+                pages.append(
+                    PlaylistPage(
+                        name=playlist.name,
+                        videos=page_videos,
+                        page_count=total_pages,
+                        page_number=page_number,
+                        page_size=len(page_videos),
+                    )
+                )
+
+        return pages
 
     def play_video(self, url):
         """Play video using xwinwrap and mpv."""
@@ -245,9 +339,8 @@ class VidWallUi(ThemeAware):
         self.current_playlist = playlist_name
         self.current_video = None
 
-        with open(VIDWALL_PLAYLIST_CACHE, "w", encoding="utf-8") as f:
-            for video in videos:
-                f.write(f"{video['url']}\n")
+        urls = "\n".join(video["url"] for video in videos)
+        atomic_write_content(VIDWALL_PLAYLIST_CACHE, urls)
 
         # self.play_video("--playlist=current_playlists.plst")
         command = [
@@ -476,11 +569,11 @@ class VidWallUi(ThemeAware):
         playlist_items = []
         y_position = 0.1
         if self.active_playlist_page:
-            if self.active_playlist_page["videos"]:
-                for video in self.active_playlist_page["videos"]:
+            if self.active_playlist_page.videos:
+                for video in self.active_playlist_page.videos:
                     playlist_items.append(
                         PopupText(
-                            text=f"{video['title']}",
+                            text=f"{video.title}",
                             pos_x=0.2,
                             pos_y=y_position,
                             width=0.6,

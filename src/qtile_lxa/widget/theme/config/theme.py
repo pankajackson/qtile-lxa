@@ -10,6 +10,7 @@ from .color import ColorScheme
 from .decoration import Decoration
 from qtile_lxa import __DEFAULTS__
 from qtile_lxa.utils.process_lock import ProcessLocker
+from qtile_lxa.utils.atomic_writer import atomic_write_content
 
 
 @dataclass
@@ -89,8 +90,7 @@ class Theme:
 
     def _save_unlocked(self):
         try:
-            with open(self.config_file, "w") as f:
-                json.dump(self.to_dict(), f, indent=4)
+            atomic_write_content(self.config_file, self.to_dict())
         except Exception as e:
             logger.error(f"Failed to save config: {e}")
 
