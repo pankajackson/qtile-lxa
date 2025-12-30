@@ -31,17 +31,27 @@ class Song:
     _url: ParsedURL = field(init=False, repr=False)
 
     def __post_init__(self):
-        if isinstance(self.raw_url, ParseResult):
-            self._url = self.raw_url
-        elif isinstance(self.raw_url, Path):
-            self._url = self.raw_url
-        elif isinstance(self.raw_url, str):
-            if self.raw_url.startswith(("http://", "https://")):
-                self._url = urlparse(self.raw_url)
-            else:
-                self._url = Path(self.raw_url)
-        else:
-            raise TypeError(f"Unsupported url type: {type(self.raw_url)!r}")
+        self._url = self._normalize_url(self.raw_url)
+
+    @staticmethod
+    def _normalize_url(value: str | Path | ParseResult) -> ParsedURL:
+        # Already a parsed URL (http/https)
+        if isinstance(value, ParseResult):
+            return value
+
+        # Path object
+        if isinstance(value, Path):
+            return value if value.is_absolute() else Path.home() / value
+
+        # String
+        if isinstance(value, str):
+            if value.startswith(("http://", "https://")):
+                return urlparse(value)
+
+            path = Path(value)
+            return path if path.is_absolute() else Path.home() / path
+
+        raise TypeError(f"Unsupported url type: {type(value)!r}")
 
     @property
     def parsed_url(self) -> ParsedURL:
@@ -101,7 +111,7 @@ class PlaylistPage:
 class VidWallUi(ThemeAware):
     widget_instance = None
 
-    DEFAULT_STATE = {
+    DEFAULT_STATE: dict[str, Any] = {
         "visible": False,
         "is_playing": False,
         "is_muted": True,
@@ -188,6 +198,10 @@ class VidWallUi(ThemeAware):
         self.playlists = self.load_playlists()
         self.videos_per_page = 12
         self.playlist_pages = self.split_playlist()
+        self.active_playlist_page_index = min(
+            self.active_playlist_page_index,
+            max(len(self.playlist_pages) - 1, 0),
+        )
         self.active_playlist_page = (
             self.playlist_pages[self.active_playlist_page_index]
             if self.playlist_pages
@@ -324,25 +338,23 @@ class VidWallUi(ThemeAware):
         self.current_video = None
         self.save_state()
 
-    def play_playlist(self, playlist_name):
-        """Play all videos in the specified playlist."""
-        if playlist_name not in self.playlists:
-            return  # No such playlist
-
-        videos = self.playlists[playlist_name]
-        if not videos:
-            return  # Empty playlist
+    def play_playlist(self, playlist_name: str):
+        playlist = next(
+            (p for p in self.playlists.playlists if p.name == playlist_name),
+            None,
+        )
+        if not playlist or not playlist.songs:
+            return
 
         if self.is_playing:
             self.stop_video()
 
-        self.current_playlist = playlist_name
+        self.current_playlist = playlist.name
         self.current_video = None
 
-        urls = "\n".join(video["url"] for video in videos)
+        urls = "\n".join(song.url_string for song in playlist.songs)
         atomic_write_content(VIDWALL_PLAYLIST_CACHE, urls)
 
-        # self.play_video("--playlist=current_playlists.plst")
         command = [
             "xwinwrap",
             "-ov",
@@ -363,6 +375,7 @@ class VidWallUi(ThemeAware):
             "--panscan=1.0",
             "--no-input-default-bindings",
         ]
+
         self.process = Popen(command)
         self.pid = self.process.pid
         self.is_playing = True
@@ -415,9 +428,9 @@ class VidWallUi(ThemeAware):
         }
         center_adjust = common_props["width"] / 2
         if self.active_playlist_page is not None:
-            playlist_name = self.active_playlist_page["name"]
-            playlist_page_count = self.active_playlist_page["page_count"]
-            playlist_page_number = self.active_playlist_page["page_number"]
+            playlist_name = self.active_playlist_page.name
+            playlist_page_count = self.active_playlist_page.page_count
+            playlist_page_number = self.active_playlist_page.page_number
             if len(self.playlist_pages) > 1:
                 playlist_title_prefix = f"{self.active_playlist_page_index + 1}/{len(self.playlist_pages )}. "
             else:
@@ -573,7 +586,7 @@ class VidWallUi(ThemeAware):
                 for video in self.active_playlist_page.videos:
                     playlist_items.append(
                         PopupText(
-                            text=f"{video.title}",
+                            text=video.title,
                             pos_x=0.2,
                             pos_y=y_position,
                             width=0.6,
@@ -583,9 +596,9 @@ class VidWallUi(ThemeAware):
                             highlight_radius=13,
                             highlight_method="border",
                             mouse_callbacks={
-                                "Button1": lambda video_url=video[
-                                    "url"
-                                ]: self.play_video(video_url)
+                                "Button1": lambda video_url=video.url_string: self.play_video(
+                                    video_url
+                                )
                             },
                         )
                     )
