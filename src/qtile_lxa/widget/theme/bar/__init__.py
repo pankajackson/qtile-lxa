@@ -1,3 +1,6 @@
-from .decorated_bar import DecoratedBar
+from .decorated_bar import DecoratedBar, CenterLayout
 
-__all__ = ["DecoratedBar"]
+__all__ = [
+    "DecoratedBar",
+    "CenterLayout",
+]

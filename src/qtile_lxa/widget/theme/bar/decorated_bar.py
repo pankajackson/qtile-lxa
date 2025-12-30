@@ -16,6 +16,13 @@ class WidgetPos(Enum):
     RIGHT = auto()
 
 
+class CenterLayout(Enum):
+    CENTERED = auto()  # current behavior
+    NO_SPACERS = auto()  # no spacers at all
+    LEFT_SPACER = auto()  # spacer only on left
+    RIGHT_SPACER = auto()  # spacer only on right
+
+
 class DecoratedBar:
     def __init__(
         self,
@@ -23,6 +30,8 @@ class DecoratedBar:
         left_widgets: list[_Widget] | None = None,
         center_widgets: list[_Widget] | None = None,
         right_widgets: list[_Widget] | None = None,
+        *,
+        center_layout: CenterLayout = CenterLayout.CENTERED,
         size: int = 30,
         **bar_kwargs,
     ):
@@ -33,6 +42,7 @@ class DecoratedBar:
         self._raw_left_widgets = left_widgets or []
         self._raw_center_widgets = center_widgets or []
         self._raw_right_widgets = right_widgets or []
+        self.center_layout = center_layout
         self.left_widgets = self._decorated_widgets(
             self._raw_left_widgets, WidgetPos.LEFT
         )
@@ -40,7 +50,6 @@ class DecoratedBar:
         self.right_widgets = self._decorated_widgets(
             self._raw_right_widgets, WidgetPos.RIGHT
         )
-
         self.bar: bar.Bar = bar.Bar(
             widgets=[*self.left_widgets, *self.center_widgets, *self.right_widgets],
             background=rgba(self.theme.color.scheme.palette.background, 0),
@@ -94,9 +103,32 @@ class DecoratedBar:
         return decorated
 
     def _decorate_center_widgets(self, wid_list: list[_Widget]) -> list[_Widget]:
-        # Always visible center container
-        left_spacer = self._decorated_widgets([widget.Spacer()], WidgetPos.RIGHT)
-        right_spacer = self._decorated_widgets([widget.Spacer()], WidgetPos.RIGHT)
+        def _spacer(length: int | None = None):
+            if length is not None:
+                return self._decorated_widgets(
+                    [widget.Spacer(length=length)], WidgetPos.RIGHT
+                )
+            return self._decorated_widgets([widget.Spacer()], WidgetPos.RIGHT)
+
+        left_spacer = (
+            _spacer()
+            if self.center_layout
+            in {
+                CenterLayout.CENTERED,
+                CenterLayout.LEFT_SPACER,
+            }
+            else _spacer(length=1)
+        )
+
+        right_spacer = (
+            _spacer()
+            if self.center_layout
+            in {
+                CenterLayout.CENTERED,
+                CenterLayout.RIGHT_SPACER,
+            }
+            else _spacer(length=1)
+        )
 
         n = len(wid_list)
 
@@ -108,7 +140,7 @@ class DecoratedBar:
         if n == 1:
             return [
                 *left_spacer,
-                wid_list[0],
+                *self._decorated_widgets([wid_list[0]], WidgetPos.LEFT),
                 *right_spacer,
             ]
 
