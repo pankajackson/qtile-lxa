@@ -23,6 +23,12 @@ class CenterLayout(Enum):
     RIGHT_SPACER = auto()  # spacer only on right
 
 
+class CenterTransparency(Enum):
+    NEVER = auto()
+    ON_SPLIT = auto()
+    ALWAYS = auto()
+
+
 class DecoratedBar:
     def __init__(
         self,
@@ -32,6 +38,7 @@ class DecoratedBar:
         right_widgets: list[_Widget] | None = None,
         *,
         center_layout: CenterLayout = CenterLayout.CENTERED,
+        center_transparency: CenterTransparency = CenterTransparency.NEVER,
         size: int = 30,
         **bar_kwargs,
     ):
@@ -43,6 +50,7 @@ class DecoratedBar:
         self._raw_center_widgets = center_widgets or []
         self._raw_right_widgets = right_widgets or []
         self.center_layout = center_layout
+        self.center_transparency = center_transparency
         self.left_widgets = self._decorated_widgets(
             self._raw_left_widgets, WidgetPos.LEFT
         )
@@ -294,12 +302,22 @@ class DecoratedBar:
                 if attr == "background":
                     if transparent:
                         value = rgba(value, 0)
-                    elif (
-                        split
-                        and pos is WidgetPos.CENTER
-                        and wid not in self._raw_center_widgets
-                    ):
-                        value = rgba(value, 0)
+
+                    elif pos is WidgetPos.CENTER:
+                        is_spacer = (
+                            isinstance(wid, widget.Spacer)
+                            and wid not in self._raw_center_widgets
+                        )
+                        if self.center_transparency is CenterTransparency.ALWAYS:
+                            value = rgba(value, 0)
+                        elif split:
+                            if is_spacer:
+                                value = rgba(value, 0)
+                            elif (
+                                self.center_transparency is CenterTransparency.ON_SPLIT
+                            ):
+                                value = rgba(value, 0)
+
                 setattr(wid, attr, value)
 
     def apply_theme(self, *_args):
