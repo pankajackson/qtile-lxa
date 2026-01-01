@@ -79,6 +79,8 @@ class ThemeManager(widget.WidgetBox, ThemeAware):
             if isinstance(self.pywall, PyWallChanger):
                 self.pywall.subscribe(self.update_layout_colors)
 
+            qtile.call_soon(self.update_layout_colors)
+
         super().__init__(
             name=name,
             widgets=self.controller_list,
