@@ -158,14 +158,6 @@ def switch_next_source(theme_config: Theme):
 
     # Update the current source
     set_active_source_id(theme_config, next_src_id)
-    # self.update_text()
-
-    # # If a timer is running, cancel it and start a new one
-    # if self.update_wall_timer and self.update_wall_timer.is_alive():
-    #     self.update_wall_timer.cancel()
-
-    # self.update_wall_timer = threading.Timer(0.5, self.set_wallpaper)
-    # self.update_wall_timer.start()
 
 
 def switch_prev_source(theme_config: Theme):
@@ -189,11 +181,3 @@ def switch_prev_source(theme_config: Theme):
 
     # Update the current source
     set_active_source_id(theme_config, next_src_id)
-    # self.update_text()
-
-    # # If a timer is running, cancel it and start a new one
-    # if self.update_wall_timer and self.update_wall_timer.is_alive():
-    #     self.update_wall_timer.cancel()
-
-    # self.update_wall_timer = threading.Timer(0.5, self.set_wallpaper)
-    # self.update_wall_timer.start()
