@@ -1,6 +1,25 @@
-from .config import ThemeConfig
-from .colors import color_schemes
-from .decorations import decorations
+from .color import ColorSchemeConfig, ColorScheme
+from .decoration import DecorationConfig, Decoration
+from .theme import (
+    Theme,
+    ThemeAware,
+    WallpaperSource,
+    Wallpaper,
+    VideoWallpaper,
+    Color,
+    Bar,
+)
 
-
-__all__ = ["ThemeConfig", "color_schemes", "decorations"]
+__all__ = [
+    "Theme",
+    "ThemeAware",
+    "WallpaperSource",
+    "Wallpaper",
+    "VideoWallpaper",
+    "Color",
+    "Bar",
+    "DecorationConfig",
+    "Decoration",
+    "ColorSchemeConfig",
+    "ColorScheme",
+]

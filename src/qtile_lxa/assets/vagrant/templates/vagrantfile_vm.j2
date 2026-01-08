@@ -1,0 +1,237 @@
+Vagrant.configure("2") do |config|
+  config.vm.define "{{ vm.name }}" do |vm|
+
+    # --- BASE IMAGE (REQUIRED) ---
+    vm.vm.box = "{{ vm.box }}"
+    vm.vm.hostname = "{{ vm.hostname or vm.name }}"
+
+    {% if vm.box_version %}
+    vm.vm.box_version = "{{ vm.box_version }}"
+    {% endif %}
+
+    # --- PROVIDER CONFIG ---
+    vm.vm.provider "{{ vm.provider.value }}" do |p|
+      
+      {% if vm.cpus %}
+      p.cpus = {{ vm.cpus }}
+      {% endif %}
+      {% if vm.memory %}
+      p.memory = {{ vm.memory }}
+      {% endif %}
+      {% for key, value in vm.provider_config.items() %}
+      p.{{ key }} = {{ value | tojson }}
+      {% endfor %}
+    end
+
+    # --- NETWORKS ---
+    {% for net in vm.networks %}
+      {% if net.type.value == "forwarded_port" %}
+    vm.vm.network :forwarded_port, guest: {{ net.forward.guest_port }}, host: {{ net.forward.host_port }}, protocol: "{{ net.forward.protocol.value }}"
+    
+      {% elif net.type.value == "private_network" %}
+    vm.vm.network "private_network"{% if net.addresses %}, ip: "{{ net.addresses[0] }}"{% endif %}
+    
+      {% elif net.type.value == "public_network" and vm.provider.value == "libvirt" %}
+    vm.vm.network "public_network"{% if net.addresses %}, ip: "{{ net.addresses[0] }}" {% endif %}{% if net.interface %}, dev: "{{ net.interface }}" {% endif %}
+    
+      {% elif net.type.value == "public_network" and vm.provider.value != "libvirt" %}
+    vm.vm.network "public_network"{% if net.addresses %}, ip: "{{ net.addresses[0] }}" {% endif %}{% if net.interface %}, bridge: "{{ net.interface }}" {% endif %}
+    
+      {% endif %}
+    
+    {% endfor %}
+
+    # --- SYNCED FOLDERS ---
+    {% for sf in vm.synced_folders -%}
+      {{ "    " }}vm.vm.synced_folder "{{ sf.source_path }}", "{{ sf.target_path }}"{%- set opts = [] -%}
+
+    {# Common opts #}
+    {%- if sf.owner %}{% set _ = opts.append('owner: "' ~ sf.owner ~ '"') %}{% endif -%}
+    {%- if sf.group %}{% set _ = opts.append('group: "' ~ sf.group ~ '"') %}{% endif -%}
+    {%- if sf.type %}{% set _ = opts.append('type: "' ~ sf.type.value ~ '"') %}{% endif -%}
+    {%- if sf.disabled %}{% set _ = opts.append('disabled: true') %}{% endif -%}
+    {%- if sf.mount_options %}{% set _ = opts.append('mount_options: ' ~ sf.mount_options | tojson) %}{% endif -%}
+
+    {# SMB #}
+    {%- if sf.type.value == "smb" %}
+        {% set _ = opts.append('smb_username: "' ~ sf.smb_username ~ '"') -%}
+        {% set _ = opts.append('smb_password: "' ~ sf.smb_password ~ '"') -%}
+    {%- endif -%}
+
+    {# NFS #}
+    {%- if sf.type.value == "nfs" %}
+        {% if sf.nfs_version %}{% set _ = opts.append('nfs_version: ' ~ sf.nfs_version) %}{% endif -%}
+        {% if sf.nfs_udp is not none %}{% set _ = opts.append('nfs_udp: ' ~ (sf.nfs_udp | lower)) %}{% endif -%}
+    {%- endif -%}
+
+    {# libvirt 9p #}
+    {%- if sf.type.value == "ninep" %}
+        {% if sf.ninep_accessmode %}{% set _ = opts.append('accessmode: "' ~ sf.ninep_accessmode ~ '"') %}{% endif -%}
+        {% if sf.ninep_readonly is not none %}{% set _ = opts.append('readonly: ' ~ (sf.ninep_readonly | lower)) %}{% endif -%}
+        {% if sf.ninep_mount_tag %}{% set _ = opts.append('mount_tag: "' ~ sf.ninep_mount_tag ~ '"') %}{% endif -%}
+    {%- endif -%}
+
+    {# RSYNC #}
+    {%- if sf.type.value == "rsync" %}
+        {% if sf.rsync_exclude %}{% set _ = opts.append('rsync__exclude: ' ~ sf.rsync_exclude | tojson) %}{% endif -%}
+        {% if sf.rsync_args %}{% set _ = opts.append('rsync__args: ' ~ sf.rsync_args | tojson) %}{% endif -%}
+        {% if sf.rsync_auto is not none %}{% set _ = opts.append('rsync__auto: ' ~ (sf.rsync_auto | lower)) %}{% endif -%}
+    {%- endif -%}
+
+    {%- if opts %}, {{ opts | join(", ") }}{% endif %}
+    
+    {% endfor %}
+
+    # --- DISKS ---
+    {% for d in vm.disks %}
+    vm.vm.disk :{{ d.type }},
+        name: "{{ d.name }}"
+        {%- if d.size_mb and d.type == "disk" and not d.file %}, size: "{{ d.size_mb }}MB"{% endif %}
+        {%- if d.disk_ext and d.type == "disk" and not d.file %}, disk_ext: "{{ d.disk_ext }}"{% endif %}
+        {%- if d.file %}, file: "{{ d.file }}"{% endif %}
+        {%- if d.primary %}, primary: true{% endif %}
+        {%- if d.auto_delete %}, auto_delete: true{% endif %}
+        {%- for provider, cfg in d.provider_config.items() %}
+        , {{ provider }}: {{ cfg | tojson }}
+        {%- endfor %}
+
+    {% endfor %}
+
+    # --- CLOUD INIT ---
+    {% if vm.cloud_init  %}
+    vm.vm.cloud_init {{ vm.cloud_init.type.value  }} do |ci|
+        ci.content_type = "{{ vm.cloud_init.content_type.value }}"
+        {% if vm.cloud_init.path  %}
+        ci.path = "{{ vm.cloud_init.path  }}"
+        {% else  %}
+        ci.inline = <<-EOF
+        {{ vm.cloud_init.inline | indent(10) }}
+        EOF
+        {% endif   %}
+    end
+    {% endif  %}
+
+    # --- PROVISIONERS ---
+    {% for prov in vm.provisioners %}
+
+      {% if prov.type.value == "shell" %}
+    vm.vm.provision "shell",
+      {% if prov.config.inline %}
+        inline: "{{ prov.config.inline }}",
+      {% endif %}
+      {% if prov.config.script %}
+        path: "{{ prov.config.script }}",
+      {% endif %}
+      {% if prov.config.args %}
+        args: [{% for arg in prov.config.args %}"{{ arg }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+      {% endif %}
+      {% if prov.config.env %}
+        env: { {% for k, v in prov.config.env.items() %} "{{ k }}": "{{ v }}" {% if not loop.last %}, {% endif %}{% endfor %} },
+      {% endif %}
+        privileged: {{ "true" if prov.config.privileged else "false" }}
+      
+
+      {% elif prov.type.value == "file" %}
+    vm.vm.provision "file",
+        source: "{{ prov.config.source }}",
+        destination: "{{ prov.config.destination }}"
+      
+
+      {% elif prov.type.value == "ansible" %}
+    vm.vm.provision "ansible" do |ans|
+        ans.playbook = "{{ prov.config.playbook }}"
+        ans.become = {{ "true" if prov.config.become else "false" }}
+        ans.become_user = "{{ prov.config.become_user }}"
+        ans.compatibility_mode = "{{ prov.config.compatibility_mode }}"
+        {% if prov.config.config_file %}
+        ans.config_file = "{{ prov.config.config_file }}"
+        {% endif %}
+        {% if prov.config.inventory_path %}
+        ans.inventory_path = "{{ prov.config.inventory_path }}"
+        {% endif %}
+        ans.limit = "{{ prov.config.limit }}"
+        {% if prov.config.extra_vars %}
+        ans.extra_vars = {
+          {% for k, v in prov.config.extra_vars.items() %}
+            "{{ k }}": "{{ v }}"{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        }
+        {% endif %}
+    end
+      
+
+      {% elif prov.type.value == "ansible_local" %}
+    vm.vm.provision "ansible_local" do |ans|
+        ans.playbook = "{{ prov.config.playbook }}"
+        ans.become = {{ "true" if prov.config.become else "false" }}
+        ans.become_user = "{{ prov.config.become_user }}"
+        ans.install = {{ "true" if prov.config.install else "false" }}
+        ans.install_mode = "{{ prov.config.install_mode.value }}"
+        {% if prov.config.pip_args %}
+        ans.pip_args = "{{ prov.config.pip_args }}"
+        {% endif %}
+        ans.provisioning_path = "{{ prov.config.provisioning_path }}"
+        ans.tmp_path = "{{ prov.config.tmp_path }}"
+    end
+      {% endif %}
+
+    {% endfor %}
+
+    # --- TRIGGERS ---
+    {% for t in vm.triggers %}
+    vm.trigger.{{ t.timing.value }} [{%- for a in t.on_actions -%}:{{ a.value }}{{ "," if not loop.last }}{%- endfor -%}]{% if t.trigger_type %}, type: :{{ t.trigger_type.value }}{% endif %} do |tr|
+      {% if t.name %}
+      tr.name = "{{ t.name }}"
+      {% endif %}
+      {% if t.info %}
+      tr.info = "{{ t.info }}"
+      {% endif %}
+      {% if t.warn %}
+      tr.warn = "{{ t.warn }}"
+      {% endif %}
+      {% if t.on_error %}
+      tr.on_error = {{ t.on_error.value }}
+      {% endif %}
+
+      {% if t.only_on %}
+      tr.only_on = [{% for i in t.only_on %}"{{ i }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+      {% endif %}
+
+      {% if t.ignore %}
+      tr.ignore = [{% for i in t.ignore %}"{{ i }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+      {% endif %}
+
+      {% if t.run %}
+      tr.run = {
+        {%- if t.run.inline %}
+          inline: "{{ t.run.inline }}"
+        {%- elif t.run.path %}
+          path: "{{ t.run.path }}"
+        {%- endif %}
+        {%- if t.run.args and (t.run.inline or t.run.path) %}, args: [{% for a in t.run.args %}"{{ a }}"{% if not loop.last %}, {% endif %}{% endfor %}]{%- endif %}
+      }
+      {% endif %}
+
+      {% if t.run_remote %}
+      tr.run_remote = {
+        {%- if t.run_remote.inline %}
+          inline: "{{ t.run_remote.inline }}"
+        {%- elif t.run_remote.path %}
+          path: "{{ t.run_remote.path }}"
+        {%- endif %}
+        {%- if t.run_remote.args and (t.run_remote.inline or t.run_remote.path) %}, args: [{% for a in t.run_remote.args %}"{{ a }}"{% if not loop.last %}, {% endif %}{% endfor %}]{%- endif %}
+      }
+      {% endif %}
+
+      {% if t.ruby %}
+      tr.ruby do |env, machine|
+      {{ t.ruby | indent(10) }}
+      end
+      {% endif %}
+
+    end
+    {% endfor %}
+
+
+  end
+end

@@ -2,7 +2,7 @@ import subprocess
 from libqtile.log_utils import logger
 
 
-def check_interface_exists(interface_name):
+def check_interface_exists(interface_name: str) -> bool:
     try:
         result = subprocess.run(
             ["ip", "link", "show", interface_name],
@@ -12,38 +12,40 @@ def check_interface_exists(interface_name):
         )
         return result.returncode == 0
     except Exception as e:
-        logger.error(f"An error occurred while checking interface: {e}")
+        logger.error(f"Error checking interface '{interface_name}': {e}")
         return False
 
 
-def get_default_interface():
+def get_default_interface() -> str | None:
     try:
-        result = subprocess.run(
-            ["ip", "route"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        output = subprocess.check_output(
+            ["ip", "route"], text=True, stderr=subprocess.STDOUT
         )
-
-        if result.returncode != 0:
-            raise Exception(f"Error executing ip route: {result.stderr}")
-
-        for line in result.stdout.splitlines():
-            if line.startswith("default"):
-                interface = line.split()[4]
-                return interface
-
-        raise Exception("Default interface not found.")
-
     except Exception as e:
-        logger.error(f"An error occurred: {e}")
+        logger.error(f"Error executing 'ip route': {e}")
         return None
 
+    for line in output.splitlines():
+        if line.startswith("default"):
+            parts = line.split()
+            # Look for the token "dev"
+            if "dev" in parts:
+                try:
+                    return parts[parts.index("dev") + 1]
+                except (IndexError, ValueError):
+                    continue
 
-def get_interface(interface_name=None):
+    logger.error("Default interface not found.")
+    return None
+
+
+def get_interface(interface_name: str | None = None) -> str | None:
     if interface_name:
         if check_interface_exists(interface_name):
             return interface_name
         else:
             logger.error(
-                f"Interface {interface_name} not found, using default interface."
+                f"Interface '{interface_name}' not found. Falling back to default."
             )
 
     return get_default_interface()

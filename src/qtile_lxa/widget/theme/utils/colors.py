@@ -1,6 +1,4 @@
-from ..config.colors import color_schemes, get_pywal_color_scheme
-from typing import Any, Literal
-from libqtile.log_utils import logger
+from typing import Any
 
 
 def invert_hex_color_of(hex_color: str):
@@ -14,28 +12,3 @@ def invert_hex_color_of(hex_color: str):
 def rgba(hex_color: Any, alpha: float):
     hex_color = hex_color.lstrip("#")
     return f"#{hex_color}{int(alpha * 255):02x}"
-
-
-def get_color_scheme(
-    theme: Literal["pywal", "dark_pl", "bright_pl", "black_n_white"] = "dark_pl",
-):
-    cs = None
-    color_schemes["pywal"] = get_pywal_color_scheme()
-    try:
-        if theme in color_schemes and color_schemes[theme]:
-            cs = color_schemes[theme]
-        else:
-            logger.error(f"Unable to find color_schemes for theme {theme}!")
-    except Exception as e:
-        logger.error(f"failed to get color_schemes for theme {theme}!")
-
-    if not cs:
-        cs = color_schemes["dark_pl"]
-
-    cs["active"] = cs["color_sequence"][-1]
-    cs["highlight"] = cs["color_sequence"][0]
-    if len(cs["color_sequence"]) > 1:
-        cs["inactive"] = cs["color_sequence"][1]
-    else:
-        cs["inactive"] = invert_hex_color_of(cs["color_sequence"][0])
-    return cs

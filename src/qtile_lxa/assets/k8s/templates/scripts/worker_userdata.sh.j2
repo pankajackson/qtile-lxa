@@ -35,6 +35,14 @@ wait_for_kubeconfig() {
     done
 }
 
+setup_k3s_config() {
+    echo "=== Setting up k3s config ==="
+    sudo mkdir -p /etc/rancher/k3s
+    sudo tee /etc/rancher/k3s/config.yaml > /dev/null <<EOF
+node-name: $HOSTNAME
+EOF
+}
+
 setup_kubeconfig() {
     mkdir -p "$(dirname "$KUBECONFIG_DEST")"
     cp "$KUBECONFIG_SRC" "$KUBECONFIG_DEST"
@@ -49,5 +57,6 @@ run_join_script() {
 wait_for_kubeconfig
 setup_kubeconfig
 {% endif %}
+setup_k3s_config
 wait_for_join_script
 run_join_script

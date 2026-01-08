@@ -1,3 +1,3 @@
-from . import config, colors, decorations
+from . import colors
 
-__all__ = ["config", "colors", "decorations"]
+__all__ = ["colors"]
