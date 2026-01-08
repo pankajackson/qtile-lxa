@@ -1,22 +1,17 @@
 import requests
 from libqtile.log_utils import logger
 from pathlib import Path
-from .utils import (
-    get_potd_directories,
-    get_source_list,
-    get_active_source_id,
-    sync_config_for_source,
-)
-from qtile_lxa.widget.theme.config import ThemeConfig
 from qtile_lxa.utils.process_lock import ProcessLocker
 from qtile_lxa.utils.notification import send_notification
+from ....config import Theme
+from .utils import get_potd_directories, sync_config_for_source
 
 
 class Bing:
     def __init__(
         self,
         wallpaper_dir: Path,
-        theme_config: ThemeConfig,
+        theme_config: Theme,
         process_locker: ProcessLocker = ProcessLocker("bing"),
     ):
         self.wallpaper_dir = wallpaper_dir

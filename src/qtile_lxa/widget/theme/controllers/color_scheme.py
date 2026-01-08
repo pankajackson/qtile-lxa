@@ -1,17 +1,21 @@
-import threading
+from pathlib import Path
 from qtile_extras import widget
-from qtile_lxa.widget.theme.config import ThemeConfig
-from qtile_lxa.widget.theme.config import color_schemes
 from qtile_lxa.utils.notification import send_notification
 from qtile_lxa import __DEFAULTS__
+from ..config import Theme, ThemeAware, ColorScheme
 
-theme_config = ThemeConfig()
 
-
-class ColorSchemeChanger(widget.TextBox):
-    def __init__(self, display_name=False, **config):
-        super().__init__(**config)
-        self.color_schemes_list = list(color_schemes.keys())
+class ColorSchemeChanger(ThemeAware, widget.TextBox):
+    def __init__(
+        self,
+        config_file: Path = __DEFAULTS__.theme_manager.config_path,
+        theme: Theme | None = None,
+        display_name=False,
+        **kwargs,
+    ):
+        ThemeAware.__init__(self, theme=theme, config_file=config_file)
+        widget.TextBox.__init__(self, **kwargs)
+        self.color_schemes_list = [item for item in ColorScheme]
         self.text_template = f"󰸌: {{current_scheme}}"  # Icon and scheme name
         self.current_scheme = self.get_current_scheme()
         self.display_name = display_name
@@ -35,16 +39,12 @@ class ColorSchemeChanger(widget.TextBox):
         self.update_text()
 
     def get_current_scheme(self):
-        return (
-            theme_config.load_config()
-            .get("color", {})
-            .get("scheme", self.color_schemes_list[0])
-        )
+        return self.theme.color.scheme
 
-    def save_current_scheme(self, scheme_name):
-        config = theme_config.load_config()
-        config["color"]["scheme"] = scheme_name
-        theme_config.save_config(config)
+    def save_current_scheme(self, scheme_name: ColorScheme):
+        config = self.theme
+        config.color.scheme = scheme_name
+        config.save()
 
     def update_text(self):
         current_scheme = self.current_scheme
@@ -63,19 +63,15 @@ class ColorSchemeChanger(widget.TextBox):
             (current_index + 1) % len(self.color_schemes_list)
         ]
         self.save_current_scheme(self.current_scheme)
+        self.notify_theme("cs_change")
         self.update_text()
         send_notification(
-            title=f"Color Scheme: {self.current_scheme}",
+            title=f"Color Scheme: {self.current_scheme.name}",
             msg="Theme Manager",
             app_name="ThemeManager",
             app_id=2003,
             timeout=5000,
         )
-
-        if self.conf_reload_timer and self.conf_reload_timer.is_alive():
-            self.conf_reload_timer.cancel()
-        self.conf_reload_timer = threading.Timer(1, theme_config.reload_qtile)
-        self.conf_reload_timer.start()
 
     def prev_scheme(self):
         current_index = self.color_schemes_list.index(self.current_scheme)
@@ -83,16 +79,12 @@ class ColorSchemeChanger(widget.TextBox):
             (current_index - 1) % len(self.color_schemes_list)
         ]
         self.save_current_scheme(self.current_scheme)
+        self.notify_theme("cs_change")
         self.update_text()
         send_notification(
-            title=f"Color Scheme: {self.current_scheme}",
+            title=f"Color Scheme: {self.current_scheme.name}",
             msg="Theme Manager",
             app_name="ThemeManager",
             app_id=2003,
             timeout=5000,
         )
-
-        if self.conf_reload_timer and self.conf_reload_timer.is_alive():
-            self.conf_reload_timer.cancel()
-        self.conf_reload_timer = threading.Timer(1, theme_config.reload_qtile)
-        self.conf_reload_timer.start()

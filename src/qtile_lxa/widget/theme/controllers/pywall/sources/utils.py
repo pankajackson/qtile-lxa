@@ -2,8 +2,8 @@ import os
 from datetime import datetime
 from pathlib import Path
 import hashlib
-from qtile_lxa.widget.theme.config import ThemeConfig
 from qtile_lxa.utils.notification import send_notification
+from ....config import Theme, WallpaperSource
 
 
 def get_potd_directories(wallpaper_dir: Path, provider: str):
@@ -23,24 +23,24 @@ def get_potd_directories(wallpaper_dir: Path, provider: str):
     return image_path, potd_path, date_dir, potd_dir
 
 
-def get_source_list(theme_config: ThemeConfig):
-    config = theme_config.load_config()
-    sources = config.get("wallpaper", {}).get("sources", {})
+def get_source_list(theme_config: Theme):
+    config = theme_config.load()
+    sources = config.wallpaper.sources
     return sources
 
 
-def set_active_source_id(theme_config: ThemeConfig, source_id):
+def set_active_source_id(theme_config: Theme, source_id):
     """Save the current source ID."""
     if source_id is not None:
-        config = theme_config.load_config()
+        config = theme_config.load()
         sources = get_source_list(theme_config)
         if not sources:
             return
-        config["wallpaper"]["source_id"] = source_id
-        theme_config.save_config(config)
+        config.wallpaper.source_id = source_id
+        theme_config.save()
         source = sources[source_id]
-        group = source["group"]
-        collection = source["collection"]
+        group = source.group
+        collection = source.collection
         send_notification(
             f"Collection Changed: ",
             f"{collection}\n{group}",
@@ -50,13 +50,13 @@ def set_active_source_id(theme_config: ThemeConfig, source_id):
         )
 
 
-def get_active_source_id(theme_config: ThemeConfig):
+def get_active_source_id(theme_config: Theme):
     """Get the current source ID."""
-    config = theme_config.load_config()
+    config = theme_config.load()
     sources = get_source_list(theme_config)
     if not sources:
         return
-    active_source_id = config.get("wallpaper", {}).get("source_id", None)
+    active_source_id = config.wallpaper.source_id
     if active_source_id is None:
         source_ids = list(sources.keys())  # Get a list of source IDs
         first_src_id = source_ids[0]
@@ -65,11 +65,9 @@ def get_active_source_id(theme_config: ThemeConfig):
     return active_source_id
 
 
-def sync_config_for_source(
-    theme_config: ThemeConfig, wallpaper_dir: Path, data_dir=None
-):
+def sync_config_for_source(theme_config: Theme, wallpaper_dir: Path, data_dir=None):
     """Get the list of wallpaper files and parse source information."""
-    config = theme_config.load_config()
+    config = theme_config.load()
     sources = get_source_list(theme_config)
 
     def get_uid(group=None, collection=None, none_marker="NONE"):
@@ -118,15 +116,15 @@ def sync_config_for_source(
                     )
                     src = sources.get(
                         id,
-                        {
-                            "group": group,
-                            "collection": collection,
-                            "active_index": 0,
-                            "wallpapers": [],
-                        },
+                        WallpaperSource(
+                            group=group,
+                            collection=collection,
+                            active_index=0,
+                            wallpapers=[],
+                        ),
                     )
-                    if wallpaper_file_name not in src["wallpapers"]:
-                        src["wallpapers"].append(wallpaper_file_name)
+                    if wallpaper_file_name not in src.wallpapers:
+                        src.wallpapers.append(wallpaper_file_name)
                     sources[id] = src
 
                 elif entry.is_dir():
@@ -134,12 +132,12 @@ def sync_config_for_source(
 
     scan_directory(data_dir if data_dir else wallpaper_dir)
 
-    config["wallpaper"]["sources"] = sources
-    theme_config.save_config(config)
+    config.wallpaper.sources = sources
+    config.save()
     return sources
 
 
-def switch_next_source(theme_config: ThemeConfig):
+def switch_next_source(theme_config: Theme):
     active_source_id = get_active_source_id(theme_config)
     sources = get_source_list(theme_config)  # Returns the dictionary of sources
 
@@ -160,17 +158,9 @@ def switch_next_source(theme_config: ThemeConfig):
 
     # Update the current source
     set_active_source_id(theme_config, next_src_id)
-    # self.update_text()
-
-    # # If a timer is running, cancel it and start a new one
-    # if self.update_wall_timer and self.update_wall_timer.is_alive():
-    #     self.update_wall_timer.cancel()
-
-    # self.update_wall_timer = threading.Timer(0.5, self.set_wallpaper)
-    # self.update_wall_timer.start()
 
 
-def switch_prev_source(theme_config: ThemeConfig):
+def switch_prev_source(theme_config: Theme):
     active_source_id = get_active_source_id(theme_config)
     sources = get_source_list(theme_config)  # Returns the dictionary of sources
 
@@ -191,11 +181,3 @@ def switch_prev_source(theme_config: ThemeConfig):
 
     # Update the current source
     set_active_source_id(theme_config, next_src_id)
-    # self.update_text()
-
-    # # If a timer is running, cancel it and start a new one
-    # if self.update_wall_timer and self.update_wall_timer.is_alive():
-    #     self.update_wall_timer.cancel()
-
-    # self.update_wall_timer = threading.Timer(0.5, self.set_wallpaper)
-    # self.update_wall_timer.start()
