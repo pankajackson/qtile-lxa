@@ -124,6 +124,26 @@ def get_screens():
     return screens
 
 
-def get_active_monitor_count(screens=get_screens()):
-    active_screens = list(filter(lambda s: s["active"] and s["connected"], screens))
-    return len(active_screens)
+def get_active_monitor_count(
+    screens=None,
+    fallback: int | None = None,
+    min_count: int | None = None,
+    max_count: int | None = None,
+):
+    if min_count is not None and max_count is not None and min_count > max_count:
+        raise ValueError("min_count cannot be greater than max_count")
+    if screens is None:
+        screens = get_screens()
+
+    if not screens:
+        return fallback if fallback is not None else 0
+
+    active_screens = [s for s in screens if s["active"] and s["connected"]]
+    screen_count = len(active_screens)
+
+    if min_count is not None:
+        screen_count = max(screen_count, min_count)
+    if max_count is not None:
+        screen_count = min(screen_count, max_count)
+
+    return screen_count
