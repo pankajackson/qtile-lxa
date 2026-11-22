@@ -18,7 +18,7 @@ except PackageNotFoundError:
 @dataclass(frozen=True)
 class PyWallDefaults:
     pywal_color_scheme_path: Path = Path.home() / ".cache/wal/colors.json"
-    wallpaper_dir: Path = Path.home() / "Pictures/lxa_desktop_backgrounds"
+    wallpaper_dir: Path = Path.home() / "Pictures/Wallpapers"
     wallpaper_repos: list[str] = field(
         default_factory=lambda: ["https://github.com/pankajackson/wallpapers.git"]
     )
@@ -27,7 +27,7 @@ class PyWallDefaults:
 
 @dataclass(frozen=True)
 class VidWallDefaults:
-    playlist_path: Path = Path.home() / ".lxa_vidwall_playlists.json"
+    playlist_path: Path = Path.home() / ".config/qtile/.lxa_vidwall_playlists.json"
     playlist_cache_path: Path = Path.home() / ".cache/qtile/lxa_vidwall_playlists.plst"
     state_cache_path: Path = Path.home() / ".cache/qtile/lxa_vidwall_state.json"
 
@@ -36,7 +36,7 @@ class VidWallDefaults:
 class ThemeManagerDefaults:
     pywall: PyWallDefaults = PyWallDefaults()
     vidwall: VidWallDefaults = VidWallDefaults()
-    config_path: Path = Path.home() / ".lxa_theme_config.json"
+    config_path: Path = Path.home() / ".config/qtile/.lxa_theme_config.json"
 
 
 @dataclass(frozen=True)
